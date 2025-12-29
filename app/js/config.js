@@ -1,13 +1,17 @@
 // app/js/config.js
-// ALTERE SOMENTE AQUI (1 lugar só).
+// Fonte única de configuração do V4
+
 window.TESOURA_CONFIG = {
-  SUPABASE_URL: "https://xuplzpispukvtggjasxx.supabase.co",
-  SUPABASE_KEY: "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg",
+  // Jogadores (visual)
+  APP_PIN: "TESOURA2026",
 
-  // PIN ÚNICO para todos os celulares (troque aqui).
-  // Sugestão: use 6 dígitos.
-  APP_PIN: "123456",
-
-  // Nome do app no topo:
-  APP_TITLE: "TESOURA - CONTROLE DO FUTEBOL",
+  // Diretoria (edita) + regra do CAIXA
+  // true = COM CAIXA | false = SEM CAIXA
+  DIRETORES: {
+    "1baidec": { caixa: true  },
+    "2thiago": { caixa: true  },
+    "3love":   { caixa: false },
+    "4le":     { caixa: false },
+    "5titi":   { caixa: false }
+  }
 };
