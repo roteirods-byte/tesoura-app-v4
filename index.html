@@ -1,254 +1,416 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>TESOURA - PAINÉIS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Evitar cache do index -->
-  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tesoura — Controle do Futebol</title>
   <style>
-    body{margin:0;font-family:Arial,sans-serif;background:#0b1220;color:#fff}
-    .topbar{background:#111827;padding:10px 20px;color:#ff7f27;font-weight:900;font-size:18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .topbar .actions{display:flex;align-items:center;gap:8px}
-    .mode{font-size:12px;color:#fff;opacity:.9;background:#0b1220;border:1px solid #334155;padding:4px 8px;border-radius:999px}
-    .topbar button{border:none;border-radius:6px;padding:6px 10px;font-weight:900;cursor:pointer}
-    .btn-login{background:#0ea5e9;color:#06162f;display:none}
-    .btn-logout{background:#ef4444;color:#fff;display:none}
+    :root{
+      --bg:#07101f;
+      --card:#0b1630;
+      --line:#1b2c57;
+      --txt:#eaf0ff;
+      --muted:#a8b4d6;
+      --accent:#f39c12;
+      --green:#2bd39f;
+      --blue:#4b7cff;
+      --danger:#ff4b4b;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:radial-gradient(1200px 600px at 20% 0%, #132246 0%, var(--bg) 55%) fixed;
+      color:var(--txt);
+      overflow-x:hidden; /* evita barra horizontal na página */
+    }
+    a{color:inherit}
 
-    .tabs{display:flex;background:#111827;border-bottom:2px solid #ff7f27}
-    .tab-btn{flex:1;padding:10px;cursor:pointer;text-align:center;border:none;background:#111827;color:#fff;font-weight:900;font-size:14px}
-    .tab-btn.active{background:#1f2937;color:#ff7f27;border-bottom:3px solid #ff7f27}
-    .tab-content{display:none;height:calc(100vh - 80px);background:#0b1220}
-    .tab-content.active{display:block}
-    iframe{width:100%;height:100%;border:none;background:#0b1220}
+    .wrap{max-width:1600px;margin:0 auto;padding:14px 10px}
+    .top{
+      border:1px solid var(--line);
+      background:rgba(11,22,48,.75);
+      border-radius:16px;
+      padding:12px 14px;
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+    }
+    .brand{display:flex;align-items:center;gap:10px;min-width:0}
+    .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#ffd08a);display:grid;place-items:center;color:#091226;font-weight:900}
+    .title{font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sub{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-    /* Tela inicial */
-    #telaInicial{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.80)}
-    #telaInicial .box{width:min(520px,100%);background:#081427;border:1px solid #334155;border-radius:14px;padding:18px;text-align:center}
-    #telaInicial .t1{color:#ff7f27;font-weight:900;font-size:22px}
-    #telaInicial .t2{color:#e5e7eb;margin-top:8px;font-weight:800}
-    #telaInicial .t3{color:#e5e7eb;margin-top:18px;font-weight:900}
-    #telaInicial .row{display:flex;gap:14px;justify-content:center;margin-top:18px;flex-wrap:wrap}
-    #telaInicial .btnJ{min-width:200px;border:none;border-radius:10px;padding:12px 14px;font-weight:900;cursor:pointer;background:#22c55e;color:#052e16}
-    #telaInicial .btnD{min-width:200px;border:none;border-radius:10px;padding:12px 14px;font-weight:900;cursor:pointer;background:#3b82f6;color:#06162f}
-    #telaInicial .msg{margin-top:12px;color:#e5e7eb;font-size:12px;min-height:16px}
-    noscript{display:block;padding:12px;background:#b91c1c;color:#fff;font-weight:900;text-align:center}
+    .right{display:flex;align-items:center;gap:10px}
+    .role{
+      font-weight:900;color:#091226;background:var(--accent);
+      border-radius:999px;padding:6px 10px;font-size:12px;
+      white-space:nowrap;
+    }
+    .btnExit{
+      border:1px solid var(--line);background:transparent;color:var(--txt);
+      border-radius:12px;padding:8px 12px;font-weight:900;cursor:pointer;
+    }
+
+    .nav{
+      margin-top:12px;
+      border:1px solid var(--line);
+      background:rgba(11,22,48,.55);
+      border-radius:16px;
+      padding:10px;
+    }
+
+    /* MENU: 1 linha + rolagem horizontal sem mostrar barra */
+    .tabs{
+      display:flex;gap:10px;flex-wrap:nowrap;
+      overflow-x:auto;-webkit-overflow-scrolling:touch;
+      scrollbar-width:none;
+    }
+    .tabs::-webkit-scrollbar{display:none;}
+
+    .tab{
+      flex:0 0 auto;
+      display:inline-flex;align-items:center;justify-content:center;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:transparent;
+      color:var(--txt);
+      font-weight:900;
+      cursor:pointer;
+      text-decoration:none;
+      white-space:nowrap;
+    }
+    .tab.active{background:rgba(255,255,255,.07)}
+    .tab.disabled{opacity:.35;pointer-events:none}
+
+    .content{
+      margin-top:12px;
+      border:1px solid var(--line);
+      background:rgba(11,22,48,.55);
+      border-radius:16px;
+      padding:10px;
+      min-height:420px;
+    }
+    iframe{
+      width:100%;
+      height:78vh;
+      min-height:520px;
+      border:0;
+      border-radius:12px;
+      background:rgba(0,0,0,.15);
+    }
+
+    /* MODAL LOGIN */
+    .modal{
+      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,.62);padding:14px;z-index:9999;
+    }
+    .modalCard{
+      width:min(720px, 96vw);
+      border:1px solid var(--line);
+      background:rgba(11,22,48,.92);
+      border-radius:18px;
+      padding:18px;
+      box-shadow:0 18px 60px rgba(0,0,0,.45);
+    }
+    .modalH1{margin:0 0 6px;color:var(--accent);font-weight:1000;letter-spacing:.6px;text-align:center}
+    .modalP{margin:0 0 12px;color:var(--muted);font-size:13px;text-align:center}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:720px){ .grid2{grid-template-columns:1fr} }
+
+    .box{
+      border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(255,255,255,.03)
+    }
+    .boxTitle{font-weight:1000;margin:0 0 6px}
+    .boxNote{color:var(--muted);font-size:12px;margin:0 0 10px}
+    label{display:block;color:var(--muted);font-size:12px;margin:8px 0 6px}
+    input{
+      width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);
+      background:#0a142b;color:var(--txt);outline:none;
+      font-weight:900;
+    }
+    .rowBtns{display:flex;gap:10px;margin-top:10px}
+    .btnG{
+      flex:1;border:0;border-radius:12px;padding:12px 14px;
+      font-weight:1000;cursor:pointer;color:#061019;
+      background:linear-gradient(135deg,#28d7a2,#1aa98e);
+    }
+    .btnB{
+      flex:1;border:0;border-radius:12px;padding:12px 14px;
+      font-weight:1000;cursor:pointer;color:#07101f;
+      background:linear-gradient(135deg,#5f86ff,#3f69ff);
+    }
+    .msg{
+      margin-top:10px;font-size:13px;color:#ffcf7a;text-align:center;min-height:18px;
+    }
+    .mini{
+      margin-top:10px;color:var(--muted);font-size:12px;line-height:1.4
+    }
+    .mini b{color:var(--txt)}
   </style>
-
-  <script>
-    // ===== REGRAS DE ESTABILIDADE (SITE OFICIAL) =====
-    // 1) Sempre mostrar a tela inicial (senha) ao abrir
-    // 2) Iframes carregam sempre versão nova (cb automático)
-    // 3) Desativar Service Worker (evita versão antiga em cache)
-
-    function qs(id){ return document.getElementById(id); }
-    function cacheBust(url){
-      const sep = url.includes("?") ? "&" : "?";
-      return url + sep + "cb=" + Date.now();
-    }
-    function showTelaInicial(v){
-      const t = qs("telaInicial");
-      if(t) t.style.display = v ? "flex" : "none";
-    }
-    function setBadge(txt){
-      const b = qs("modeBadge");
-      if(b) b.textContent = txt;
-    }
-
-    async function disableServiceWorker(){
-      try{
-        if("serviceWorker" in navigator){
-          const regs = await navigator.serviceWorker.getRegistrations();
-          for(const r of regs){ await r.unregister(); }
-        }
-      }catch(e){}
-      try{
-        if("caches" in window){
-          const keys = await caches.keys();
-          for(const k of keys){ await caches.delete(k); }
-        }
-      }catch(e){}
-    }
-
-    // Entrar Jogadores
-    function TESOURA_ENTRAR_JOGADORES(){
-      const cfg = window.TESOURA_CONFIG || {};
-      const pinCfg = String(cfg.APP_PIN || "").trim();
-      const pin = (prompt("Senha dos JOGADORES (visualização):") || "").trim();
-      if(pinCfg && pin !== pinCfg){
-        qs("msgTelaInicial").textContent = "Senha incorreta.";
-        return;
-      }
-      window.TESOURA_ROLE = "jogador";
-      showTelaInicial(false);
-      setBadge("Modo: Jogadores (visual)");
-      abrirAba("aba-jogadores");
-      setTimeout(()=>TESOURA_TRAVAR_IFRAMES(), 200);
-    }
-
-    // Entrar Diretoria
-    function TESOURA_ENTRAR_DIRETORIA(){
-      window.TESOURA_ROLE = "diretoria";
-      showTelaInicial(false);
-      setBadge("Modo: Diretoria");
-      abrirAba("aba-jogadores");
-    }
-
-    // Trava cliques dentro do iframe (modo jogador)
-    function travarIframeJogador(iframe){
-      try{
-        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if(!doc || !doc.body) return;
-
-        let banner = doc.getElementById("TESOURA_JOGADOR_BANNER");
-        if(!banner){
-          banner = doc.createElement("div");
-          banner.id = "TESOURA_JOGADOR_BANNER";
-          banner.textContent = "MODO JOGADOR: SOMENTE VISUALIZAÇÃO";
-          banner.style.cssText =
-            "position:fixed;top:0;left:0;right:0;z-index:999999;" +
-            "background:#b91c1c;color:#fff;font-weight:900;" +
-            "padding:8px 10px;text-align:center;font-size:12px;";
-          doc.body.appendChild(banner);
-          doc.body.style.paddingTop = "40px";
-        }
-
-        let style = doc.getElementById("TESOURA_JOGADOR_LOCK");
-        if(!style){
-          style = doc.createElement("style");
-          style.id = "TESOURA_JOGADOR_LOCK";
-          style.textContent = `
-            button, input, select, textarea, a, [role="button"], [onclick]{
-              pointer-events:none !important;
-              opacity:0.55 !important;
-              cursor:not-allowed !important;
-            }
-          `;
-          (doc.head || doc.documentElement).appendChild(style);
-        }
-      }catch(e){}
-    }
-
-    function TESOURA_TRAVAR_IFRAMES(){
-      if(window.TESOURA_ROLE !== "jogador") return;
-      document.querySelectorAll("iframe").forEach(ifr=>travarIframeJogador(ifr));
-    }
-
-    function ensureIframeLoaded(iframe){
-      if(!iframe) return;
-      const base = iframe.getAttribute("data-src");
-      if(!base) return;
-
-      // evita "flash" de versão antiga
-      iframe.src = "about:blank";
-      setTimeout(()=>{ iframe.src = cacheBust(base); }, 0);
-
-      iframe.addEventListener("load", ()=>TESOURA_TRAVAR_IFRAMES(), { once:false });
-    }
-
-    function abrirAba(id){
-      const abas = document.querySelectorAll(".tab-content");
-      const botoes = document.querySelectorAll(".tab-btn");
-
-      abas.forEach(a=>a.classList.remove("active"));
-      botoes.forEach(b=>b.classList.remove("active"));
-
-      const el = document.getElementById(id);
-      if(el) el.classList.add("active");
-
-      const map = {"aba-jogadores":0,"aba-presenca":1,"aba-controle":2,"aba-mensalidade":3,"aba-caixa":4,"aba-gols":5,"aba-banco":6};
-      if(botoes[map[id]]) botoes[map[id]].classList.add("active");
-
-      const iframe = document.querySelector("#"+id+" iframe");
-      ensureIframeLoaded(iframe);
-    }
-    window.abrirAba = abrirAba;
-
-    window.addEventListener("load", async ()=>{
-      await disableServiceWorker();
-
-      // SEMPRE mostrar a tela inicial ao abrir o site
-      window.TESOURA_ROLE = "";
-      showTelaInicial(true);
-      setBadge("Modo: —");
-
-      // carrega a primeira aba já com versão nova
-      abrirAba("aba-jogadores");
-    });
-  </script>
 </head>
 
 <body>
-  <noscript>Ative o JavaScript no navegador para usar o TESOURA.</noscript>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="logo">T</div>
+        <div style="min-width:0">
+          <div class="title">Tesoura — Controle do Futebol</div>
+          <div class="sub" id="subInfo">Aguardando login…</div>
+        </div>
+      </div>
+      <div class="right">
+        <div class="role" id="roleTag">MODO: —</div>
+        <button class="btnExit" id="btnSair">SAIR</button>
+      </div>
+    </div>
 
-  <!-- TELA INICIAL -->
-  <div id="telaInicial">
-    <div class="box">
-      <div class="t1">GRUPO TESOURA I</div>
-      <div class="t2">ESPORTE, FAMÍLIA E AMIZADE</div>
-      <div class="t3">APLICATIVO DO GRUPO</div>
+    <div class="nav">
+      <div class="tabs" id="tabs">
+        <a class="tab active" data-tab="jogadores" href="#" onclick="return false;">JOGADORES</a>
+        <a class="tab" data-tab="presenca" href="#" onclick="return false;">PRESENÇA / ESCALAÇÃO</a>
+        <a class="tab" data-tab="controle" href="#" onclick="return false;">CONTROLE GERAL</a>
+        <a class="tab" data-tab="mensalidade" href="#" onclick="return false;">MENSALIDADE</a>
+        <a class="tab" data-tab="caixa" href="#" onclick="return false;">CAIXA</a>
+        <a class="tab" data-tab="gols" href="#" onclick="return false;">GOLS</a>
+        <a class="tab" data-tab="banco" href="#" onclick="return false;">BANCO DE DADOS</a>
+      </div>
+    </div>
 
-      <div class="row">
-        <button class="btnJ" onclick="TESOURA_ENTRAR_JOGADORES()">ENTRAR JOGADORES</button>
-        <button class="btnD" onclick="TESOURA_ENTRAR_DIRETORIA()">ENTRAR DIRETORIA</button>
+    <div class="content">
+      <iframe id="frame" src="about:blank" title="Tesoura"></iframe>
+    </div>
+  </div>
+
+  <!-- MODAL LOGIN -->
+  <div class="modal" id="loginModal">
+    <div class="modalCard">
+      <h2 class="modalH1">GRUPO TESOURA I</h2>
+      <p class="modalP">Escolha o acesso e digite a senha (senhas visíveis, como você pediu).</p>
+
+      <div class="grid2">
+        <div class="box">
+          <div class="boxTitle">Jogadores (VISUAL)</div>
+          <p class="boxNote">Somente visualização (sem edição).</p>
+
+          <label>Senha dos Jogadores</label>
+          <input id="pinJog" type="text" placeholder="TESOURA2026" />
+
+          <div class="rowBtns">
+            <button class="btnG" id="btnJog">ENTRAR JOGADORES</button>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="boxTitle">Diretoria (EDITA)</div>
+          <p class="boxNote">Edita tudo. Alguns diretores podem ficar “sem Caixa”.</p>
+
+          <label>Senha da Diretoria</label>
+          <input id="pinDir" type="text" placeholder="1baidec / 2thiago / 3love / 4le / 5titi" />
+
+          <div class="rowBtns">
+            <button class="btnB" id="btnDir">ENTRAR DIRETORIA</button>
+          </div>
+        </div>
       </div>
 
-      <div class="msg" id="msgTelaInicial"></div>
+      <div class="mini">
+        <b>REGRA:</b> Jogadores = <b>TESOURA2026</b> (visual).<br/>
+        Diretoria: <b>1baidec</b>, <b>2thiago</b> = <b>COM CAIXA</b>. <b>3love</b>, <b>4le</b>, <b>5titi</b> = <b>SEM CAIXA</b>.
+      </div>
+
+      <div class="msg" id="loginMsg"></div>
     </div>
   </div>
 
-  <div class="topbar">
-    <div>TESOURA – CONTROLE DO FUTEBOL</div>
-    <div class="actions">
-      <div class="mode" id="modeBadge">Modo: —</div>
-      <button class="btn-login" id="btnLogin">ENTRAR (DIRETORIA)</button>
-      <button class="btn-logout" id="btnLogout">SAIR</button>
-    </div>
-  </div>
-
-  <div class="tabs">
-    <button class="tab-btn active" onclick="abrirAba('aba-jogadores')">JOGADORES</button>
-    <button class="tab-btn" onclick="abrirAba('aba-presenca')">PRESENÇA / ESCALAÇÃO</button>
-    <button class="tab-btn" onclick="abrirAba('aba-controle')">CONTROLE GERAL</button>
-    <button class="tab-btn" onclick="abrirAba('aba-mensalidade')">MENSALIDADE</button>
-    <button class="tab-btn" onclick="abrirAba('aba-caixa')">CAIXA</button>
-    <button class="tab-btn" onclick="abrirAba('aba-gols')">GOLS</button>
-    <button class="tab-btn" onclick="abrirAba('aba-banco')">BANCO DE DADOS</button>
-  </div>
-
-  <div id="aba-jogadores" class="tab-content active">
-    <iframe id="f-jogadores" data-src="tesoura_jogadores_teste.html"></iframe>
-  </div>
-
-  <div id="aba-presenca" class="tab-content">
-    <iframe id="f-presenca" data-src="tesoura_presenca_escala_R5.html"></iframe>
-  </div>
-
-  <div id="aba-controle" class="tab-content">
-    <iframe id="f-controle" data-src="tesoura_controle_geral_teste.html"></iframe>
-  </div>
-
-  <div id="aba-mensalidade" class="tab-content">
-    <iframe id="f-mensalidade" data-src="tesoura_mensalidade_R4.html"></iframe>
-  </div>
-
-  <div id="aba-caixa" class="tab-content">
-    <iframe id="f-caixa" data-src="tesoura_caixa_teste.html"></iframe>
-  </div>
-
-  <div id="aba-gols" class="tab-content">
-    <iframe id="f-gols" data-src="tesoura_gols_teste.html"></iframe>
-  </div>
-
-  <div id="aba-banco" class="tab-content">
-    <iframe id="f-banco" data-src="tesoura_banco_dados_teste.html"></iframe>
-  </div>
-
-  <!-- Config do app (PIN, URL/KEY do Supabase etc) -->
+  <!-- CONFIG (fonte única) -->
   <script src="app/js/config.js"></script>
+
+  <script>
+    const $ = (id)=>document.getElementById(id);
+
+    const cfg = window.TESOURA_CONFIG || {};
+    const PIN_JOG = String(cfg.APP_PIN || "TESOURA2026");
+
+    const DIRETORES = cfg.DIRETORES || {
+      "1baidec": { caixa: true },
+      "2thiago": { caixa: true },
+      "3love":   { caixa: false },
+      "4le":     { caixa: false },
+      "5titi":   { caixa: false }
+    };
+
+    const PAGES = {
+      jogadores:   "tesoura_jogadores_teste.html",
+      presenca:    "tesoura_presenca_escala_R5.html",
+      controle:    "tesoura_controle_geral_teste.html",
+      mensalidade: "tesoura_mensalidade_R4.html",
+      caixa:       "tesoura_caixa_teste.html",
+      gols:        "tesoura_gols_teste.html",
+      banco:       "tesoura_banco_dados_teste.html"
+    };
+
+    function setRole(role, caixaAllowed){
+      localStorage.setItem("TESOURA_ROLE", role);
+      localStorage.setItem("TESOURA_CAIXA", caixaAllowed ? "1" : "0");
+    }
+
+    function getRole(){
+      return localStorage.getItem("TESOURA_ROLE") || "";
+    }
+
+    function hasCaixa(){
+      return (localStorage.getItem("TESOURA_CAIXA") || "0") === "1";
+    }
+
+    function applyUI(){
+      const role = getRole();
+      const caixaOk = hasCaixa();
+
+      if(!role){
+        $("roleTag").textContent = "MODO: —";
+        $("subInfo").textContent = "Aguardando login…";
+        $("loginModal").style.display = "flex";
+        return;
+      }
+
+      $("loginModal").style.display = "none";
+
+      if(role === "jogador"){
+        $("roleTag").textContent = "MODO: Jogadores (VISUAL)";
+        $("subInfo").textContent = "Acesso visual (sem edição).";
+      } else {
+        $("roleTag").textContent = caixaOk ? "MODO: Diretoria (COM CAIXA)" : "MODO: Diretoria (SEM CAIXA)";
+        $("subInfo").textContent = "Acesso da Diretoria (edita).";
+      }
+
+      // Esconde o botão CAIXA se não puder
+      const tabCaixa = document.querySelector('.tab[data-tab="caixa"]');
+      if(tabCaixa){
+        if(role === "jogador" || (role === "diretor" && !caixaOk)){
+          tabCaixa.classList.add("disabled");
+        }else{
+          tabCaixa.classList.remove("disabled");
+        }
+      }
+
+      // Se estiver numa aba proibida, volta para jogadores
+      const active = document.querySelector(".tab.active")?.dataset?.tab || "jogadores";
+      if(active === "caixa" && (role === "jogador" || !caixaOk)){
+        setActiveTab("jogadores");
+        loadTab("jogadores");
+      }
+    }
+
+    function setActiveTab(tab){
+      document.querySelectorAll(".tab").forEach(el=>{
+        if(el.dataset.tab === tab) el.classList.add("active");
+        else el.classList.remove("active");
+      });
+    }
+
+    function loadTab(tab){
+      const role = getRole();
+      if(!role){ return; }
+
+      if(tab === "caixa" && (role === "jogador" || (role==="diretor" && !hasCaixa()))){
+        $("loginMsg").textContent = "Sem permissão para CAIXA.";
+        return;
+      }
+
+      const src = PAGES[tab] || PAGES.jogadores;
+
+      // passa modo para as páginas (se você quiser usar depois)
+      const qs = `?role=${encodeURIComponent(role)}&caixa=${hasCaixa() ? "1" : "0"}`;
+      $("frame").src = src + qs;
+
+      // trava clique no iframe em modo jogador (visual)
+      // (sem mexer nos seus painéis agora)
+      setTimeout(()=>{
+        if(getRole()==="jogador"){
+          lockIframeVisual();
+        }else{
+          unlockIframe();
+        }
+      }, 400);
+    }
+
+    function lockIframeVisual(){
+      const fr = $("frame");
+      const parent = fr.parentElement;
+      let ov = parent.querySelector("[data-ov='1']");
+      if(!ov){
+        ov = document.createElement("div");
+        ov.dataset.ov="1";
+        ov.style.position="absolute";
+        ov.style.inset="10px";
+        ov.style.borderRadius="12px";
+        ov.style.pointerEvents="auto";
+        ov.style.background="transparent";
+        ov.title = "Modo Jogador: visual";
+        parent.style.position = "relative";
+        parent.appendChild(ov);
+      }
+    }
+
+    function unlockIframe(){
+      const parent = $("frame").parentElement;
+      const ov = parent.querySelector("[data-ov='1']");
+      if(ov) ov.remove();
+    }
+
+    // LOGIN (sem prompt)
+    $("btnJog").onclick = ()=>{
+      const pin = ($("pinJog").value || "").trim();
+      if(pin !== PIN_JOG){
+        $("loginMsg").textContent = "Senha de Jogadores incorreta.";
+        return;
+      }
+      $("loginMsg").textContent = "";
+      setRole("jogador", false);
+      applyUI();
+      loadTab(document.querySelector(".tab.active")?.dataset?.tab || "jogadores");
+    };
+
+    $("btnDir").onclick = ()=>{
+      const pin = ($("pinDir").value || "").trim();
+      const info = DIRETORES[pin];
+      if(!info){
+        $("loginMsg").textContent = "Senha de Diretoria incorreta.";
+        return;
+      }
+      $("loginMsg").textContent = "";
+      setRole("diretor", !!info.caixa);
+      applyUI();
+      loadTab(document.querySelector(".tab.active")?.dataset?.tab || "jogadores");
+    };
+
+    // SAIR
+    $("btnSair").onclick = ()=>{
+      localStorage.removeItem("TESOURA_ROLE");
+      localStorage.removeItem("TESOURA_CAIXA");
+      $("frame").src = "about:blank";
+      applyUI();
+    };
+
+    // TABS
+    $("tabs").addEventListener("click",(e)=>{
+      const a = e.target.closest(".tab");
+      if(!a) return;
+      const tab = a.dataset.tab;
+      if(a.classList.contains("disabled")) return;
+      setActiveTab(tab);
+      loadTab(tab);
+    });
+
+    // INICIO
+    (function init(){
+      // força login sempre ao abrir (como você quer)
+      localStorage.removeItem("TESOURA_ROLE");
+      localStorage.removeItem("TESOURA_CAIXA");
+      setActiveTab("jogadores");
+      applyUI();
+    })();
+  </script>
 </body>
 </html>
