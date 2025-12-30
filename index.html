@@ -68,7 +68,7 @@
     </div>
 
     <div class="framebox">
-      <iframe id="frame" src="tesoura_jogadores_teste.html"></iframe>
+      <iframe id="frame" src="tesoura_controle_geral_teste.html">
     </div>
 
     <div id="msg" class="msg"></div>
@@ -225,7 +225,7 @@
       showTelaInicial(false);
       TESOURA_setPermissaoCaixa(true);
       TESOURA_precarregarIframes();
-      abrirAba(sessionStorage.getItem("tesoura_tab") || "aba-jogadores");
+      abrirAba(sessionStorage.getItem("tesoura_tab") || "aba-controle");
       TESOURA_TRAVAR_IFRAMES(true);
       TESOURA_setMsg("");
     }
