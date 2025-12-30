@@ -158,7 +158,8 @@
         </div>
       </div>
 
-      <div class="foot">Regra: Jogador só visualiza (não edita). Diretor edita. Diretores 3love/4le/5titi: sem CAIXA.</div>
+     <div class="foot">Regra: Jogador só visualiza (não edita). Diretor edita.</div>
+
       <div id="loginMsg" class="msg" style="text-align:center;margin-top:10px"></div>
     </div>
   </div>
@@ -250,32 +251,30 @@ const DIRETORES = {
 
   // ======= LOGIN =======
   function TESOURA_ENTRAR_JOGADORES(){
-    const pw = (qs("senhaJogador")?.value || "").trim();
-    if (pw !== SENHA_JOGADOR) return TESOURA_setMsg("Senha do jogador inválida.");
+  const pw = (qs("senhaJogador")?.value || "").trim();
+  if (pw !== SENHA_JOGADOR) return TESOURA_setMsg("Senha do jogador inválida.");
 
-    window.TESOURA_ROLE = "jogadores";
-    window.TESOURA_CAN_CAIXA = true;
+  window.TESOURA_ROLE = "jogadores";
+  window.TESOURA_CAN_CAIXA = true;
 
-    TESOURA_ATUALIZA_BADGE();
-    TESOURA_setMsg("");
-    showTelaInicial(false);
-    TESOURA_TRAVAR_IFRAMES(true);
-  }
-
+  TESOURA_ATUALIZA_BADGE();
+  TESOURA_setMsg("");
+  showTelaInicial(false);
+  TESOURA_TRAVAR_IFRAMES(true);
+}
   function TESOURA_ENTRAR_DIRETORIA(){
-    const pw = (qs("senhaDiretor")?.value || "").trim();
-    const info = DIRETORES[pw];
-    if (!info) return TESOURA_setMsg("Senha da diretoria inválida.");
+  const pw = (qs("senhaDiretor")?.value || "").trim();
+  const info = DIRETORES[pw];
+  if (!info) return TESOURA_setMsg("Senha da diretoria inválida.");
 
-    window.TESOURA_ROLE = "diretoria";
-    window.TESOURA_CAN_CAIXA = !!info.can_caixa;
+  window.TESOURA_ROLE = "diretoria";
+  window.TESOURA_CAN_CAIXA = !!info.can_caixa;
 
-    TESOURA_ATUALIZA_BADGE();
-    TESOURA_setMsg("");
-    showTelaInicial(false);
-    TESOURA_TRAVAR_IFRAMES(false);
-  }
-
+  TESOURA_ATUALIZA_BADGE();
+  TESOURA_setMsg("");
+  showTelaInicial(false);
+  TESOURA_TRAVAR_IFRAMES(false);
+}
   function TESOURA_SAIR(){
     qs("senhaJogador").value = "";
     qs("senhaDiretor").value = "";
