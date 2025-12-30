@@ -199,3 +199,92 @@
           }
         } else {
           if (style) style.remove();
+        }
+      }catch(e){
+        setTimeout(()=>TESOURA_TRAVAR_IFRAMES(travar), 350);
+      }
+    }
+
+    // ======= ABAS =======
+    const MAPA = {
+      "aba-jogadores":   "tesoura_jogadores_teste.html",
+      "aba-presenca":    "tesoura_presenca_escala_R5.html",
+      "aba-controle":    "tesoura_controle_geral_teste.html",
+      "aba-mensalidade": "tesoura_mensalidade_R4.html",
+      "aba-caixa":       "tesoura_caixa_teste.html",
+      "aba-gols":        "tesoura_gols_teste.html",
+      "aba-banco":       "tesoura_banco_dados_teste.html",
+    };
+
+    function abrirAba(tabId){
+      // ativa aba
+      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+      const tab = qs(tabId);
+      if (tab) tab.classList.add("active");
+
+      // abre iframe
+      const url = MAPA[tabId] || MAPA["aba-controle"];
+      qs("frame").src = url;
+
+      // quando carregar iframe, trava/destrava conforme role
+      qs("frame").onload = () => {
+        if ((window.TESOURA_ROLE||"jogadores") === "jogadores") TESOURA_TRAVAR_IFRAMES(true);
+        else TESOURA_TRAVAR_IFRAMES(false);
+      };
+    }
+
+    // ======= LOGIN =======
+    function TESOURA_ENTRAR_JOGADORES(){
+      const pw = (qs("senhaJogador")?.value || "").trim();
+      if (pw !== SENHA_JOGADOR) return TESOURA_setMsg("Senha do jogador inválida.");
+
+      window.TESOURA_ROLE = "jogadores";
+      window.TESOURA_CAN_CAIXA = true;
+
+      TESOURA_ATUALIZA_BADGE();
+      TESOURA_setMsg("");
+      showTelaInicial(false);
+      TESOURA_TRAVAR_IFRAMES(true);
+    }
+
+    function TESOURA_ENTRAR_DIRETORIA(){
+      const pw = (qs("senhaDiretor")?.value || "").trim();
+      if (pw !== SENHA_DIRETOR) return TESOURA_setMsg("Senha da diretoria inválida.");
+
+      window.TESOURA_ROLE = "diretoria";
+      window.TESOURA_CAN_CAIXA = true; // depois ajustamos regra “sem caixa” por diretor
+
+      TESOURA_ATUALIZA_BADGE();
+      TESOURA_setMsg("");
+      showTelaInicial(false);
+      TESOURA_TRAVAR_IFRAMES(false);
+    }
+
+    function TESOURA_SAIR(){
+      qs("senhaJogador").value = "";
+      qs("senhaDiretor").value = "";
+      window.TESOURA_ROLE = "jogadores";
+      window.TESOURA_CAN_CAIXA = true;
+      TESOURA_ATUALIZA_BADGE();
+      TESOURA_setMsg("");
+      showTelaInicial(true);
+      TESOURA_TRAVAR_IFRAMES(true);
+      abrirAba("aba-controle");
+    }
+
+    // ======= BOOT =======
+    window.addEventListener("load", () => {
+      qs("btnSair").onclick = () => TESOURA_SAIR();
+      qs("btnLogin").onclick = () => showTelaInicial(true);
+
+      // Sempre pedir senha (segurança) + controle geral por trás
+      showTelaInicial(true);
+      window.TESOURA_ROLE = "jogadores";
+      window.TESOURA_CAN_CAIXA = true;
+      TESOURA_ATUALIZA_BADGE();
+      TESOURA_TRAVAR_IFRAMES(true);
+      abrirAba("aba-controle");
+    });
+  </script>
+</body>
+</html>
