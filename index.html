@@ -2,77 +2,134 @@
 <html lang="pt-br">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Tesoura — Controle do Futebol</title>
-  <meta name="theme-color" content="#0b1220" />
-
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    :root{--bg:#0b1220;--panel:#0e1b33;--panel2:#0c172c;--line:#1f2f55;--txt:#e9eefc;--muted:#9fb0d6;--orange:#ff8c2b;--green:#19d38c;--blue:#5d87ff;--red:#ff4d4d;}
+    :root{
+      --bg:#0b1220;
+      --panel:#061024;
+      --panel2:#020617;
+      --line:#0f172a;
+      --txt:#ffffff;
+      --muted:#9ca3af;
+      --orange:#f97316;
+      --green:#22c55e;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --cyan:#38bdf8;
+    }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Arial,system-ui,Segoe UI,sans-serif;background:linear-gradient(180deg,#050a14 0,#0b1220 40%,#050a14 100%);color:var(--txt)}
-    .topbar{display:flex;align-items:center;gap:16px;padding:14px 18px;border-bottom:1px solid var(--line);background:rgba(11,18,32,.92);position:sticky;top:0;z-index:10}
-    .logo{width:36px;height:36px;border-radius:10px;background:#ffb14a;display:grid;place-items:center;color:#081020;font-weight:900}
-    .title{font-weight:800}
-    .sub{font-size:12px;color:var(--muted)}
-    .spacer{flex:1}
-    .badge{padding:6px 12px;border-radius:999px;background:#1a2a52;border:1px solid #27407a;color:#cfe0ff;font-size:12px;font-weight:700}
-    .btn{border:1px solid #2b3f73;background:#102147;color:var(--txt);padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:800}
-    .btn.orange{background:#ff8c2b;border-color:#ff8c2b;color:#101019}
-    .btn.green{background:#19d38c;border-color:#19d38c;color:#081020}
-    .btn.blue{background:#5d87ff;border-color:#5d87ff;color:#081020}
-    .wrap{padding:18px}
-    .tabs{display:flex;flex-wrap:wrap;gap:10px;background:rgba(14,27,51,.7);border:1px solid var(--line);padding:10px;border-radius:14px}
-    .tab{padding:10px 12px;border-radius:12px;border:1px solid #2b3f73;background:#0e1b33;color:#cfe0ff;cursor:pointer;font-weight:800}
-    .tab.active{border-color:#ff8c2b;color:#101019;background:#ff8c2b}
-    .framebox{margin-top:14px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#0e1b33}
-    iframe{width:100%;height:82vh;border:0;background:#0b1220}
-    .msg{margin-top:10px;color:#ffb14a;font-weight:800}
+    body{margin:0;font-family:Arial,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--txt)}
+    .top{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 16px;background:#07101f;border-bottom:1px solid #111827;
+    }
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{
+      width:30px;height:30px;border-radius:10px;background:#fb923c;color:#111827;
+      display:flex;align-items:center;justify-content:center;font-weight:900;
+    }
+    .title{font-weight:900;letter-spacing:.3px}
+    .subtitle{color:var(--muted);font-size:12px;margin-top:2px}
+    .right{display:flex;align-items:center;gap:10px}
+    .badge{
+      padding:6px 10px;border-radius:999px;background:#0b1a35;border:1px solid #1f2a44;
+      font-weight:900;font-size:11px;text-transform:uppercase;color:#cbd5e1;
+    }
+    .btnTop{
+      border:0;border-radius:10px;padding:10px 14px;font-weight:900;cursor:pointer;
+      text-transform:uppercase;font-size:12px;box-shadow:0 6px 16px rgba(0,0,0,.35);
+    }
+    .btnLogin{background:var(--orange);color:#1b0b02}
+    .btnSair{background:#0b1a35;color:#cbd5e1;border:1px solid #1f2a44}
+    .tabs{
+      display:flex;gap:10px;flex-wrap:wrap;
+      padding:12px 16px;background:#0b1a35;border-bottom:1px solid #111827;
+    }
+    .tab{
+      border:1px solid #1f2a44;border-radius:12px;padding:10px 14px;
+      background:#0b1a35;color:#e5e7eb;font-weight:900;cursor:pointer;
+      text-transform:uppercase;font-size:12px;
+    }
+    .tab.active{background:var(--orange);color:#1b0b02;border-color:transparent}
+    .framebox{padding:12px 16px}
+    iframe{
+      width:100%;height:calc(100vh - 132px);
+      border:0;border-radius:14px;background:#020617;
+      box-shadow:0 12px 28px rgba(0,0,0,.40);
+    }
+    .msg{padding:10px 16px;color:#ffb4a2;font-weight:900}
 
-    /* Tela de login */
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50}
-    .modal{width:min(820px,92vw);background:linear-gradient(180deg,#0e1b33,#0b1220);border:1px solid #27407a;border-radius:18px;padding:18px;box-shadow:0 22px 70px rgba(0,0,0,.6)}
-    .h1{font-size:20px;font-weight:900;color:var(--orange);text-align:center;margin:0}
-    .h2{font-size:14px;font-weight:900;text-align:center;margin:6px 0 2px}
-    .h3{font-size:12px;color:var(--muted);text-align:center;margin:0 0 14px}
+    /* ===== LOGIN OVERLAY ===== */
+    .overlay{
+      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,.55);backdrop-filter: blur(3px);
+      z-index:9999;
+    }
+    .modal{
+      width:min(860px,calc(100vw - 24px));
+      background:linear-gradient(180deg,#0b1a35,#020617);
+      border:1px solid #1f2a44;border-radius:16px;
+      padding:16px;box-shadow:0 18px 40px rgba(0,0,0,.55);
+    }
+    .h1{margin:0;color:var(--orange);font-weight:900;text-align:center;font-size:20px}
+    .h2{margin:6px 0 0;text-align:center;color:#e5e7eb;font-weight:900}
+    .h3{margin:4px 0 14px;text-align:center;color:var(--muted);font-size:12px;font-weight:900}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .card{background:rgba(14,27,51,.7);border:1px solid var(--line);border-radius:14px;padding:12px}
-    .label{font-size:12px;color:#cfe0ff;font-weight:900;margin-bottom:6px}
-    .pin{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #2b3f73;background:#081020;color:#e9eefc;font-weight:900}
-    .rowbtn{display:flex;gap:10px;margin-top:10px}
-    .foot{margin-top:10px;font-size:12px;color:var(--muted);text-align:center;font-weight:800}
-    @media(max-width:720px){.grid{grid-template-columns:1fr}}
+    .card{
+      background:#020617;border:1px solid #1f2a44;border-radius:14px;padding:12px;
+    }
+    .label{font-weight:900;text-transform:uppercase;color:#cbd5e1;font-size:12px;margin-bottom:8px}
+    .pin{
+      width:100%;padding:12px 12px;border-radius:12px;
+      background:#0b1220;border:1px solid #1f2a44;color:#fff;font-weight:900;
+      outline:none;
+    }
+    .rowbtn{margin-top:10px;display:flex;gap:10px}
+    .btn{
+      flex:1;border:0;border-radius:12px;padding:12px 12px;font-weight:900;cursor:pointer;
+      text-transform:uppercase;font-size:12px;box-shadow:0 6px 16px rgba(0,0,0,.35);
+    }
+    .green{background:var(--green);color:#051a0f}
+    .blue{background:var(--blue);color:#07101f}
+    .foot{
+      margin-top:12px;color:#cbd5e1;font-size:12px;font-weight:900;text-align:center;
+    }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="logo">T</div>
-    <div>
-      <div class="title">Tesoura — Controle do Futebol</div>
-      <div class="sub">Acesso da Diretoria (edita).</div>
+
+  <div class="top">
+    <div class="brand">
+      <div class="logo">T</div>
+      <div>
+        <div class="title">Tesoura — Controle do Futebol</div>
+        <div class="subtitle">Acesso da Diretoria (edita).</div>
+      </div>
     </div>
-    <div class="spacer"></div>
-    <div id="badge" class="badge">—</div>
-    <button id="btnLogin" class="btn orange">LOGIN</button>
-    <button id="btnSair" class="btn">SAIR</button>
+    <div class="right">
+      <div id="badge" class="badge">JOGADOR (VISUAL)</div>
+      <button id="btnLogin" class="btnTop btnLogin">LOGIN</button>
+      <button id="btnSair" class="btnTop btnSair">SAIR</button>
+    </div>
   </div>
 
-  <div class="wrap">
-    <div class="tabs">
-      <button class="tab active" id="aba-jogadores" onclick="abrirAba('aba-jogadores')">JOGADORES</button>
-      <button class="tab" id="aba-presenca" onclick="abrirAba('aba-presenca')">PRESENÇA / ESCALAÇÃO</button>
-      <button class="tab" id="aba-controle" onclick="abrirAba('aba-controle')">CONTROLE GERAL</button>
-      <button class="tab" id="aba-mensalidade" onclick="abrirAba('aba-mensalidade')">MENSALIDADE</button>
-      <button class="tab" id="aba-caixa" onclick="abrirAba('aba-caixa')">CAIXA</button>
-      <button class="tab" id="aba-gols" onclick="abrirAba('aba-gols')">GOLS</button>
-      <button class="tab" id="aba-banco" onclick="abrirAba('aba-banco')">BANCO DE DADOS</button>
-    </div>
-
-    <div class="framebox">
-      <iframe id="frame" src="tesoura_controle_geral_teste.html">
-    </div>
-
-    <div id="msg" class="msg"></div>
+  <div class="tabs">
+    <button class="tab" id="aba-jogadores" onclick="abrirAba('aba-jogadores')">JOGADORES</button>
+    <button class="tab" id="aba-presenca" onclick="abrirAba('aba-presenca')">PRESENÇA / ESCALAÇÃO</button>
+    <button class="tab" id="aba-controle" onclick="abrirAba('aba-controle')">CONTROLE GERAL</button>
+    <button class="tab" id="aba-mensalidade" onclick="abrirAba('aba-mensalidade')">MENSALIDADE</button>
+    <button class="tab" id="aba-caixa" onclick="abrirAba('aba-caixa')">CAIXA</button>
+    <button class="tab" id="aba-gols" onclick="abrirAba('aba-gols')">GOLS</button>
+    <button class="tab" id="aba-banco" onclick="abrirAba('aba-banco')">BANCO DE DADOS</button>
   </div>
+
+  <div class="framebox">
+    <!-- Controle Geral sempre por trás do login -->
+    <iframe id="frame" src="tesoura_controle_geral_teste.html"></iframe>
+  </div>
+
+  <div id="msg" class="msg"></div>
 
   <!-- LOGIN -->
   <div id="overlay" class="overlay">
@@ -106,50 +163,25 @@
 
   <script>
     // ======= CONFIG =======
-    const SENHA_JOGADOR = "TESOURA2026";
-    const SENHAS_DIRETORES = {
-      "1baidec": { caixa: true },
-      "2thiago": { caixa: true },
-      "3love":   { caixa: false },
-      "4le":     { caixa: false },
-      "5titi":   { caixa: false },
-    };
-
-    // ======= STATE =======
-    window.TESOURA_ROLE = "jogadores";
-    window.TESOURA_CAN_CAIXA = true;
-    let modoJogador = true;
+    const SENHA_JOGADOR = "1234";   // depois você me manda a senha real
+    const SENHA_DIRETOR = "9999";   // depois você me manda a senha real
 
     // ======= HELPERS =======
-    function qs(id){ return document.getElementById(id); }
-    function setBadge(txt){ qs("badge").textContent = txt; }
-    function showTelaInicial(show){
-      qs("overlay").style.display = show ? "flex" : "none";
-    }
+    const qs = (id)=>document.getElementById(id);
     function TESOURA_setMsg(txt){
       qs("msg").textContent = txt || "";
       qs("loginMsg").textContent = txt || "";
     }
-    function TESOURA_setPermissaoCaixa(can){
-      const btn = qs("aba-caixa");
-      if (!btn) return;
-      btn.style.display = can ? "" : "none";
+    function showTelaInicial(show){
+      qs("overlay").style.display = show ? "flex" : "none";
     }
     function TESOURA_ATUALIZA_BADGE(){
-      if (window.TESOURA_ROLE === "diretoria") {
-        setBadge(window.TESOURA_CAN_CAIXA ? "DIRETORIA (COM CAIXA)" : "DIRETORIA (SEM CAIXA)");
-      } else {
-        setBadge("JOGADOR (VISUAL)");
-      }
+      const role = window.TESOURA_ROLE || "jogadores";
+      if (role === "diretoria") qs("badge").textContent = window.TESOURA_CAN_CAIXA ? "DIRETORIA (COM CAIXA)" : "DIRETORIA (SEM CAIXA)";
+      else qs("badge").textContent = "JOGADOR (VISUAL)";
     }
 
-    // Precarrega iframes / garante que as páginas estão no mesmo app
-    function TESOURA_precarregarIframes(){
-      // Não faz nada aqui (já é um app único). Mantido por compatibilidade.
-      return;
-    }
-
-    // Trava/Destrava cliques dentro dos iframes (jogador visual)
+    // Trava cliques dentro do iframe (para jogador)
     function TESOURA_TRAVAR_IFRAMES(travar){
       const ifr = qs("frame");
       try{
@@ -159,184 +191,11 @@
           if (!style){
             style = doc.createElement("style");
             style.id = "TESOURA_LOCK_STYLE";
-            style.textContent = `
-              * { pointer-events:none !important; }
-              body { user-select:none !important; }
-              /* permite rolagem */
-              html, body { overflow:auto !important; }
+            style.innerHTML = `
+              *{ user-select:text !important; }
+              a,button,input,select,textarea,[role="button"]{ pointer-events:none !important; }
             `;
             doc.head.appendChild(style);
           }
         } else {
           if (style) style.remove();
-        }
-      }catch(e){
-        // se iframe ainda não carregou, tenta depois
-        setTimeout(()=>TESOURA_TRAVAR_IFRAMES(travar), 350);
-      }
-    }
-
-    // ======= ABAS =======
-  const MAPA = {
-  "aba-jogadores":   "tesoura_jogadores_teste.html",
-  "aba-presenca":    "tesoura_presenca_escala_R5.html",
-  "aba-controle":    "tesoura_controle_geral_teste.html",
-  "aba-mensalidade": "tesoura_mensalidade_R4.html",
-  "aba-caixa":       "tesoura_caixa_teste.html",
-  "aba-gols":        "tesoura_gols_teste.html",
-  "aba-banco":       "tesoura_banco_dados_teste.html",
-};
-
-    function abrirAba(tabId){
-      sessionStorage.setItem("tesoura_tab", tabId);
-
-      // ativa aba
-      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-      const tab = qs(tabId);
-      if (tab) tab.classList.add("active");
-
-      // troca iframe
-      const src = MAPA[tabId] || MAPA["aba-jogadores"];
-      const ifr = qs("frame");
-      ifr.src = src;
-
-      ifr.onload = () => {
-        TESOURA_TRAVAR_IFRAMES(modoJogador);
-      };
-    }
-
-    // ======= LOGIN =======
-    function TESOURA_ENTRAR_JOGADORES(){
-      const pw = (qs("senhaJogador")?.value || "").trim();
-      if (pw !== SENHA_JOGADOR) {
-        TESOURA_setMsg("Senha do jogador inválida.");
-        return;
-      }
-
-      window.TESOURA_ROLE = "jogadores";
-      window.TESOURA_CAN_CAIXA = true;
-      modoJogador = true;
-
-      sessionStorage.setItem("tesoura_role","jogadores");
-      sessionStorage.setItem("tesoura_caixa","1");
-      sessionStorage.removeItem("tesoura_diretor");
-
-      TESOURA_ATUALIZA_BADGE();
-      showTelaInicial(false);
-      TESOURA_setPermissaoCaixa(true);
-      TESOURA_precarregarIframes();
-      abrirAba(sessionStorage.getItem("tesoura_tab") || "aba-controle");
-      TESOURA_TRAVAR_IFRAMES(true);
-      TESOURA_setMsg("");
-    }
-
-    function TESOURA_ENTRAR_DIRETORIA(){
-      const pw = (qs("senhaDiretor")?.value || "").trim();
-      const perm = SENHAS_DIRETORES[pw];
-      if (!perm) {
-        TESOURA_setMsg("Senha da diretoria inválida.");
-        return;
-      }
-
-      window.TESOURA_ROLE = "diretoria";
-      window.TESOURA_CAN_CAIXA = !!perm.caixa;
-      modoJogador = false;
-
-      sessionStorage.setItem("tesoura_role","diretoria");
-      sessionStorage.setItem("tesoura_caixa", perm.caixa ? "1" : "0");
-      sessionStorage.setItem("tesoura_diretor", pw);
-
-      TESOURA_ATUALIZA_BADGE();
-      showTelaInicial(false);
-      TESOURA_setPermissaoCaixa(window.TESOURA_CAN_CAIXA);
-      TESOURA_precarregarIframes();
-      abrirAba(sessionStorage.getItem("tesoura_tab") || "aba-jogadores");
-      TESOURA_TRAVAR_IFRAMES(false);
-      TESOURA_setMsg("");
-    }
-
-    function TESOURA_SAIR(){
-      sessionStorage.removeItem("tesoura_role");
-      sessionStorage.removeItem("tesoura_caixa");
-      sessionStorage.removeItem("tesoura_diretor");
-      sessionStorage.removeItem("tesoura_tab");
-
-      window.TESOURA_ROLE = "jogadores";
-      window.TESOURA_CAN_CAIXA = true;
-      modoJogador = true;
-
-      // limpa senhas digitadas
-      const sj = qs("senhaJogador");
-      const sd = qs("senhaDiretor");
-      if (sj) sj.value = "";
-      if (sd) sd.value = "";
-
-      TESOURA_ATUALIZA_BADGE();
-      showTelaInicial(true);
-      TESOURA_setPermissaoCaixa(true);
-      TESOURA_TRAVAR_IFRAMES(true);
-      TESOURA_setMsg("");
-      abrirAba("aba-jogadores");
-    }
-
-    // ======= BOOT =======
-    window.addEventListener("load", () => {
-      const btnS = document.getElementById("btnSair");
-      const btnL = document.getElementById("btnLogin");
-
-      // Botões do topo
-      btnS.onclick = () => TESOURA_SAIR();
-      btnL.onclick = () => {
-        // Trocar usuário
-        sessionStorage.removeItem("tesoura_role");
-        sessionStorage.removeItem("tesoura_caixa");
-        sessionStorage.removeItem("tesoura_diretor");
-        sessionStorage.removeItem("tesoura_tab");
-        showTelaInicial(true);
-        window.TESOURA_ROLE = "jogadores";
-        window.TESOURA_CAN_CAIXA = true;
-        modoJogador = true;
-        TESOURA_ATUALIZA_BADGE();
-        TESOURA_TRAVAR_IFRAMES(true);
-      };
-
-      const savedRole = sessionStorage.getItem("tesoura_role");
-      const savedCaixa = sessionStorage.getItem("tesoura_caixa");
-      const savedTab = sessionStorage.getItem("tesoura_tab") || "aba-jogadores";
-
-      if (savedRole === "diretoria") {
-        window.TESOURA_ROLE = "diretoria";
-        window.TESOURA_CAN_CAIXA = (savedCaixa === "1");
-        modoJogador = false;
-        showTelaInicial(false);
-        TESOURA_setPermissaoCaixa(window.TESOURA_CAN_CAIXA);
-        TESOURA_ATUALIZA_BADGE();
-        TESOURA_TRAVAR_IFRAMES(false);
-        abrirAba(savedTab);
-        return;
-      }
-
-      if (savedRole === "jogadores") {
-        window.TESOURA_ROLE = "jogadores";
-        window.TESOURA_CAN_CAIXA = true;
-        modoJogador = true;
-        showTelaInicial(false);
-        TESOURA_setPermissaoCaixa(true);
-        TESOURA_ATUALIZA_BADGE();
-        TESOURA_TRAVAR_IFRAMES(true);
-        abrirAba(savedTab);
-        return;
-      }
-
-      // Primeiro acesso: mostra login e trava tudo
-      showTelaInicial(true);
-      window.TESOURA_ROLE = "jogadores";
-      window.TESOURA_CAN_CAIXA = true;
-      modoJogador = true;
-      TESOURA_ATUALIZA_BADGE();
-      TESOURA_TRAVAR_IFRAMES(true);
-      abrirAba("aba-jogadores");
-    });
-  </script>
-</body>
-</html>
