@@ -143,23 +143,20 @@
           <div class="label">JOGADORES (VISUAL)</div>
   <input id="senhaDiretor" class="pin" type="text" inputmode="text" autocomplete="off" placeholder="Senha da diretoria" />
           <div class="rowbtn">
-            <button class="btn green" onclick="TESOURA_ENTRAR_JOGADORES()">ENTRAR JOGADORES</button>
+           <button id="btnEntrarJogadores" class="btn green" type="button">ENTRAR JOGADORES</button>
           </div>
         </div>
 
         <div class="card">
           <div class="label">DIRETORIA (EDITA)</div>
           <input id="senhaJogador" class="pin" type="text" inputmode="text" autocomplete="off" placeholder="Senha do jogador" />
-
-
+          
           <div class="rowbtn">
-            <button class="btn blue" onclick="TESOURA_ENTRAR_DIRETORIA()">ENTRAR DIRETORIA</button>
+                <button id="btnEntrarDiretoria" class="btn blue" type="button">ENTRAR DIRETORIA</button>
           </div>
         </div>
       </div>
-
      <div class="foot">Regra: Jogador só visualiza (não edita). Diretor edita.</div>
-
       <div id="loginMsg" class="msg" style="text-align:center;margin-top:10px"></div>
     </div>
   </div>
@@ -222,7 +219,8 @@ const DIRETORES = {
   const MAPA = {
     "aba-jogadores":   "tesoura_jogadores_teste.html",
     "aba-presenca":    "tesoura_presenca_escala_R5.html",
-    "aba-controle":    "tesoura_controle_geral_teste.html",
+   "aba-mensalidade": "tesoura_mensalidade_R4.html",
+   "aba-controle":    "tesoura_controle_geral_teste.html",
     "aba-mensalidade": "tesoura_mensalidade_R4.html",
     "aba-caixa":       "tesoura_caixa_teste.html",
     "aba-gols":        "tesoura_gols_teste.html",
@@ -291,7 +289,11 @@ const DIRETORES = {
   window.addEventListener("load", () => {
     qs("btnSair").onclick = () => TESOURA_SAIR();
     qs("btnLogin").onclick = () => showTelaInicial(true);
-
+const bJog = document.getElementById("btnEntrarJogadores");
+  const bDir = document.getElementById("btnEntrarDiretoria");
+  if (bJog) bJog.onclick = () => TESOURA_ENTRAR_JOGADORES();
+  if (bDir) bDir.onclick = () => TESOURA_ENTRAR_DIRETORIA();
+    
     showTelaInicial(true);
     window.TESOURA_ROLE = "jogadores";
     window.TESOURA_CAN_CAIXA = true;
