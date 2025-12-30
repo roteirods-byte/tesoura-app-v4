@@ -2,217 +2,294 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Tesoura — Controle Geral (Arquivo)</title>
+  <title>TESOURA - CONTROLE GERAL</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0b1220;
-      color: #e9eefc;
-      margin: 0;
-      padding: 16px;
+    body { margin: 0; font-family: Arial, sans-serif; background: #0b1220; color: #fff; }
+    header { padding: 14px 18px; border-bottom: 2px solid #f97316; display:flex; align-items:center; justify-content:space-between; background:#07101f; }
+    header h1 { margin: 0; font-size: 16px; letter-spacing: .5px; color:#f97316; text-transform:uppercase; font-weight:900; }
+    .wrap { max-width: 1100px; margin: 18px auto; padding: 0 12px; }
+    .painel { background:#020617; border:1px solid #0f172a; border-radius:12px; padding:12px; margin-bottom:14px; box-shadow:0 6px 16px rgba(0,0,0,.35); }
+    .painel h2 { margin:0 0 10px; color:#f97316; font-size:14px; letter-spacing:.5px; text-transform:uppercase; font-weight:900; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    select { border-radius:10px; border:1px solid #0f172a; padding:10px 12px; font-weight:900; text-transform:uppercase; font-size:12px; background:#0b1220; color:#fff; min-width:140px; }
+    .status { margin-top: 8px; font-size: 12px; color: #9ca3af; }
+
+    table { border-collapse: collapse; font-size: 12px; width: max-content; min-width: 100%; }
+    thead th {
+      position: sticky; top: 0; background:#f97316; color:#ffffff; z-index:2;
+      border:1px solid rgba(255,255,255,.45); padding:6px 8px; text-align:center; white-space:nowrap; font-weight:900; text-transform:uppercase;
     }
-    h1 {
-      margin: 0 0 10px 0;
-      color: #ff8c2b;
-      font-size: 24px;
-      letter-spacing: 0.5px;
+    tbody td {
+      border:1px solid rgba(255,255,255,.20); padding:5px 6px; text-align:center; white-space:nowrap; background:#020617; text-transform:uppercase;
     }
-    .card {
-      background: #0e1b33;
-      border: 1px solid #1f2f55;
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-      margin-bottom: 14px;
-    }
-    label { font-weight: 800; color:#cfe0ff; }
-    select, input {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid #2b3f73;
-      background: #081020;
-      color: #e9eefc;
-      margin-top: 6px;
-      font-weight: 800;
-    }
-    .row { display:grid; grid-template-columns: 220px 1fr; gap: 12px; align-items:end; }
-    .btn {
-      padding: 10px 14px;
-      border-radius: 12px;
-      border: 1px solid #2b3f73;
-      background: #102147;
-      color: #e9eefc;
-      font-weight: 900;
-      cursor: pointer;
-    }
-    .btn.green { background:#19d38c; border-color:#19d38c; color:#081020; }
-    .btn.orange { background:#ff8c2b; border-color:#ff8c2b; color:#101019; }
-    .muted { color:#9fb0d6; font-size: 12px; font-weight: 800; }
-    .status { margin-top: 8px; color:#ffb14a; font-weight: 900; }
-    .list {
-      max-height: 360px;
-      overflow: auto;
-      border: 1px solid #1f2f55;
-      border-radius: 14px;
-      padding: 10px;
-      background: #0c172c;
-    }
-    .item {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-      padding: 10px 12px;
-      border: 1px solid #1f2f55;
-      border-radius: 12px;
-      margin-bottom: 8px;
-      background: rgba(14,27,51,.55);
-    }
-    .item b { color:#cfe0ff; }
-    .item small { color:#9fb0d6; font-weight: 800; }
-    .actions { display:flex; gap:10px; }
-    .pill {
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid #2b3f73;
-      background: #102147;
-      font-weight: 900;
-      font-size: 12px;
-      cursor:pointer;
-    }
-    .pill.red { background:#ff4d4d; border-color:#ff4d4d; color:#081020; }
-    .pill.blue { background:#5d87ff; border-color:#5d87ff; color:#081020; }
-    .inline { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    @media(max-width:720px){ .row{ grid-template-columns:1fr; } }
+    tbody tr:nth-child(even) td { background:#061024; }
+
+    .col-atleta { min-width:140px; text-align:left; padding-left:10px; font-weight:900; }
+    .col-faltas { min-width:85px; font-weight:900; }
+
+    .sticky-atleta { position: sticky; left: 0; z-index:3; background:#020617; }
+    .sticky-faltas { position: sticky; left: 140px; z-index:3; background:#020617; }
+    thead .sticky-atleta, thead .sticky-faltas { z-index:5; background:#f97316; color:#ffffff; }
+
+    .pverde { color:#22c55e; font-weight:900; }
+    .pvermelho { color:#ef4444; font-weight:900; }
   </style>
 </head>
 <body>
-  <h1>TESOURA — CONTROLE GERAL (ARQUIVO)</h1>
 
-  <div class="card">
+<header>
+  <h1>TESOURA - CONTROLE GERAL</h1>
+  <div style="font-size:12px;color:#9ca3af;">(somente visualização)</div>
+</header>
+
+<div class="wrap">
+  <div class="painel">
+    <h2>FILTRO</h2>
     <div class="row">
-      <div>
-        <label>ANO</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label style="font-weight:900;text-transform:uppercase;">ANO:</label>
         <select id="selAno"></select>
-        <div class="muted">Selecione o ANO. A lista carrega automaticamente.</div>
-      </div>
-
-      <div class="inline" style="justify-content:flex-end;">
-        <button id="btnSalvar" class="btn green">SALVAR / ARQUIVAR</button>
-        <button id="btnAtualizar" class="btn orange">ATUALIZAR LISTA</button>
       </div>
     </div>
 
-    <div id="status" class="status"></div>
+    <p style="margin:10px 0 0;font-size:12px;color:#cbd5e1;">
+      OBS: C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
+      <span class="pverde">P (verde)</span> pagou |
+      <span class="pvermelho">P (vermelho)</span> não pagou.
+    </p>
+    <div class="status" id="status">A lista carrega automaticamente.</div>
   </div>
 
-  <div class="card">
-    <div class="muted" style="margin-bottom:10px">
-      Arquivos salvos do painel <b>Controle Geral</b>.
-    </div>
-    <div id="lista" class="list"></div>
+  <div class="painel" id="wrapTabela" style="overflow-x:auto;">
+    <h2>JOGADORES X DOMINGOS</h2>
+    <table id="tblControle">
+      <thead id="theadControle"></thead>
+      <tbody id="tbodyControle"></tbody>
+    </table>
   </div>
+</div>
 
-  <script>
-    // ======== CONFIG ========
-    // Ajuste se necessário:
-    const BASE_DIR = "arquivos/controle_geral";
+<script src="app/js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const CFG = window.TESOURA_CONFIG || {};
+  const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
+  const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-    // ======== UI ========
-    const selAno   = document.getElementById("selAno");
-    const listaEl  = document.getElementById("lista");
-    const statusEl = document.getElementById("status");
-    selAno.addEventListener("change", carregarLista);
+  const selAno = document.getElementById("selAno");
+  const statusEl = document.getElementById("status");
+  const theadControle = document.getElementById("theadControle");
+  const tbodyControle = document.getElementById("tbodyControle");
 
-    // Popula anos (ex.: 2024..2032)
-    function popularAnos(){
-      const now = new Date().getFullYear();
-      const ini = now - 1;
-      const fim = now + 7;
-      selAno.innerHTML = "";
-      for (let y=ini; y<=fim; y++){
-        const opt = document.createElement("option");
-        opt.value = String(y);
-        opt.textContent = String(y);
-        if (y === now) opt.selected = true;
-        selAno.appendChild(opt);
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  for (let a = anoAtual - 1; a <= anoAtual + 1; a++) {
+    const opt = document.createElement("option");
+    opt.value = a;
+    opt.textContent = a;
+    if (a === anoAtual) opt.selected = true;
+    selAno.appendChild(opt);
+  }
+
+  const nomesMes = {
+    1:"JANEIRO",2:"FEVEREIRO",3:"MARÇO",4:"ABRIL",5:"MAIO",6:"JUNHO",
+    7:"JULHO",8:"AGOSTO",9:"SETEMBRO",10:"OUTUBRO",11:"NOVEMBRO",12:"DEZEMBRO"
+  };
+
+  function getDomingosMes(ano, mes) {
+    const domingos = [];
+    const dt = new Date(ano, mes - 1, 1);
+    while (dt.getMonth() === mes - 1) {
+      if (dt.getDay() === 0) {
+        const anoStr = dt.getFullYear();
+        const mesStr = String(dt.getMonth() + 1).padStart(2, "0");
+        const diaStr = String(dt.getDate()).padStart(2, "0");
+        domingos.push({ iso: `${anoStr}-${mesStr}-${diaStr}`, rotulo: `${diaStr}/${mesStr}` });
       }
+      dt.setDate(dt.getDate() + 1);
+    }
+    return domingos;
+  }
+
+  function buildMesesOrdem(anoSelecionado) {
+    const hoje = new Date();
+    const anoAtual = hoje.getFullYear();
+    const mesAtual = hoje.getMonth() + 1;
+
+    const meses = [];
+    if (anoSelecionado === anoAtual && mesAtual <= 2) {
+      meses.push({ ano: anoAtual - 1, mes: 11 });
+      meses.push({ ano: anoAtual - 1, mes: 12 });
+    }
+    for (let m = 1; m <= 12; m++) meses.push({ ano: anoSelecionado, mes: m });
+    return meses;
+  }
+
+  function scrollUltimos3Meses(anoSelecionado) {
+    const wrap = document.getElementById("wrapTabela");
+    if (!wrap) return;
+
+    const hoje = new Date();
+    let alvoAno = anoSelecionado;
+    let alvoMes = 10;
+
+    if (anoSelecionado === hoje.getFullYear()) {
+      alvoMes = (hoje.getMonth() + 1) - 2;
+      if (alvoMes <= 0) { alvoAno = anoSelecionado - 1; alvoMes = 12 + alvoMes; }
     }
 
-    function setStatus(t){ statusEl.textContent = t || ""; }
+    const doms = getDomingosMes(alvoAno, alvoMes);
+    if (!doms.length) return;
 
-    // Lista arquivos pelo diretório (simples: busca por index JSON se existir)
-    async function carregarLista(){
-      const ano = selAno.value;
-      setStatus("Carregando lista...");
-      listaEl.innerHTML = "";
+    const th = wrap.querySelector(`th[data-iso="${doms[0].iso}"]`);
+    if (!th) return;
 
-      // Estratégia: tenta ler um índice (index.json). Se não existir, mostra aviso.
-      const indexUrl = `${BASE_DIR}/${ano}/index.json?ts=${Date.now()}`;
+    wrap.scrollLeft = Math.max(0, th.offsetLeft - 220);
+  }
 
-      try{
-        const r = await fetch(indexUrl, { cache:"no-store" });
-        if (!r.ok) throw new Error("index not found");
-        const data = await r.json();
+  async function carregarLista() {
+    try {
+      statusEl.textContent = "CARREGANDO...";
+      theadControle.innerHTML = "";
+      tbodyControle.innerHTML = "";
 
-        if (!Array.isArray(data) || data.length === 0){
-          listaEl.innerHTML = `<div class="muted">Nenhum arquivo salvo para ${ano}.</div>`;
-          setStatus("");
-          return;
-        }
+      const ano = Number(selAno.value);
 
-        data.sort((a,b)=> (b.ts||0)-(a.ts||0));
-        data.forEach(item => renderItem(ano, item));
-        setStatus("");
-      }catch(e){
-        listaEl.innerHTML = `<div class="muted">Sem índice encontrado para ${ano}. (Se ainda não salvou nada, é normal.)</div>`;
-        setStatus("");
-      }
+      const mesesOrdem = buildMesesOrdem(ano);
+      const domingosMes = mesesOrdem.map(mm => getDomingosMes(mm.ano, mm.mes));
+
+      const trMeses = document.createElement("tr");
+      const trDias = document.createElement("tr");
+
+      const thAtletaSpan = document.createElement("th");
+      thAtletaSpan.textContent = "ATLETA";
+      thAtletaSpan.rowSpan = 2;
+      thAtletaSpan.className = "col-atleta sticky-atleta";
+      trMeses.appendChild(thAtletaSpan);
+
+      const thFaltasTop = document.createElement("th");
+      thFaltasTop.textContent = "TOTAL";
+      thFaltasTop.className = "col-faltas sticky-faltas";
+      trMeses.appendChild(thFaltasTop);
+
+      const thFaltasBottom = document.createElement("th");
+      thFaltasBottom.textContent = "FALTAS";
+      thFaltasBottom.className = "col-faltas sticky-faltas";
+      trDias.appendChild(thFaltasBottom);
+
+      mesesOrdem.forEach((mm, idx) => {
+        const listaDom = domingosMes[idx] || [];
+        const thMes = document.createElement("th");
+        thMes.colSpan = Math.max(1, listaDom.length);
+        const nomeMes = nomesMes[mm.mes] || `MÊS ${mm.mes}`;
+        thMes.textContent = `MÊS ${String(mm.mes).padStart(2,"0")} - ${nomeMes} - ${mm.ano}`;
+        trMeses.appendChild(thMes);
+
+        listaDom.forEach(d => {
+          const thDia = document.createElement("th");
+          thDia.textContent = d.rotulo;
+          thDia.dataset.iso = d.iso;
+          trDias.appendChild(thDia);
+        });
+      });
+
+      theadControle.appendChild(trMeses);
+      theadControle.appendChild(trDias);
+
+      const { data: jogadores, error: errJog } = await sb
+        .from("jogadores")
+        .select("apelido")
+        .order("apelido", { ascending: true });
+      if (errJog) return (statusEl.textContent = "ERRO AO BUSCAR JOGADORES.");
+
+      const firstMM = mesesOrdem[0];
+      const iniIso = `${firstMM.ano}-${String(firstMM.mes).padStart(2, "0")}-01`;
+      const fimIso = `${ano}-12-31`;
+
+      const { data: pres, error: errPres } = await sb
+        .from("presencas")
+        .select("data_jogo, apelido, presenca, faltoso")
+        .gte("data_jogo", iniIso)
+        .lte("data_jogo", fimIso);
+      if (errPres) return (statusEl.textContent = "ERRO AO BUSCAR PRESENÇAS.");
+
+      const mapaPres = {};
+      (pres || []).forEach(p => { mapaPres[`${p.apelido}::${p.data_jogo}`] = p; });
+
+      const { data: esc, error: errEsc } = await sb
+        .from("escalacao")
+        .select("data_jogo, apelido, tempo")
+        .gte("data_jogo", iniIso)
+        .lte("data_jogo", fimIso);
+      if (errEsc) return (statusEl.textContent = "ERRO AO BUSCAR ESCALAÇÃO.");
+
+      const mapaEsc = {};
+      (esc || []).forEach(e => {
+        const key = `${e.apelido}::${e.data_jogo}`;
+        if (!mapaEsc[key]) mapaEsc[key] = new Set();
+        if (e.tempo !== null && e.tempo !== undefined && e.tempo !== "") mapaEsc[key].add(e.tempo);
+      });
+
+      (jogadores || []).forEach(j => {
+        const apelido = j.apelido;
+        const tr = document.createElement("tr");
+
+        const tdAtleta = document.createElement("td");
+        tdAtleta.textContent = (apelido || "").toUpperCase();
+        tdAtleta.className = "col-atleta sticky-atleta";
+        tr.appendChild(tdAtleta);
+
+        const tdFaltas = document.createElement("td");
+        tdFaltas.textContent = "0";
+        tdFaltas.className = "col-faltas sticky-faltas";
+        tr.appendChild(tdFaltas);
+
+        let totalFaltas = 0;
+
+        mesesOrdem.forEach((mm, idx) => {
+          const listaDom = domingosMes[idx] || [];
+          listaDom.forEach(d => {
+            const td = document.createElement("td");
+            const key = `${apelido}::${d.iso}`;
+            const presDia = mapaPres[key];
+            let valor = "";
+
+            if (presDia) {
+              if (presDia.presenca) {
+                const setTempos = mapaEsc[key] || new Set();
+                const t1 = setTempos.has(1) || setTempos.has("1");
+                const t2 = setTempos.has(2) || setTempos.has("2");
+                if (t1 && t2) valor = "1-2";
+                else if (t2) valor = "2";
+                else if (t1) valor = "1";
+                else valor = "C";
+              } else if (presDia.faltoso) {
+                valor = "F";
+                totalFaltas += 1;
+              }
+            }
+
+            td.textContent = valor;
+            tr.appendChild(td);
+          });
+        });
+
+        tdFaltas.textContent = String(totalFaltas);
+        tbodyControle.appendChild(tr);
+      });
+
+      statusEl.textContent = "LISTA CARREGADA.";
+      scrollUltimos3Meses(ano);
+    } catch (e) {
+      console.error(e);
+      statusEl.textContent = "ERRO (ver Console).";
     }
+  }
 
-    function renderItem(ano, item){
-      const div = document.createElement("div");
-      div.className = "item";
-
-      const left = document.createElement("div");
-      left.innerHTML = `<b>${item.nome || "Arquivo"}</b><br/><small>${item.data || ""} ${item.hora || ""}</small>`;
-
-      const actions = document.createElement("div");
-      actions.className = "actions";
-
-      const btnVer = document.createElement("button");
-      btnVer.className = "pill blue";
-      btnVer.textContent = "ABRIR";
-      btnVer.onclick = () => {
-        if (!item.arquivo) return;
-        window.open(`${BASE_DIR}/${ano}/${item.arquivo}`, "_blank");
-      };
-
-      const btnExcluir = document.createElement("button");
-      btnExcluir.className = "pill red";
-      btnExcluir.textContent = "REMOVER";
-      btnExcluir.onclick = () => alert("Remoção deve ser feita no Banco de Dados (guardião).");
-
-      actions.appendChild(btnVer);
-      actions.appendChild(btnExcluir);
-
-      div.appendChild(left);
-      div.appendChild(actions);
-      listaEl.appendChild(div);
-    }
-
-    // ======== BOTÕES ========
-    document.getElementById("btnAtualizar").addEventListener("click", carregarLista);
-
-    document.getElementById("btnSalvar").addEventListener("click", () => {
-      alert("SALVAR/ARQUIVAR: este painel grava no Banco de Dados (backend).");
-    });
-
-    // ======== START ========
-    popularAnos();
-    carregarLista();
-  </script>
+  selAno.addEventListener("change", carregarLista);
+  window.addEventListener("load", carregarLista);
+</script>
 </body>
 </html>
