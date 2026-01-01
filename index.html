@@ -112,10 +112,33 @@
 
       <div class="spacer"></div>
 
-      <div id="badge" class="badge">JOGADOR (VISUAL)</div>
-      <button id="btnLogin" class="btnTop orange" type="button">LOGIN</button>
-      <button id="btnSair" class="btnTop" type="button">SAIR</button>
-    </div>
+     <div id="badge" class="badge">JOGADOR (VISUAL)</div>
+<button id="btnLogin" class="btnTop orange" type="button">LOGIN</button>
+<button id="btnSair" class="btnTop" type="button" onclick="TESOURA_SAIR()">SAIR</button>
+</div>
+
+    <script>
+  // HOTFIX: garante SAIR global e não trava o app
+  function TESOURA_SAIR(){
+    try{
+      const fr = document.getElementById("frame");
+      if (fr) fr.src = "about:blank";
+    }catch(e){}
+
+    try{
+      const sj = document.getElementById("senhaJogador");
+      const sd = document.getElementById("senhaDiretor");
+      if (sj) sj.value = "";
+      if (sd) sd.value = "";
+    }catch(e){}
+
+    window.TESOURA_ROLE = "jogadores";
+    window.TESOURA_CAN_CAIXA = true;
+
+    try{ if (typeof showLogin === "function") showLogin(true); }catch(e){}
+  }
+  window.TESOURA_SAIR = TESOURA_SAIR;
+</script>
 
     <div class="tabs">
       <button id="aba-jogadores" class="tab" type="button">JOGADORES</button>
@@ -347,12 +370,11 @@ function TESOURA_SAIR(){
   if (typeof lockIframeForJogador === "function") lockIframeForJogador(true);
 }
 window.TESOURA_SAIR = TESOURA_SAIR;
-
   
   // ======= BOOT =======
   window.addEventListener("DOMContentLoaded", () => {
     // topo
-    $("btnSair")?.addEventListener("click", TESOURA_SAIR);
+    $("btnSair")?.addEventListener("click", () => window.TESOURA_SAIR())
     $("btnLogin")?.addEventListener("click", () => showLogin(true));
 
     // login
