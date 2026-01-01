@@ -327,6 +327,28 @@ function abrirAba(tabId){
     return false;
   };
 
+// ======= HOTFIX: garante SAIR global (evita travar o site) =======
+function TESOURA_SAIR(){
+  try{
+    const fr = document.getElementById("frame");
+    if (fr) fr.src = "about:blank";
+  }catch(e){}
+
+  const sj = document.getElementById("senhaJogador");
+  const sd = document.getElementById("senhaDiretor");
+  if (sj) sj.value = "";
+  if (sd) sd.value = "";
+
+  window.TESOURA_ROLE = "jogadores";
+  window.TESOURA_CAN_CAIXA = true;
+
+  if (typeof setBadge === "function") setBadge();
+  if (typeof showLogin === "function") showLogin(true);
+  if (typeof lockIframeForJogador === "function") lockIframeForJogador(true);
+}
+window.TESOURA_SAIR = TESOURA_SAIR;
+
+  
   // ======= BOOT =======
   window.addEventListener("DOMContentLoaded", () => {
     // topo
