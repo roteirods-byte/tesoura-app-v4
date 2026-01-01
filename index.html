@@ -239,6 +239,8 @@
     }
   }
 
+
+  
   function abrirAba(tabId){
     // diretores sem caixa: ao clicar CAIXA, volta para controle (silencioso)
     if (tabId === "aba-caixa" && window.TESOURA_ROLE === "diretoria" && !window.TESOURA_CAN_CAIXA){
@@ -260,52 +262,64 @@
     };
   }
 
-  // ======= LOGIN =======
-  function TESOURA_ENTRAR_JOGADORES(){
-    const pw = ($("senhaJogador")?.value || "").trim();
-    if (pw !== SENHA_JOGADOR){
-      setMsg("Senha do jogador inválida.");
-      return;
-    }
-    window.TESOURA_ROLE = "jogadores";
-    window.TESOURA_CAN_CAIXA = true;
-
-    setBadge();
-    setMsg("");
-    showLogin(false);
-    lockIframeForJogador(true);
+function abrirAba(tabId){
+  // diretores sem caixa: ao clicar CAIXA, volta para controle (silencioso)
+  if (tabId === "aba-caixa" && window.TESOURA_ROLE === "diretoria" && !window.TESOURA_CAN_CAIXA){
+    tabId = "aba-controle";
   }
 
-  function TESOURA_ENTRAR_DIRETORIA(){
-    const pw = ($("senhaDiretor")?.value || "").trim();
-    const info = DIRETORES[pw];
-    if (!info){
-      setMsg("Senha da diretoria inválida.");
-      return;
-    }
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  const tab = $(tabId);
+  if (tab) tab.classList.add("active");
 
-    window.TESOURA_ROLE = "diretoria";
-    window.TESOURA_CAN_CAIXA = !!info.can_caixa;
+  const url = MAPA[tabId] || MAPA["aba-controle"];
+  const fr = $("frame");
+  if (!fr) return;
 
-    setBadge();
-    setMsg("");
-    showLogin(false);
-    lockIframeForJogador(false);
+  // overlay de carregamento (cria 1 vez)
+  let ld = document.getElementById("TESOURA_LOADING");
+  if (!ld){
+    ld = document.createElement("div");
+    ld.id = "TESOURA_LOADING";
+    ld.textContent = "CARREGANDO...";
+    ld.style.cssText = [
+      "position:fixed",
+      "inset:0",
+      "display:none",
+      "align-items:center",
+      "justify-content:center",
+      "background:rgba(2,6,23,.55)",
+      "backdrop-filter:blur(3px)",
+      "z-index:9998",
+      "color:#ffffff",
+      "font-weight:900",
+      "letter-spacing:.6px",
+      "text-transform:uppercase"
+    ].join(";");
+    document.body.appendChild(ld);
   }
 
-  function TESOURA_SAIR(){
-    if ($("senhaJogador")) $("senhaJogador").value = "";
-    if ($("senhaDiretor")) $("senhaDiretor").value = "";
+  // some o iframe enquanto carrega (evita mostrar o painel anterior)
+  ld.style.display = "flex";
+  fr.style.transition = "opacity .12s ease";
+  fr.style.opacity = "0";
+  fr.style.pointerEvents = "none";
 
-    window.TESOURA_ROLE = "jogadores";
-    window.TESOURA_CAN_CAIXA = true;
+  fr.onload = () => {
+    ld.style.display = "none";
+    fr.style.opacity = "1";
 
-    setBadge();
-    setMsg("");
-    abrirAba("aba-controle");
-    showLogin(true);
-    lockIframeForJogador(true);
-  }
+    // se o login overlay estiver aberto, mantém travado
+    const o = $("overlay");
+    if (o && o.style.display === "flex") fr.style.pointerEvents = "none";
+    else fr.style.pointerEvents = "auto";
+
+    if (window.TESOURA_ROLE === "jogadores") lockIframeForJogador(true);
+    else lockIframeForJogador(false);
+  };
+
+  fr.src = url;
+}
 
   // ======= SE DER ERRO, MOSTRA NA TELA =======
   window.onerror = function(msg){
