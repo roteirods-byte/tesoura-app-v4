@@ -240,26 +240,32 @@
   }
 
   function abrirAba(tabId){
-    // diretores sem caixa: ao clicar CAIXA, volta para controle (silencioso)
-    if (tabId === "aba-caixa" && window.TESOURA_ROLE === "diretoria" && !window.TESOURA_CAN_CAIXA){
-      tabId = "aba-controle";
-    }
-
-    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-    const tab = $(tabId);
-    if (tab) tab.classList.add("active");
-
-    const url = MAPA[tabId] || MAPA["aba-controle"];
-    const fr = $("frame");
-    if (!fr) return;
-
-    fr.src = url;
-    fr.onload = () => {
-      if (window.TESOURA_ROLE === "jogadores") lockIframeForJogador(true);
-      else lockIframeForJogador(false);
-    };
+  // diretores sem caixa: ao clicar CAIXA, volta para controle (silencioso)
+  if (tabId === "aba-caixa" && window.TESOURA_ROLE === "diretoria" && !window.TESOURA_CAN_CAIXA){
+    tabId = "aba-controle";
   }
 
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  const tab = $(tabId);
+  if (tab) tab.classList.add("active");
+
+  const url = MAPA[tabId] || MAPA["aba-controle"];
+  const fr = $("frame");
+  if (!fr) return;
+
+  // >>> evita mostrar o painel anterior enquanto carrega o novo
+  fr.style.visibility = "hidden";
+
+  fr.onload = () => {
+    fr.style.visibility = "visible";
+    if (window.TESOURA_ROLE === "jogadores") lockIframeForJogador(true);
+    else lockIframeForJogador(false);
+  };
+
+  // garante que o hide aplica antes de trocar o src
+  requestAnimationFrame(() => { fr.src = url; });
+}
+ 
   // ======= LOGIN =======
   function TESOURA_ENTRAR_JOGADORES(){
     const pw = ($("senhaJogador")?.value || "").trim();
