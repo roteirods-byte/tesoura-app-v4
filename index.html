@@ -38,7 +38,7 @@
     .tab:hover{filter:brightness(1.05)}
 
     .wrap{max-width:1400px;margin:0 auto;padding:0 14px 20px}
-    .frameWrap{border:1px solid rgba(255,255,255,.10);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.03)}
+    .frameWrap{border:1px solid rgba(255,255,255,.10);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.03);position:relative}
     iframe{width:100%;height:calc(100vh - 150px);border:0;background:transparent}
 
     .msg{margin:10px 0 0;color:var(--red);font-weight:800;min-height:18px}
@@ -240,32 +240,45 @@
   }
 
   function abrirAba(tabId){
-  // diretores sem caixa: ao clicar CAIXA, volta para controle (silencioso)
-  if (tabId === "aba-caixa" && window.TESOURA_ROLE === "diretoria" && !window.TESOURA_CAN_CAIXA){
-    tabId = "aba-controle";
+    Object.keys(TABS).forEach(k=>{
+      const b = document.getElementById("tab_"+k);
+      if(b) b.classList.toggle("active", k===tabId);
+    });
+
+    const url = TABS[tabId];
+    if(!url) return;
+
+    // Evita "flash" do painel anterior: esconde o iframe, mostra loader e só exibe quando carregar.
+    const wrap = document.getElementById("frameWrap");
+    const fr = document.getElementById("appFrame");
+    if(!wrap || !fr) return;
+
+    wrap.classList.add("loading");
+    wrap.classList.remove("ready");
+    fr.style.opacity = "0";
+
+    // Força limpar antes de carregar o novo (reduz 1s de painel errado)
+    fr.onload = null;
+    fr.src = "about:blank";
+
+    // carrega o novo no próximo tick
+    setTimeout(()=>{
+      let done = false;
+      const finish = ()=>{
+        if(done) return;
+        done = true;
+        wrap.classList.remove("loading");
+        wrap.classList.add("ready");
+        fr.style.opacity = "1";
+      };
+      fr.onload = finish;
+      fr.src = url;
+
+      // fallback: se o onload não disparar (cache/erro), libera em 2.5s
+      setTimeout(finish, 2500);
+    }, 0);
   }
 
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  const tab = $(tabId);
-  if (tab) tab.classList.add("active");
-
-  const url = MAPA[tabId] || MAPA["aba-controle"];
-  const fr = $("frame");
-  if (!fr) return;
-
-  // >>> evita mostrar o painel anterior enquanto carrega o novo
-  fr.style.visibility = "hidden";
-
-  fr.onload = () => {
-    fr.style.visibility = "visible";
-    if (window.TESOURA_ROLE === "jogadores") lockIframeForJogador(true);
-    else lockIframeForJogador(false);
-  };
-
-  // garante que o hide aplica antes de trocar o src
-  requestAnimationFrame(() => { fr.src = url; });
-}
- 
   // ======= LOGIN =======
   function TESOURA_ENTRAR_JOGADORES(){
     const pw = ($("senhaJogador")?.value || "").trim();
