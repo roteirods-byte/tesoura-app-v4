@@ -144,8 +144,7 @@
   <header class="page-header">
         <h1>TESOURA - JOGADORES</h1>
     <div style="color:#00ff9a;font-weight:900;margin:8px 0">VERSÃO TESTE JOGADORES - 01/01 12:30</div>
-        <button id="btnSalvarPainel" class="btn-salvar-painel">SALVAR PAINEL</button>
-    </header>
+            </header>
 
   <div class="container">
     <div class="painel">
@@ -207,6 +206,7 @@
       <table>
         <thead>
           <tr>
+            <th>ORDEM</th>
             <th>ID</th>
             <th>CAMISA</th>
             <th>APELIDO</th>
@@ -236,11 +236,15 @@
     var supabase = window.__TESOURA_SUPABASE__;
     // Botão: SALVAR PAINEL (arquiva o painel no Banco de Dados)
     const btnSalvarPainel = document.getElementById("btnSalvarPainel");
+
+    
     if(btnSalvarPainel){
       btnSalvarPainel.addEventListener("click", async () => {
         try{
           btnSalvarPainel.disabled = true;
           btnSalvarPainel.textContent = "SALVANDO...";
+
+          
           const { data: rows, error } = await supabase.from("jogadores")
             .select("id,camisa,apelido,nome,data_nasc,celular,posicao,hab,vel,mov,pontos,ativo")
             .order("apelido", { ascending: true });
