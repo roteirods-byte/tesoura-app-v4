@@ -171,6 +171,9 @@
 
     <div class="painel" style="overflow-x:auto;">
       <h2>Lista de Jogadores</h2>
+      <div style="color:#cfd6ff;font-weight:800;margin:6px 0 10px">
+  ZAGUEIRO = Z &nbsp;&nbsp; LATERAL = L &nbsp;&nbsp; MEIO = M &nbsp;&nbsp; ATAQUE = A
+</div>
       <button class="btn-recarregar" id="btn-recarregar">RECARREGAR LISTA</button>
       <p style="font-size:12px;">ORDEM ALFABÉTICA POR APELIDO. COLUNA IDADE É CALCULADA AUTOMÁTICA.</p>
 
@@ -286,7 +289,6 @@
       }
 
       let ordem = 0;
-
       data.forEach(j => {
         ordem++;
         const tr = document.createElement("tr");
@@ -297,7 +299,7 @@
           return td;
         }
 
-        tr.appendChild(tdTexto(ordem));
+       tr.appendChild(tdTexto(String(ordem)));
         tr.appendChild(tdTexto(j.id));
         tr.appendChild(tdTexto(j.camisa ?? ""));
         tr.appendChild(tdTexto((j.apelido || "").toUpperCase()));
