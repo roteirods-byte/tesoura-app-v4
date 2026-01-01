@@ -203,8 +203,8 @@
     if(msg) l.querySelector(".loaderText").textContent = msg;
     l.classList.toggle("on", !!on);
   };
-  const hideFrame = () => { const fr=$("frame"); if(fr) fr.style.opacity="0"; };
-  const showFrame = () => { const fr=$("frame"); if(fr) fr.style.opacity="1"; };
+  const hideFrame = () => { const fr=$("frame"); if(fr){ fr.style.opacity="0"; fr.style.visibility="hidden"; } };
+  const showFrame = () => { const fr=$("frame"); if(fr){ fr.style.visibility="visible"; fr.style.opacity="1"; } };
 
 const SENHA_JOGADOR = "TESOURA2026";
   const DIRETORES = {
@@ -291,18 +291,21 @@ const SENHA_JOGADOR = "TESOURA2026";
     const url = urlBase + (urlBase.includes("?") ? "&" : "?") + "v=" + Date.now();
 
     // anti-flash: esconde o iframe e mostra loader até carregar
-    showLoader(true, "Carregando painel...");
+    showLoader(true,"Carregando painel...");
     hideFrame();
-
-    // garante que só mostra quando o conteúdo novo terminar
+    // token evita corrida (cliques rápidos)
+    const __tok = String(Date.now()) + ":" + String(Math.random());
+    window.__TESOURA_FRAME_TOK = __tok;
     fr.onload = () => {
+      if(window.__TESOURA_FRAME_TOK !== __tok) return;
       showLoader(false);
       showFrame();
-      // limpa handler para não acumular
-      fr.onload = null;
     };
-
-    fr.src = url;
+    try{ fr.src = "about:blank"; }catch(e){}
+    requestAnimationFrame(() => {
+      if(window.__TESOURA_FRAME_TOK !== __tok) return;
+      fr.src = url;
+    });
   }
 
 function setBadge(){
