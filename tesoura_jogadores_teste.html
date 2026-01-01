@@ -1,157 +1,111 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <title>TESOURA - JOGADORES (TESTE)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>TESOURA - JOGADORES</title>
+  <link rel="stylesheet" href="app/css/ui.css">
+  <script src="app/js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root{
-      --bg:#0b1220;
-      --panel:#061024;
-      --panel2:#020617;
-      --line:#0f172a;
-      --txt:#ffffff;
-      --muted:#9ca3af;
-      --orange:#f97316;
-      --green:#22c55e;
-      --red:#ef4444;
-      --btn:#38bdf8;
-    }
-    body{ margin:0; font-family:Arial, sans-serif; background:var(--bg); color:var(--txt); }
-    .wrap{ max-width:1100px; margin:18px auto; padding:0 12px; }
-    h1{ margin:0 0 10px; color:var(--orange); font-size:26px; letter-spacing:1px; font-weight:900; text-transform:uppercase; }
-    .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-    .btnSavePainel{
-      background:var(--green); color:#051a0f; border:0; padding:10px 14px;
-      border-radius:10px; font-weight:900; cursor:pointer; text-transform:uppercase; font-size:12px;
-      box-shadow:0 6px 16px rgba(0,0,0,.35);
-    }
-    .card{
-      background:var(--panel2);
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:12px;
-      box-shadow:0 6px 16px rgba(0,0,0,.35);
-      margin-bottom:14px;
-    }
-    .card h2{ margin:0 0 10px; color:var(--orange); font-size:16px; font-weight:900; text-transform:uppercase; }
-    .grid{
-      display:grid;
-      grid-template-columns: 180px 1fr 180px 220px;
-      gap:10px;
-    }
-    label{ font-size:11px; color:#cbd5e1; text-transform:uppercase; font-weight:900; display:block; margin-bottom:4px; }
-    input, select{
-      width:100%;
-      background:var(--bg);
-      border:1px solid var(--line);
-      color:var(--txt);
-      border-radius:10px;
-      padding:10px 12px;
-      font-size:12px;
-      outline:none;
-    }
-    .row2{ display:grid; grid-template-columns: 220px 220px 220px 1fr; gap:10px; margin-top:10px; }
-    .row3{ display:grid; grid-template-columns: 220px 220px 1fr; gap:10px; margin-top:10px; }
-    .actions{ display:flex; gap:10px; margin-top:12px; }
-    .btn{
-      border:0; border-radius:10px; padding:10px 14px; font-weight:900; cursor:pointer;
-      text-transform:uppercase; font-size:12px; box-shadow:0 6px 16px rgba(0,0,0,.35);
-    }
-    .btnGreen{ background:var(--green); color:#051a0f; }
-    .btnOrange{ background:var(--orange); color:#1b0b02; }
-    .meta{ margin-top:6px; color:var(--muted); font-size:12px; font-weight:900; text-transform:uppercase; }
-    .sub{ color:var(--muted); font-size:12px; margin:6px 0 0; }
-
-    table{ width:100%; border-collapse:collapse; font-size:12px; margin-top:10px; }
-    thead th{
-      background:var(--orange); color:#fff; padding:7px 6px; text-transform:uppercase; font-weight:900;
-      border:1px solid rgba(255,255,255,.45); white-space:nowrap; text-align:center;
-    }
-    tbody td{
-      background:var(--panel2); padding:6px 6px; border:1px solid rgba(255,255,255,.20);
-      white-space:nowrap; text-align:center; text-transform:uppercase;
-    }
-    tbody tr:nth-child(even) td{ background:var(--panel); }
-    .tdLeft{ text-align:left; padding-left:10px; font-weight:900; }
-    .btnTiny{
-      padding:6px 10px; border-radius:8px; font-weight:900; border:0; cursor:pointer; text-transform:uppercase; font-size:11px;
-    }
-    .tinyEdit{ background:#f59e0b; color:#1b0b02; }
-    .tinyDel{ background:var(--red); color:#fff; }
-
-    @media (max-width:980px){
-      .grid{ grid-template-columns: 1fr 1fr; }
-      .row2{ grid-template-columns: 1fr 1fr; }
-      .row3{ grid-template-columns: 1fr; }
+    body{margin:0;background:#071023;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .wrap{padding:18px 18px 28px}
+    .h1{font-size:34px;font-weight:900;letter-spacing:.5px;color:#ff7a18;margin:6px 0 16px}
+    .card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:18px;margin:14px 0}
+    .grid2{display:grid;grid-template-columns: 1fr 1fr; gap:16px}
+    .row2{display:grid;grid-template-columns: 220px 1fr; gap:16px; margin-top:10px}
+    .row3{display:grid;grid-template-columns: 220px 220px 1fr; gap:16px; margin-top:10px}
+    label{display:block;font-size:12px;color:#cfd6ff;margin:0 0 6px}
+    input{width:100%;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.22);color:#fff;padding:0 12px;outline:none}
+    input::placeholder{color:rgba(255,255,255,.35)}
+    .btn{height:44px;border-radius:12px;border:0;padding:0 14px;font-weight:800;cursor:pointer}
+    .btnGreen{background:#10d37d;color:#052014}
+    .btnOrange{background:#ff7a18;color:#2b1304}
+    .btnTiny{height:32px;border-radius:10px;border:0;padding:0 10px;font-weight:900;cursor:pointer}
+    .tinyEdit{background:#ffb14a;color:#2b1304}
+    .tinyDel{background:#ff3b3b;color:#2b0505}
+    .meta{margin-top:8px;color:#cfd6ff;font-weight:800}
+    .tableBox{overflow:auto;border-radius:16px;border:1px solid rgba(255,255,255,.10)}
+    table{width:100%;border-collapse:collapse;min-width:980px;background:rgba(0,0,0,.15)}
+    th,td{padding:10px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:center;font-size:13px}
+    th{background:rgba(255,122,24,.95);color:#211104;font-weight:900;position:sticky;top:0}
+    .tdLeft{text-align:left}
+    .topbar{display:flex;justify-content:flex-end;align-items:center;gap:10px}
+    @media (max-width: 900px){
+      .grid2,.row2,.row3{grid-template-columns:1fr}
+      table{min-width:860px}
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-
     <div class="topbar">
-      <h1>TESOURA - JOGADORES</h1>
-      <button class="btnSavePainel" id="btnSalvarPainel">SALVAR PAINEL</button>
+      <button class="btn btnGreen" id="btnSalvarPainel">SALVAR PAINEL</button>
     </div>
 
-    <div class="card">
-      <h2>CADASTRAR / EDITAR JOGADOR</h2>
+    <div class="h1">TESOURA - JOGADORES</div>
 
-      <div class="grid">
+    <div class="card">
+      <div style="font-weight:900;color:#ff7a18;margin-bottom:10px">CADASTRAR / EDITAR JOGADOR</div>
+
+      <div class="grid2">
         <div>
           <label>NÚMERO DA CAMISA:</label>
-          <input id="camisa" />
+          <input id="camisa" placeholder="">
         </div>
-
         <div>
           <label>NOME COMPLETO:</label>
-          <input id="nome" />
-        </div>
-
-        <div>
-          <label>APELIDO (ÚNICO):</label>
-          <input id="apelido" />
-        </div>
-
-        <div>
-          <label>DATA DE NASCIMENTO:</label>
-          <input id="nascimento" placeholder="dd/mm/aaaa" />
+          <input id="nome" placeholder="">
         </div>
       </div>
 
       <div class="row2">
         <div>
-          <label>CELULAR (WHATSAPP):</label>
-          <input id="celular" />
+          <label>APELIDO (ÚNICO):</label>
+          <input id="apelido" placeholder="">
         </div>
         <div>
-          <label>POSIÇÃO (D/M/A):</label>
-          <input id="posicao" />
-        </div>
-        <div>
-          <label>HABILIDADE (1–5):</label>
-          <input id="hab" />
-        </div>
-        <div>
-          <label>VELOCIDADE (1–2, N_3_*):</label>
-          <input id="vel" />
+          <label>DATA DE NASCIMENTO:</label>
+          <input id="nascimento" placeholder="dd/mm/aaaa">
         </div>
       </div>
 
       <div class="row3">
         <div>
-          <label>MOVIMENTAÇÃO (1–2, N_3_*):</label>
-          <input id="mov" />
+          <label>CELULAR (WHATSAPP):</label>
+          <input id="celular" placeholder="">
         </div>
         <div>
-          <label>PONTOS:</label>
-          <input id="pontos" />
+          <label>POSIÇÃO (D/M/A):</label>
+          <input id="posicao" placeholder="">
         </div>
         <div></div>
       </div>
 
-      <div class="actions">
+      <div class="row3">
+        <div>
+          <label>HABILIDADE (1–5):</label>
+          <input id="hab" placeholder="">
+        </div>
+        <div>
+          <label>VELOCIDADE (1–2, N_3_*):</label>
+          <input id="vel" placeholder="">
+        </div>
+        <div>
+          <label>MOVIMENTAÇÃO (1–2, N_3_*):</label>
+          <input id="mov" placeholder="">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label>PONTOS:</label>
+          <input id="pontos" placeholder="" readonly>
+        </div>
+        <div></div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
         <button class="btn btnGreen" id="btnSalvarJogador">SALVAR JOGADOR</button>
         <button class="btn btnOrange" id="btnCancelar">CANCELAR EDIÇÃO</button>
       </div>
@@ -160,56 +114,63 @@
     </div>
 
     <div class="card">
-      <h2>LISTA DE JOGADORES</h2>
-      <div class="sub">ORDEM ALFABÉTICA POR APELIDO. COLUNA IDADE É CALCULADA AUTOMÁTICA.</div>
+      <div style="font-weight:900;color:#ff7a18;margin-bottom:10px">LISTA DE JOGADORES</div>
+      <div style="color:#cfd6ff;font-size:12px;margin-bottom:10px">ORDEM ALFABÉTICA POR APELIDO. COLUNA IDADE É CALCULADA AUTOMÁTICA.</div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th><th>CAMISA</th><th>APELIDO</th><th>NOME</th><th>DATA NASC.</th><th>IDADE</th>
-            <th>CELULAR</th><th>POSIÇÃO</th><th>HAB</th><th>VEL</th><th>MOV</th><th>PONTOS</th>
-            <th>EDITAR</th><th>EXCLUIR</th>
-          </tr>
-        </thead>
-        <tbody id="tbodyJogadores"></tbody>
-      </table>
+      <div class="tableBox">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>CAMISA</th>
+              <th>APELIDO</th>
+              <th>NOME</th>
+              <th>DATA NASC.</th>
+              <th>IDADE</th>
+              <th>CELULAR</th>
+              <th>POSIÇÃO</th>
+              <th>HAB</th>
+              <th>VEL</th>
+              <th>MOV</th>
+              <th>PONTOS</th>
+              <th>EDITAR</th>
+              <th>EXCLUIR</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyJogadores"></tbody>
+        </table>
+      </div>
     </div>
-
   </div>
 
-  <script src="app/js/config.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const CFG = window.TESOURA_CONFIG || {};
-    const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
-    const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-    const sb = window.supabase.createClient(SB_URL, SB_KEY);
-
+    const SB_URL = CFG.SUPABASE_URL || "";
+    const SB_ANON = CFG.SUPABASE_ANON_KEY || "";
+    const sb = supabase.createClient(SB_URL, SB_ANON);
     const el = (id)=>document.getElementById(id);
 
     function calcIdade(iso){
       if(!iso) return "";
-      const d = new Date(iso);
-      if(String(d)==="Invalid Date") return "";
+      const a = new Date(iso);
+      if(isNaN(a.getTime())) return "";
       const hoje = new Date();
-      let idade = hoje.getFullYear() - d.getFullYear();
-      const m = hoje.getMonth() - d.getMonth();
-      if (m < 0 || (m === 0 && hoje.getDate() < d.getDate())) idade--;
+      let idade = hoje.getFullYear() - a.getFullYear();
+      const m = hoje.getMonth() - a.getMonth();
+      if(m < 0 || (m === 0 && hoje.getDate() < a.getDate())) idade--;
       return idade;
     }
-
+    function iso2br(iso){
+      if(!iso) return "";
+      const m = (iso||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if(!m) return "";
+      return `${m[3]}/${m[2]}/${m[1]}`;
+    }
     function br2iso(br){
       const t = (br||"").trim();
       const m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
       if(!m) return null;
       return `${m[3]}-${m[2]}-${m[1]}`;
-    }
-
-    function iso2br(iso){
-      if(!iso) return "";
-      const [a,m,d] = iso.split("-");
-      if(!a||!m||!d) return "";
-      return `${d}/${m}/${a}`;
     }
 
     async function carregar(){
@@ -240,117 +201,128 @@
       el("totalJogadores").textContent = `TOTAL DE JOGADORES: ${(data||[]).length}`;
     }
 
-    carregar();
+    // ======= ATIVA SALVAR / EDITAR / EXCLUIR (JOGADORES) =======
+    let editId = null;
 
-   // ======= ATIVA SALVAR / EDITAR / EXCLUIR =======
-let editId = null;
-
-function limparForm(){
-  editId = null;
-  el("camisa").value = "";
-  el("nome").value = "";
-  el("apelido").value = "";
-  el("nascimento").value = "";
-  el("celular").value = "";
-  el("posicao").value = "";
-  el("hab").value = "";
-  el("vel").value = "";
-  el("mov").value = "";
-  el("pontos").value = "";
-}
-
-function pontosAuto(){
-  const hab = parseInt(el("hab").value || "0", 10) || 0;
-  const vel = parseInt(el("vel").value || "0", 10) || 0;
-  const mov = parseInt(el("mov").value || "0", 10) || 0;
-  const p = hab + vel + mov;
-  el("pontos").value = p ? String(p) : "";
-  return p;
-}
-
-["hab","vel","mov"].forEach(id=>{
-  el(id).addEventListener("input", pontosAuto);
-});
-
-el("btnCancelar").addEventListener("click", ()=>{
-  limparForm();
-});
-
-el("btnSalvarJogador").addEventListener("click", async ()=>{
-  const apelido = (el("apelido").value || "").trim().toUpperCase();
-  if(!apelido){ alert("INFORME O APELIDO."); return; }
-
-  const nascBR = (el("nascimento").value || "").trim();
-  const data_nasc = nascBR ? br2iso(nascBR) : null;
-  if(nascBR && !data_nasc){ alert("DATA INVÁLIDA. Use dd/mm/aaaa"); return; }
-
-  const payload = {
-    camisa: el("camisa").value ? parseInt(el("camisa").value,10) : null,
-    nome: (el("nome").value || "").trim().toUpperCase(),
-    apelido,
-    data_nasc,
-    celular: (el("celular").value || "").trim(),
-    posicao: (el("posicao").value || "").trim().toUpperCase().slice(0,1),
-    hab: el("hab").value ? parseInt(el("hab").value,10) : null,
-    vel: el("vel").value ? parseInt(el("vel").value,10) : null,
-    mov: el("mov").value ? parseInt(el("mov").value,10) : null,
-    pontos: pontosAuto()
-  };
-
-  let resp;
-  if(editId === null){
-    resp = await sb.from("jogadores").insert(payload);
-  } else {
-    resp = await sb.from("jogadores").update(payload).eq("id", editId);
-  }
-
-  if(resp.error){
-    console.error(resp.error);
-    alert("ERRO AO SALVAR: " + (resp.error.message||""));
-    return;
-  }
-
-  alert("JOGADOR SALVO!");
-  limparForm();
-  await carregar();
-});
-
-el("tbodyJogadores").addEventListener("click", async (ev)=>{
-  const btn = ev.target;
-  if(!(btn instanceof HTMLElement)) return;
-
-  const id = btn.getAttribute("data-id");
-  if(!id) return;
-
-  if(btn.classList.contains("tinyEdit")){
-    const { data, error } = await sb.from("jogadores").select("*").eq("id", id).single();
-    if(error){ alert("ERRO AO LER JOGADOR: " + (error.message||"")); return; }
-
-    editId = data.id;
-    el("camisa").value = data.camisa ?? "";
-    el("nome").value = data.nome ?? "";
-    el("apelido").value = data.apelido ?? "";
-    el("nascimento").value = iso2br(data.data_nasc || "");
-    el("celular").value = data.celular ?? "";
-    el("posicao").value = data.posicao ?? "";
-    el("hab").value = data.hab ?? "";
-    el("vel").value = data.vel ?? "";
-    el("mov").value = data.mov ?? "";
-    el("pontos").value = data.pontos ?? "";
-    window.scrollTo({top:0, behavior:"smooth"});
-    return;
-  }
-
-  if(btn.classList.contains("tinyDel")){
-    if(!confirm("CONFIRMAR EXCLUSÃO DO JOGADOR?")) return;
-
-    const resp = await sb.from("jogadores").delete().eq("id", id);
-    if(resp.error){
-      console.error(resp.error);
-      alert("ERRO AO EXCLUIR: " + (resp.error.message||""));
-      return;
+    function limparForm(){
+      editId = null;
+      el("camisa").value = "";
+      el("nome").value = "";
+      el("apelido").value = "";
+      el("nascimento").value = "";
+      el("celular").value = "";
+      el("posicao").value = "";
+      el("hab").value = "";
+      el("vel").value = "";
+      el("mov").value = "";
+      el("pontos").value = "";
     }
-    alert("JOGADOR EXCLUÍDO!");
-    await carregar();
-  }
-});
+
+    function pontosAuto(){
+      const hab = parseInt(el("hab").value || "0", 10) || 0;
+      const vel = parseInt(el("vel").value || "0", 10) || 0;
+      const mov = parseInt(el("mov").value || "0", 10) || 0;
+      const p = hab + vel + mov;
+      el("pontos").value = p ? String(p) : "";
+      return p;
+    }
+
+    ["hab","vel","mov"].forEach(id=>{
+      el(id).addEventListener("input", pontosAuto);
+    });
+
+    el("btnCancelar").addEventListener("click", ()=>{
+      limparForm();
+    });
+
+    el("btnSalvarJogador").addEventListener("click", async ()=>{
+      try{
+        const apelido = (el("apelido").value || "").trim().toUpperCase();
+        if(!apelido){ alert("INFORME O APELIDO (ÚNICO)."); return; }
+
+        const nascBR = (el("nascimento").value || "").trim();
+        const data_nasc = nascBR ? br2iso(nascBR) : null;
+        if(nascBR && !data_nasc){ alert("DATA INVÁLIDA. Use dd/mm/aaaa"); return; }
+
+        const payload = {
+          camisa: el("camisa").value ? parseInt(el("camisa").value,10) : null,
+          nome: (el("nome").value || "").trim().toUpperCase(),
+          apelido,
+          data_nasc,
+          celular: (el("celular").value || "").trim(),
+          posicao: (el("posicao").value || "").trim().toUpperCase().slice(0,1),
+          hab: el("hab").value ? parseInt(el("hab").value,10) : null,
+          vel: el("vel").value ? parseInt(el("vel").value,10) : null,
+          mov: el("mov").value ? parseInt(el("mov").value,10) : null,
+          pontos: pontosAuto()
+        };
+
+        let resp;
+        if(editId === null){
+          resp = await sb.from("jogadores").insert(payload);
+        } else {
+          resp = await sb.from("jogadores").update(payload).eq("id", editId);
+        }
+
+        if(resp.error){
+          console.error(resp.error);
+          alert("ERRO AO SALVAR: " + (resp.error.message||""));
+          return;
+        }
+
+        alert("JOGADOR SALVO!");
+        limparForm();
+        await carregar();
+      }catch(e){
+        console.error(e);
+        alert("ERRO NO PAINEL JOGADORES. Veja o Console.");
+      }
+    });
+
+    el("tbodyJogadores").addEventListener("click", async (ev)=>{
+      const btn = ev.target;
+      if(!(btn instanceof HTMLElement)) return;
+
+      const id = btn.getAttribute("data-id");
+      if(!id) return;
+
+      // EDITAR
+      if(btn.classList.contains("tinyEdit")){
+        const { data, error } = await sb.from("jogadores").select("*").eq("id", id).single();
+        if(error){ console.error(error); alert("ERRO AO LER JOGADOR: " + (error.message||"")); return; }
+
+        editId = data.id;
+        el("camisa").value = data.camisa ?? "";
+        el("nome").value = data.nome ?? "";
+        el("apelido").value = data.apelido ?? "";
+        el("nascimento").value = iso2br(data.data_nasc || "");
+        el("celular").value = data.celular ?? "";
+        el("posicao").value = data.posicao ?? "";
+        el("hab").value = data.hab ?? "";
+        el("vel").value = data.vel ?? "";
+        el("mov").value = data.mov ?? "";
+        el("pontos").value = data.pontos ?? "";
+        window.scrollTo({top:0, behavior:"smooth"});
+        return;
+      }
+
+      // EXCLUIR
+      if(btn.classList.contains("tinyDel")){
+        if(!confirm("CONFIRMAR EXCLUSÃO DO JOGADOR?")) return;
+
+        const resp = await sb.from("jogadores").delete().eq("id", id);
+        if(resp.error){
+          console.error(resp.error);
+          alert("ERRO AO EXCLUIR: " + (resp.error.message||""));
+          return;
+        }
+        alert("JOGADOR EXCLUÍDO!");
+        await carregar();
+      }
+    });
+
+    // carrega tabela ao abrir
+    carregar();
+  </script>
+</body>
+</html>
