@@ -39,7 +39,14 @@
 
     .wrap{max-width:1400px;margin:0 auto;padding:0 14px 20px}
     .frameWrap{border:1px solid rgba(255,255,255,.10);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.03);position:relative}
-    iframe{width:100%;height:calc(100vh - 150px);border:0;background:transparent}
+    iframe{border:0}
+    /* anti-flash: iframes empilhados + máscara */
+    .frame{position:absolute;inset:0;width:100%;height:calc(100vh - 150px);background:#0b1220;display:none}
+    .frame.active{display:block}
+    .frameMask{position:absolute;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);backdrop-filter:blur(2px)}
+    .frameMask.hidden{display:none}
+    .spinner{width:44px;height:44px;border-radius:50%;border:4px solid rgba(255,255,255,.25);border-top-color:#ff8c2a;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
 
     .msg{margin:10px 0 0;color:var(--red);font-weight:800;min-height:18px}
 
@@ -129,12 +136,20 @@
   </div>
 
   <div class="wrap">
-    <div class="frameWrap">
-      <!-- CONTROLE GERAL SEMPRE VISÍVEL POR TRÁS -->
-      <iframe id="frame" src="tesoura_controle_geral_teste.html"></iframe>
-    </div>
+          <div class="frameWrap" id="frameWrap">
+        <div id="frameMask" class="frameMask hidden" aria-hidden="true">
+          <div class="spinner" aria-hidden="true"></div>
+        </div>
 
-    <div id="msg" class="msg"></div>
+        <!-- iframes separados: evita "flash" do painel anterior -->
+        <iframe id="frame_jogadores" class="frame" data-src="tesoura_jogadores_teste.html?v=20260101_anti_flash" title="JOGADORES"></iframe>
+        <iframe id="frame_presenca" class="frame" data-src="tesoura_presenca_escala_R5.html?v=20260101_anti_flash" title="PRESENÇA / ESCALAÇÃO"></iframe>
+        <iframe id="frame_controle" class="frame" data-src="tesoura_controle_geral_teste.html?v=20260101_anti_flash" title="CONTROLE GERAL"></iframe>
+        <iframe id="frame_mensalidade" class="frame" data-src="tesoura_mensalidade_R4.html?v=20260101_anti_flash" title="MENSALIDADE"></iframe>
+        <iframe id="frame_caixa" class="frame" data-src="tesoura_caixa_teste.html?v=20260101_anti_flash" title="CAIXA"></iframe>
+        <iframe id="frame_gols" class="frame" data-src="tesoura_gols_teste.html?v=20260101_anti_flash" title="GOLS"></iframe>
+        <iframe id="frame_banco" class="frame" data-src="tesoura_banco_dados_teste.html?v=20260101_anti_flash" title="BANCO DE DADOS"></iframe>
+      </div><div id="msg" class="msg"></div>
   </div>
 
   <!-- LOGIN -->
@@ -168,200 +183,216 @@
   </div>
 
 <script>
-  // ======= SENHAS OFICIAIS =======
-  const SENHA_JOGADOR = "TESOURA2026";
-  const DIRETORES = {
-    "1baidec": { can_caixa: true  },
-    "2thiago": { can_caixa: true  },
-    "3love":   { can_caixa: false },
-    "4le":     { can_caixa: false },
-    "5titi":   { can_caixa: false },
+  // ============================================================
+  // TESOURA - INDEX (ANTI-FLASH)
+  // - 1 iframe por painel (carrega 1x e reaproveita)
+  // - máscara durante troca (não mostra painel anterior)
+  // ============================================================
+
+  const V = "20260101_anti_flash";
+
+  const frameWrap = document.getElementById("frameWrap");
+  const frameMask = document.getElementById("frameMask");
+
+  const frames = {
+    jogadores: document.getElementById("frame_jogadores"),
+    presenca: document.getElementById("frame_presenca"),
+    controle: document.getElementById("frame_controle"),
+    mensalidade: document.getElementById("frame_mensalidade"),
+    caixa: document.getElementById("frame_caixa"),
+    gols: document.getElementById("frame_gols"),
+    banco: document.getElementById("frame_banco"),
   };
 
-  // ======= PÁGINAS =======
-  const MAPA = {
-    "aba-jogadores":   "tesoura_jogadores_teste.html",
-    "aba-presenca":    "tesoura_presenca_escala_R5.html",
-    "aba-controle":    "tesoura_controle_geral_teste.html",
-    "aba-mensalidade": "tesoura_mensalidade_R4.html",
-    "aba-caixa":       "tesoura_caixa_teste.html",
-    "aba-gols":        "tesoura_gols_teste.html",
-    "aba-banco":       "tesoura_banco_dados_teste.html",
+  const btns = {
+    jogadores: document.getElementById("btnJogadores"),
+    presenca: document.getElementById("btnPresenca"),
+    controle: document.getElementById("btnControle"),
+    mensalidade: document.getElementById("btnMensalidade"),
+    caixa: document.getElementById("btnCaixa"),
+    gols: document.getElementById("btnGols"),
+    banco: document.getElementById("btnBanco"),
   };
 
-  const $ = (id) => document.getElementById(id);
+  const badge = document.getElementById("badge");
+  const modal = document.getElementById("loginModal");
+  const passJog = document.getElementById("passJog");
+  const passDir = document.getElementById("passDir");
 
-  function setMsg(txt){
-    if ($("msg")) $("msg").textContent = txt || "";
-    if ($("loginMsg")) $("loginMsg").textContent = txt || "";
+  const btnAcessarJ = document.getElementById("btnAcessarJ");
+  const btnAcessarD = document.getElementById("btnAcessarD");
+
+  const btnLogin = document.getElementById("btnLogin");
+  const btnSair = document.getElementById("btnSair");
+
+  let can_caixa = false;
+  let abaAtual = "controle";
+
+  function showMask(on) {
+    if (!frameMask) return;
+    frameMask.classList.toggle("hidden", !on);
   }
 
-  function showLogin(show){
-    const o = $("overlay");
-    if (!o) return;
-    o.style.display = show ? "flex" : "none";
-
-    // trava cliques no painel por trás
-    const fr = $("frame");
-    if (fr) fr.style.pointerEvents = show ? "none" : "auto";
+  function setActiveButton(key) {
+    Object.values(btns).forEach((b) => b && b.classList.remove("active"));
+    if (btns[key]) btns[key].classList.add("active");
   }
 
-  function setBadge(){
-    const badge = $("badge");
-    if (!badge) return;
-    if (window.TESOURA_ROLE === "diretoria"){
-      badge.textContent = window.TESOURA_CAN_CAIXA ? "DIRETORIA (COM CAIXA)" : "DIRETORIA (SEM CAIXA)";
-    } else {
-      badge.textContent = "JOGADOR (VISUAL)";
-    }
+  function getRole() {
+    return (localStorage.getItem("TESOURA_ROLE") || "jogadores").toLowerCase();
   }
 
-  function lockIframeForJogador(lock){
-    const fr = $("frame");
-    if (!fr) return;
-    try{
-      const doc = fr.contentDocument || fr.contentWindow.document;
-      let style = doc.getElementById("TESOURA_LOCK_STYLE");
-      if (lock){
-        if (!style){
-          style = doc.createElement("style");
-          style.id = "TESOURA_LOCK_STYLE";
-          style.innerHTML = `
-            a,button,input,select,textarea,[role="button"]{ pointer-events:none !important; }
-          `;
-          doc.head.appendChild(style);
-        }
+  function updateBadge() {
+    const role = getRole();
+    badge.textContent = (role === "diretoria") ? "DIRETORIA (COM CAIXA)" : "JOGADOR (VISUAL)";
+  }
+
+  function showLoginModal() {
+    modal.style.display = "flex";
+  }
+
+  function hideLoginModal() {
+    modal.style.display = "none";
+  }
+
+  function lockOneIframeForJogador(iframe, isJogador) {
+    try {
+      if (!iframe) return;
+      if (isJogador) {
+        // trava clique dentro do iframe (só visualização)
+        iframe.setAttribute("sandbox", "allow-same-origin allow-scripts");
+        iframe.style.pointerEvents = "none";
       } else {
-        if (style) style.remove();
+        iframe.removeAttribute("sandbox");
+        iframe.style.pointerEvents = "auto";
       }
-    }catch(e){
-      setTimeout(()=>lockIframeForJogador(lock), 250);
-    }
+    } catch (e) {}
   }
 
-  function abrirAba(tabId){
-    Object.keys(TABS).forEach(k=>{
-      const b = document.getElementById("tab_"+k);
-      if(b) b.classList.toggle("active", k===tabId);
+  function applyRoleToIframes() {
+    const role = getRole();
+    const isJogador = (role === "jogadores");
+    Object.values(frames).forEach((f) => lockOneIframeForJogador(f, isJogador));
+  }
+
+  function ensureFrameLoaded(key) {
+    const f = frames[key];
+    if (!f) return Promise.resolve();
+
+    if (f.dataset.loaded === "1") return Promise.resolve();
+
+    // src lazy: carrega só quando precisa
+    const src = f.getAttribute("data-src");
+    if (!src) return Promise.resolve();
+
+    return new Promise((resolve) => {
+      f.addEventListener(
+        "load",
+        () => {
+          f.dataset.loaded = "1";
+          resolve();
+        },
+        { once: true }
+      );
+      f.src = src;
     });
-
-    const url = TABS[tabId];
-    if(!url) return;
-
-    // Evita "flash" do painel anterior: esconde o iframe, mostra loader e só exibe quando carregar.
-    const wrap = document.getElementById("frameWrap");
-    const fr = document.getElementById("appFrame");
-    if(!wrap || !fr) return;
-
-    wrap.classList.add("loading");
-    wrap.classList.remove("ready");
-    fr.style.opacity = "0";
-
-    // Força limpar antes de carregar o novo (reduz 1s de painel errado)
-    fr.onload = null;
-    fr.src = "about:blank";
-
-    // carrega o novo no próximo tick
-    setTimeout(()=>{
-      let done = false;
-      const finish = ()=>{
-        if(done) return;
-        done = true;
-        wrap.classList.remove("loading");
-        wrap.classList.add("ready");
-        fr.style.opacity = "1";
-      };
-      fr.onload = finish;
-      fr.src = url;
-
-      // fallback: se o onload não disparar (cache/erro), libera em 2.5s
-      setTimeout(finish, 2500);
-    }, 0);
   }
 
-  // ======= LOGIN =======
-  function TESOURA_ENTRAR_JOGADORES(){
-    const pw = ($("senhaJogador")?.value || "").trim();
-    if (pw !== SENHA_JOGADOR){
-      setMsg("Senha do jogador inválida.");
+  async function abrirAba(key) {
+    if (!frames[key]) return;
+
+    abaAtual = key;
+    setActiveButton(key);
+
+    // máscara ON e esconde tudo antes de mostrar o alvo (evita "flash")
+    showMask(true);
+    Object.values(frames).forEach((f) => f.classList.remove("active"));
+
+    const alvo = frames[key];
+    alvo.classList.add("active");
+
+    // carrega se necessário
+    await ensureFrameLoaded(key);
+
+    // aplica permissões
+    applyRoleToIframes();
+    updateBadge();
+
+    // máscara OFF
+    showMask(false);
+  }
+
+  // =========================
+  // LOGIN / SAIR (globais)
+  // =========================
+  function TESOURA_ENTRAR_JOGADORES() {
+    const senha = (passJog.value || "").trim();
+    if (senha !== "TESOURA2026") {
+      alert("Senha de JOGADORES inválida.");
       return;
     }
-    window.TESOURA_ROLE = "jogadores";
-    window.TESOURA_CAN_CAIXA = true;
-
-    setBadge();
-    setMsg("");
-    showLogin(false);
-    lockIframeForJogador(true);
+    localStorage.setItem("TESOURA_ROLE", "jogadores");
+    can_caixa = false;
+    hideLoginModal();
+    updateBadge();
+    applyRoleToIframes();
   }
 
-  function TESOURA_ENTRAR_DIRETORIA(){
-    const pw = ($("senhaDiretor")?.value || "").trim();
-    const info = DIRETORES[pw];
-    if (!info){
-      setMsg("Senha da diretoria inválida.");
+  function TESOURA_ENTRAR_DIRETORIA() {
+    const senha = (passDir.value || "").trim().toLowerCase();
+    if (senha !== "1baidec") {
+      alert("Senha de DIRETORIA inválida.");
       return;
     }
-
-    window.TESOURA_ROLE = "diretoria";
-    window.TESOURA_CAN_CAIXA = !!info.can_caixa;
-
-    setBadge();
-    setMsg("");
-    showLogin(false);
-    lockIframeForJogador(false);
+    localStorage.setItem("TESOURA_ROLE", "diretoria");
+    can_caixa = true;
+    hideLoginModal();
+    updateBadge();
+    applyRoleToIframes();
   }
 
-  function TESOURA_SAIR(){
-    if ($("senhaJogador")) $("senhaJogador").value = "";
-    if ($("senhaDiretor")) $("senhaDiretor").value = "";
-
-    window.TESOURA_ROLE = "jogadores";
-    window.TESOURA_CAN_CAIXA = true;
-
-    setBadge();
-    setMsg("");
-    abrirAba("aba-controle");
-    showLogin(true);
-    lockIframeForJogador(true);
+  function TESOURA_SAIR() {
+    localStorage.setItem("TESOURA_ROLE", "jogadores");
+    can_caixa = false;
+    updateBadge();
+    applyRoleToIframes();
+    showLoginModal();
   }
 
-  // ======= SE DER ERRO, MOSTRA NA TELA =======
-  window.onerror = function(msg){
-    setMsg("ERRO JS: " + msg);
-    return false;
-  };
+  // =========================
+  // BOOT
+  // =========================
+  window.addEventListener("DOMContentLoaded", async () => {
+    // botões login/sair
+    btnLogin.addEventListener("click", showLoginModal);
+    btnSair.addEventListener("click", TESOURA_SAIR);
 
-  // ======= BOOT =======
-  window.addEventListener("DOMContentLoaded", () => {
-    // topo
-    $("btnSair")?.addEventListener("click", TESOURA_SAIR);
-    $("btnLogin")?.addEventListener("click", () => showLogin(true));
+    // botões modal
+    btnAcessarJ.addEventListener("click", TESOURA_ENTRAR_JOGADORES);
+    btnAcessarD.addEventListener("click", TESOURA_ENTRAR_DIRETORIA);
 
-    // login
-    $("btnEntrarJogadores")?.addEventListener("click", TESOURA_ENTRAR_JOGADORES);
-    $("btnEntrarDiretoria")?.addEventListener("click", TESOURA_ENTRAR_DIRETORIA);
-
-    $("senhaJogador")?.addEventListener("keydown", (e)=>{ if(e.key==="Enter") TESOURA_ENTRAR_JOGADORES(); });
-    $("senhaDiretor")?.addEventListener("keydown", (e)=>{ if(e.key==="Enter") TESOURA_ENTRAR_DIRETORIA(); });
-
-    // abas
-    $("aba-jogadores")?.addEventListener("click", ()=>abrirAba("aba-jogadores"));
-    $("aba-presenca")?.addEventListener("click", ()=>abrirAba("aba-presenca"));
-    $("aba-controle")?.addEventListener("click", ()=>abrirAba("aba-controle"));
-    $("aba-mensalidade")?.addEventListener("click", ()=>abrirAba("aba-mensalidade"));
-    $("aba-caixa")?.addEventListener("click", ()=>abrirAba("aba-caixa"));
-    $("aba-gols")?.addEventListener("click", ()=>abrirAba("aba-gols"));
-    $("aba-banco")?.addEventListener("click", ()=>abrirAba("aba-banco"));
+    // nav
+    btns.jogadores.addEventListener("click", () => abrirAba("jogadores"));
+    btns.presenca.addEventListener("click", () => abrirAba("presenca"));
+    btns.controle.addEventListener("click", () => abrirAba("controle"));
+    btns.mensalidade.addEventListener("click", () => abrirAba("mensalidade"));
+    btns.caixa.addEventListener("click", () => {
+      if (!can_caixa) {
+        alert("Acesso ao CAIXA somente DIRETORIA.");
+        return;
+      }
+      abrirAba("caixa");
+    });
+    btns.gols.addEventListener("click", () => abrirAba("gols"));
+    btns.banco.addEventListener("click", () => abrirAba("banco"));
 
     // estado inicial
-    window.TESOURA_ROLE = "jogadores";
-    window.TESOURA_CAN_CAIXA = true;
-    setBadge();
+    updateBadge();
+    applyRoleToIframes();
+    showLoginModal();
 
-    abrirAba("aba-controle"); // controle geral visível por trás
-    showLogin(true);          // sempre pede senha
-    lockIframeForJogador(true);
+    // abre painel padrão sem "flash"
+    await abrirAba("controle");
   });
 </script>
 
