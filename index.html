@@ -404,5 +404,61 @@ window.TESOURA_SAIR = TESOURA_SAIR;
   });
 </script>
 
+<!-- ===== HOTFIX BLINDAGEM V1 (não remove nada, só evita travar) ===== -->
+<script id="TESOURA_HOTFIX_BLINDAGEM_V1">
+(function () {
+  function safeCall(fn) { try { return fn && fn(); } catch (e) { console.error(e); } }
+
+  // 1) Se algum painel chamar TESOURA_SAIR dentro do iframe, não quebra mais
+  if (typeof window.TESOURA_SAIR !== "function") {
+    window.TESOURA_SAIR = function () {
+      const b = document.getElementById("btnSair");
+      if (b) return b.click();
+      location.reload();
+    };
+  }
+
+  // 2) Se o login chamar TESOURA_ENTRAR_JOGADORES e não existir, não quebra
+  if (typeof window.TESOURA_ENTRAR_JOGADORES !== "function") {
+    window.TESOURA_ENTRAR_JOGADORES = function () {
+      const b = document.getElementById("btnEntrarJogadores");
+      if (b) return b.click();
+      // fallback: abre jogadores
+      const fr = document.getElementById("frame");
+      if (fr) fr.src = "./tesoura_jogadores_teste.html";
+    };
+  }
+
+  // 3) Se o login chamar TESOURA_ENTRAR_DIRETORIA e não existir, não quebra
+  if (typeof window.TESOURA_ENTRAR_DIRETORIA !== "function") {
+    window.TESOURA_ENTRAR_DIRETORIA = function () {
+      const b = document.getElementById("btnEntrarDiretoria");
+      if (b) return b.click();
+      // fallback: abre jogadores
+      const fr = document.getElementById("frame");
+      if (fr) fr.src = "./tesoura_jogadores_teste.html";
+    };
+  }
+
+  // 4) “Empresta” essas funções para dentro do iframe (evita travar painéis)
+  const fr = document.getElementById("frame");
+  if (fr) {
+    fr.addEventListener("load", function () {
+      try {
+        const w = fr.contentWindow;
+        if (!w) return;
+
+        if (typeof w.TESOURA_SAIR !== "function") w.TESOURA_SAIR = () => window.TESOURA_SAIR();
+        if (typeof w.TESOURA_ENTRAR_JOGADORES !== "function") w.TESOURA_ENTRAR_JOGADORES = () => window.TESOURA_ENTRAR_JOGADORES();
+        if (typeof w.TESOURA_ENTRAR_DIRETORIA !== "function") w.TESOURA_ENTRAR_DIRETORIA = () => window.TESOURA_ENTRAR_DIRETORIA();
+      } catch (e) {
+        console.warn("HOTFIX iframe:", e);
+      }
+    });
+  }
+})();
+</script>
+<!-- ===== /HOTFIX BLINDAGEM V1 ===== -->
+  
 </body>
 </html>
