@@ -242,156 +242,115 @@
 
     carregar();
 
-        // ====== SALVAR / EDITAR / EXCLUIR (ATIVAÇÃO) ======
-    let editId = null;
-    let cache = [];
+   // ======= ATIVA SALVAR / EDITAR / EXCLUIR =======
+let editId = null;
 
-    // guarda cache no carregar()
-    const carregar_original = carregar;
-    carregar = async function(){
-      const { data, error } = await sb.from("jogadores").select("*").order("apelido",{ascending:true});
-      if(error){ console.error(error); alert("ERRO AO CARREGAR JOGADORES: " + (error.message||"")); return; }
-      cache = data || [];
+function limparForm(){
+  editId = null;
+  el("camisa").value = "";
+  el("nome").value = "";
+  el("apelido").value = "";
+  el("nascimento").value = "";
+  el("celular").value = "";
+  el("posicao").value = "";
+  el("hab").value = "";
+  el("vel").value = "";
+  el("mov").value = "";
+  el("pontos").value = "";
+}
 
-      const tbody = el("tbodyJogadores");
-      tbody.innerHTML = "";
-      (cache||[]).forEach(r=>{
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${r.id||""}</td>
-          <td>${(r.camisa||"").toString().toUpperCase()}</td>
-          <td class="tdLeft">${(r.apelido||"").toUpperCase()}</td>
-          <td class="tdLeft">${(r.nome||"").toUpperCase()}</td>
-          <td>${iso2br(r.data_nasc||"")}</td>
-          <td>${calcIdade(r.data_nasc||"")}</td>
-          <td>${(r.celular||"")}</td>
-          <td>${(r.posicao||"").toUpperCase()}</td>
-          <td>${(r.hab||"")}</td>
-          <td>${(r.vel||"")}</td>
-          <td>${(r.mov||"")}</td>
-          <td>${(r.pontos||"")}</td>
-          <td><button class="btnTiny tinyEdit" data-id="${r.id}">EDITAR</button></td>
-          <td><button class="btnTiny tinyDel" data-id="${r.id}">EXCLUIR</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
+function pontosAuto(){
+  const hab = parseInt(el("hab").value || "0", 10) || 0;
+  const vel = parseInt(el("vel").value || "0", 10) || 0;
+  const mov = parseInt(el("mov").value || "0", 10) || 0;
+  const p = hab + vel + mov;
+  el("pontos").value = p ? String(p) : "";
+  return p;
+}
 
-      el("totalJogadores").textContent = `TOTAL DE JOGADORES: ${(cache||[]).length}`;
-    };
+["hab","vel","mov"].forEach(id=>{
+  el(id).addEventListener("input", pontosAuto);
+});
 
-    function limparForm(){
-      editId = null;
-      el("camisa").value = "";
-      el("nome").value = "";
-      el("apelido").value = "";
-      el("nascimento").value = "";
-      el("celular").value = "";
-      el("posicao").value = "";
-      el("hab").value = "";
-      el("vel").value = "";
-      el("mov").value = "";
-      el("pontos").value = "";
+el("btnCancelar").addEventListener("click", ()=>{
+  limparForm();
+});
+
+el("btnSalvarJogador").addEventListener("click", async ()=>{
+  const apelido = (el("apelido").value || "").trim().toUpperCase();
+  if(!apelido){ alert("INFORME O APELIDO."); return; }
+
+  const nascBR = (el("nascimento").value || "").trim();
+  const data_nasc = nascBR ? br2iso(nascBR) : null;
+  if(nascBR && !data_nasc){ alert("DATA INVÁLIDA. Use dd/mm/aaaa"); return; }
+
+  const payload = {
+    camisa: el("camisa").value ? parseInt(el("camisa").value,10) : null,
+    nome: (el("nome").value || "").trim().toUpperCase(),
+    apelido,
+    data_nasc,
+    celular: (el("celular").value || "").trim(),
+    posicao: (el("posicao").value || "").trim().toUpperCase().slice(0,1),
+    hab: el("hab").value ? parseInt(el("hab").value,10) : null,
+    vel: el("vel").value ? parseInt(el("vel").value,10) : null,
+    mov: el("mov").value ? parseInt(el("mov").value,10) : null,
+    pontos: pontosAuto()
+  };
+
+  let resp;
+  if(editId === null){
+    resp = await sb.from("jogadores").insert(payload);
+  } else {
+    resp = await sb.from("jogadores").update(payload).eq("id", editId);
+  }
+
+  if(resp.error){
+    console.error(resp.error);
+    alert("ERRO AO SALVAR: " + (resp.error.message||""));
+    return;
+  }
+
+  alert("JOGADOR SALVO!");
+  limparForm();
+  await carregar();
+});
+
+el("tbodyJogadores").addEventListener("click", async (ev)=>{
+  const btn = ev.target;
+  if(!(btn instanceof HTMLElement)) return;
+
+  const id = btn.getAttribute("data-id");
+  if(!id) return;
+
+  if(btn.classList.contains("tinyEdit")){
+    const { data, error } = await sb.from("jogadores").select("*").eq("id", id).single();
+    if(error){ alert("ERRO AO LER JOGADOR: " + (error.message||"")); return; }
+
+    editId = data.id;
+    el("camisa").value = data.camisa ?? "";
+    el("nome").value = data.nome ?? "";
+    el("apelido").value = data.apelido ?? "";
+    el("nascimento").value = iso2br(data.data_nasc || "");
+    el("celular").value = data.celular ?? "";
+    el("posicao").value = data.posicao ?? "";
+    el("hab").value = data.hab ?? "";
+    el("vel").value = data.vel ?? "";
+    el("mov").value = data.mov ?? "";
+    el("pontos").value = data.pontos ?? "";
+    window.scrollTo({top:0, behavior:"smooth"});
+    return;
+  }
+
+  if(btn.classList.contains("tinyDel")){
+    if(!confirm("CONFIRMAR EXCLUSÃO DO JOGADOR?")) return;
+
+    const resp = await sb.from("jogadores").delete().eq("id", id);
+    if(resp.error){
+      console.error(resp.error);
+      alert("ERRO AO EXCLUIR: " + (resp.error.message||""));
+      return;
     }
-
-    function pontosAuto(){
-      const hab = parseInt(el("hab").value||"0",10) || 0;
-      const vel = parseInt(el("vel").value||"0",10) || 0;
-      const mov = parseInt(el("mov").value||"0",10) || 0;
-      const p = hab + vel + mov;
-      el("pontos").value = p ? String(p) : "";
-      return p;
-    }
-
-    ["hab","vel","mov"].forEach(id=>{
-      el(id).addEventListener("input", pontosAuto);
-    });
-
-    el("btnCancelar").addEventListener("click", ()=>{
-      limparForm();
-    });
-
-    el("btnSalvarJogador").addEventListener("click", async ()=>{
-      const apelido = (el("apelido").value||"").trim().toUpperCase();
-      if(!apelido){ alert("INFORME O APELIDO."); return; }
-
-      const nascBR = (el("nascimento").value||"").trim();
-      const data_nasc = nascBR ? br2iso(nascBR) : null;
-      if(nascBR && !data_nasc){ alert("DATA DE NASCIMENTO INVÁLIDA. Use dd/mm/aaaa"); return; }
-
-      const payload = {
-        camisa: el("camisa").value ? parseInt(el("camisa").value,10) : null,
-        nome: (el("nome").value||"").trim().toUpperCase(),
-        apelido,
-        data_nasc,
-        celular: (el("celular").value||"").trim(),
-        posicao: (el("posicao").value||"").trim().toUpperCase().slice(0,1),
-        hab: el("hab").value ? parseInt(el("hab").value,10) : null,
-        vel: el("vel").value ? parseInt(el("vel").value,10) : null,
-        mov: el("mov").value ? parseInt(el("mov").value,10) : null,
-        pontos: pontosAuto()
-      };
-
-      let resp;
-      if(editId === null){
-        resp = await sb.from("jogadores").insert(payload);
-      } else {
-        resp = await sb.from("jogadores").update(payload).eq("id", editId);
-      }
-
-      if(resp.error){
-        console.error(resp.error);
-        alert("ERRO AO SALVAR: " + (resp.error.message||""));
-        return;
-      }
-
-      alert("JOGADOR SALVO!");
-      limparForm();
-      await carregar();
-    });
-
-    el("tbodyJogadores").addEventListener("click", async (ev)=>{
-      const btn = ev.target;
-      if(!(btn instanceof HTMLElement)) return;
-
-      const id = btn.getAttribute("data-id");
-      if(!id) return;
-
-      if(btn.classList.contains("tinyEdit")){
-        const j = (cache||[]).find(x => String(x.id) === String(id));
-        if(!j){ alert("NÃO ACHEI O JOGADOR."); return; }
-
-        editId = j.id;
-        el("camisa").value = j.camisa ?? "";
-        el("nome").value = j.nome ?? "";
-        el("apelido").value = j.apelido ?? "";
-        el("nascimento").value = iso2br(j.data_nasc || "");
-        el("celular").value = j.celular ?? "";
-        el("posicao").value = j.posicao ?? "";
-        el("hab").value = j.hab ?? "";
-        el("vel").value = j.vel ?? "";
-        el("mov").value = j.mov ?? "";
-        el("pontos").value = j.pontos ?? "";
-        window.scrollTo({top:0, behavior:"smooth"});
-        return;
-      }
-
-      if(btn.classList.contains("tinyDel")){
-        if(!confirm("CONFIRMAR EXCLUSÃO DO JOGADOR?")) return;
-
-        const resp = await sb.from("jogadores").delete().eq("id", id);
-        if(resp.error){
-          console.error(resp.error);
-          alert("ERRO AO EXCLUIR: " + (resp.error.message||""));
-          return;
-        }
-        alert("JOGADOR EXCLUÍDO!");
-        await carregar();
-      }
-    });
-
-    // recarrega já com cache
-    carregar();
-
-  </script>
-</body>
-</html>
+    alert("JOGADOR EXCLUÍDO!");
+    await carregar();
+  }
+});
