@@ -508,6 +508,11 @@ function getDataJogoISO() {
 
     // ===== LOAD BASE =====
         async function carregarBase(){
+      // FIX_DIA_SCOPE_R5
+      const dia = (typeof dataJogoIso === 'string' && dataJogoIso)
+        ? dataJogoIso
+        : (typeof getDataJogoISO === 'function' ? getDataJogoISO() : new Date().toISOString().slice(0,10));
+
       statusBaseEl.textContent = "Carregando base...";
       try{
         // 1) Jogadores: no banco o campo ATIVO pode ser "SIM" (texto) ou boolean.
