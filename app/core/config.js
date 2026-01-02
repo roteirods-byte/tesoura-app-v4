@@ -15,9 +15,9 @@ window.TESOURA_CONFIG = {
   // Abas -> páginas (IFRAME)
   PANELS: {
     "aba-jogadores": "tesoura_jogadores_teste.html",
-    "aba-presenca":  "tesoura_presenca.html",
+    "aba-presenca":  "tesoura_presenca_escala_R5.html",
     "aba-controle":  "tesoura_controle_geral.html",
-    "aba-mensalidade":"tesoura_mensalidade.html",
+    "aba-mensalidade":"tesoura_mensalidade_R4.html",
     "aba-caixa":     "tesoura_caixa_teste.html",
     "aba-gols":      "tesoura_gols.html",
     "aba-banco":     "tesoura_banco_dados.html"
