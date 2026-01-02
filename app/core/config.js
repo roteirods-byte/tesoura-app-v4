@@ -1,24 +1,27 @@
-/**
- * TESOURA - CORE CONFIG (central)
- */
+/* TESOURA CONFIG (central) */
 window.TESOURA_CONFIG = {
-  APP_NAME: "TESOURA",
-  APP_VERSION: "v4",
+  // Jogadores (visual)
+  APP_PIN: "TESOURA2026",
 
-  // SUPABASE (dados do projeto)
-  SUPABASE_URL: "https://xuplzpispukvtggjasxx.supabase.co",
-  // Use sempre a chave pública do front: anon public / publishable
-  SUPABASE_ANON_KEY: "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg",
-
-  // PIN do modo Jogadores (somente visualização)
-  PIN_JOGADORES: "TESOURA2026",
-
-  // Diretoria por PIN (mais rápido pra finalizar agora)
+  // Diretoria (PIN -> permissões)
   DIRETORIA_PINS: {
-    "1baidec": { caixa: true },
-    "2thiago": { caixa: true },
+    "1baidec": { caixa: true  },
+    "2thiago": { caixa: true  },
     "3love":   { caixa: false },
     "4le":     { caixa: false },
     "5titi":   { caixa: false }
-  }
+  },
+
+  // Abas -> páginas (IFRAME)
+  PANELS: {
+    "aba-jogadores": "tesoura_jogadores_teste.html",
+    "aba-presenca":  "tesoura_presenca.html",
+    "aba-controle":  "tesoura_controle_geral.html",
+    "aba-mensalidade":"tesoura_mensalidade.html",
+    "aba-caixa":     "tesoura_caixa_teste.html",
+    "aba-gols":      "tesoura_gols.html",
+    "aba-banco":     "tesoura_banco_dados.html"
+  },
+
+  DEFAULT_TAB: "aba-controle"
 };
