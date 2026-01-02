@@ -1,0 +1,20 @@
+<!doctype html><meta charset="utf-8">
+<title>Redirecionando...</title>
+<script>
+(async () => {
+  const q = location.search || "";
+  const h = location.hash || "";
+  const candidatos = [
+    "tesoura_controle_geral_teste.html",
+    "tesoura_controle_ger_teste.html",
+    "tesoura_controle_geral.html"
+  ];
+  for (const f of candidatos) {
+    try {
+      const r = await fetch(f + q, { cache: "no-store" });
+      if (r && r.ok) { location.replace(f + q + h); return; }
+    } catch (e) {}
+  }
+  document.body.innerHTML = "<h1 style='font-family:Arial'>ERRO: não achei a página de Controle Geral.</h1>";
+})();
+</script>
