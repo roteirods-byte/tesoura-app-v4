@@ -1,3 +1,7 @@
 
 # backups locais
 index.html.bak_*
+
+# backups fix
+index.html.fixbak_*
+index.html.fixbak2_*
