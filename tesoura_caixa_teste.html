@@ -5,88 +5,27 @@
   <title>TESOURA - LIVRO CAIXA</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #0b1220;
-      color: #ffffff;
-    }
-    .container {
-      max-width: 1100px;
-      margin: 20px auto;
-      padding: 20px;
-      background-color: #111827;
-      border-radius: 8px;
-    }
-    h1 {
-      color: #ff7f27;
-      margin-top: 0;
-    }
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    label {
-      font-size: 14px;
-    }
-    select, input {
-      background-color: #0b1220;
-      color: #ffffff;
-      border: 1px solid #374151;
-      padding: 4px 6px;
-      border-radius: 4px;
-      font-size: 13px;
-    }
-    button {
-      background-color: #06b6d4;
-      color: #000;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: bold;
-    }
-    button:hover { opacity: 0.9; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-      font-size: 13px;
-    }
-    th, td {
-      border: 1px solid #374151;
-      padding: 4px 6px;
-      text-align: left;
-    }
-    th {
-      background-color: #ff7f27;
-      color: #000;
-    }
-    tr:nth-child(even) td { background-color: #020617; }
-    tr:nth-child(odd) td { background-color: #020617; }
-    .total-box {
-      margin-top: 10px;
-      font-size: 15px;
-      font-weight: bold;
-      color: #a7f3d0;
-    }
-    .tipo-receita { color: #22c55e; }
-    .tipo-despesa { color: #f97316; }
-    .input-small { width: 110px; }
-    .input-valor { width: 80px; }
-    .input-obs { width: 220px; }
-    .btn-mini {
-      padding: 3px 8px;
-      font-size: 11px;
-    }
-    .btn-excluir {
-      background-color: #ef4444;
-      color: #fff;
-    }
+    body { margin:0; font-family: Arial, sans-serif; background-color:#0b1220; color:#fff; }
+    .container { max-width:1100px; margin:20px auto; padding:20px; background-color:#111827; border-radius:8px; }
+    h1 { color:#ff7f27; margin-top:0; }
+    .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px; }
+    label { font-size:14px; }
+    select, input { background-color:#0b1220; color:#fff; border:1px solid #374151; padding:4px 6px; border-radius:4px; font-size:13px; }
+    button { background-color:#06b6d4; color:#000; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px; font-weight:bold; }
+    button:hover { opacity:0.9; }
+    table { width:100%; border-collapse:collapse; margin-top:15px; font-size:13px; }
+    th, td { border:1px solid #374151; padding:4px 6px; text-align:left; }
+    th { background-color:#ff7f27; color:#000; }
+    tr:nth-child(even) td { background-color:#020617; }
+    tr:nth-child(odd) td { background-color:#020617; }
+    .total-box { margin-top:10px; font-size:15px; font-weight:bold; color:#a7f3d0; }
+    .tipo-receita { color:#22c55e; }
+    .tipo-despesa { color:#f97316; }
+    .input-small { width:110px; }
+    .input-valor { width:80px; }
+    .input-obs { width:220px; }
+    .btn-mini { padding:3px 8px; font-size:11px; }
+    .btn-excluir { background-color:#ef4444; color:#fff; }
   </style>
 </head>
 <body>
@@ -140,13 +79,12 @@
   <div id="totalMes" class="total-box">
     TOTAL DO MÊS: R$ 0,00
   </div>
-
 </div>
 
 <script>
   const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-    var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const filtroAno = document.getElementById("filtroAno");
   const filtroMes = document.getElementById("filtroMes");
@@ -174,8 +112,8 @@
       filtroAno.appendChild(opt);
     }
 
-    const nomesMes = ["01 - JAN", "02 - FEV", "03 - MAR", "04 - ABR", "05 - MAI", "06 - JUN",
-      "07 - JUL", "08 - AGO", "09 - SET", "10 - OUT", "11 - NOV", "12 - DEZ"];
+    const nomesMes = ["01 - JAN","02 - FEV","03 - MAR","04 - ABR","05 - MAI","06 - JUN",
+                      "07 - JUL","08 - AGO","09 - SET","10 - OUT","11 - NOV","12 - DEZ"];
 
     for (let m = 1; m <= 12; m++) {
       const opt = document.createElement("option");
@@ -232,9 +170,7 @@
 
       const tdTipo = document.createElement("td");
       tdTipo.textContent = l.tipo || "";
-      if ((l.tipo || "").toUpperCase() === "MENSALIDADE") {
-        tdTipo.className = "tipo-receita";
-      }
+      if ((l.tipo || "").toUpperCase() === "MENSALIDADE") tdTipo.className = "tipo-receita";
 
       const tdDesc = document.createElement("td");
       tdDesc.textContent = l.descricao || "";
@@ -245,7 +181,9 @@
       total += val;
 
       const tdObs = document.createElement("td");
-      tdObs.textContent = l.obs || "";      const tdEditar = document.createElement("td");
+      tdObs.textContent = l.obs || "";
+
+      const tdEditar = document.createElement("td");
       const tdExc = document.createElement("td");
 
       const isMensalidade = ((l.tipo || "").toUpperCase() === "MENSALIDADE");
@@ -255,13 +193,14 @@
       } else {
         const btnEd = document.createElement("button");
         btnEd.textContent = "EDITAR";
-        btnEd.className = "btn btn-azul";
+        btnEd.className = "btn-mini";
         btnEd.onclick = () => editarLancamento(l);
         tdEditar.appendChild(btnEd);
 
         const btnEx = document.createElement("button");
         btnEx.textContent = "EXCLUIR";
-        btnEx.className = "btn btn-vermelho";
+        btnEx.className = "btn-mini btn-excluir";
+        // ✅ aqui passa o REGISTRO inteiro, e a função garante que usa só o ID
         btnEx.onclick = () => excluirLancamento(l);
         tdExc.appendChild(btnEx);
       }
@@ -277,8 +216,7 @@
       tbodyCaixa.appendChild(tr);
     });
 
-    totalMesEl.textContent =
-      "TOTAL DO MÊS: R$ " + total.toFixed(2).replace(".", ",");
+    totalMesEl.textContent = "TOTAL DO MÊS: R$ " + total.toFixed(2).replace(".", ",");
   }
 
   async function adicionarLancamento() {
@@ -294,7 +232,7 @@
         tipo: cxTipo.value.toUpperCase(),
         descricao: cxDesc.value.toUpperCase(),
         valor: Number(cxValor.value),
-        obs: cxObs.value.toUpperCase()
+        obs: (cxObs.value || "").toUpperCase()
       });
 
     if (error) {
@@ -333,8 +271,27 @@
     await carregarCaixaMes();
   }
 
-  async function excluirLancamento(id) {
+  function pegarIdSeguro(x) {
+    // já é id
+    if (typeof x === "number" || typeof x === "string") return x;
+
+    // veio registro inteiro
+    if (x && typeof x === "object") {
+      if (typeof x.id === "number" || typeof x.id === "string") return x.id;
+    }
+
+    return null;
+  }
+
+  async function excluirLancamento(itemOuId) {
     if (!confirm("Confirmar exclusão deste lançamento?")) return;
+
+    const id = pegarIdSeguro(itemOuId);
+    if (id === null) {
+      alert("Erro interno: não encontrei o ID deste lançamento. Me envie um print do console.");
+      console.log("EXCLUIR item recebido:", itemOuId);
+      return;
+    }
 
     const { error } = await supabase
       .from("caixa")
