@@ -6,8 +6,7 @@
   const h = location.hash || "";
   const candidatos = [
     "tesoura_controle_geral_teste.html",
-    "tesoura_controle_ger_teste.html",
-    "tesoura_controle_geral.html"
+    "tesoura_controle_ger_teste.html"
   ];
   for (const f of candidatos) {
     try {
@@ -15,6 +14,6 @@
       if (r && r.ok) { location.replace(f + q + h); return; }
     } catch (e) {}
   }
-  document.body.innerHTML = "<h1 style='font-family:Arial'>ERRO: não achei a página de Controle Geral.</h1>";
+  document.body.innerHTML = "<h1 style='font-family:Arial'>ERRO: não achei o arquivo real do Controle Geral.</h1>";
 })();
 </script>
