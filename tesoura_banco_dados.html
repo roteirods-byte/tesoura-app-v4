@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TESOURA - BANCO DE DADOS (GUARDIÃO)</title>
+
+  <!-- libs -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#081427;
+      --card:#0b1b33;
+      --card2:#0a1830;
+      --line:#0f2a4a;
+      --txt:#e9f2ff;
+      --muted:#9fb3cc;
+      --orange:#ff7f27;
+      --green:#2ecc71;
+      --red:#ff4d4d;
+      --blueBtn:#58b4ff;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--txt);font-family:Arial,Helvetica,sans-serif}
+    .wrap{max-width:1100px;margin:24px auto;padding:0 14px}
+    h1{margin:0 0 12px 0;color:var(--orange);font-size:18px;letter-spacing:.5px}
+    .card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:12px;padding:14px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+    .field{display:flex;flex-direction:column;gap:6px}
+    label{color:var(--muted);font-size:12px}
+    select,input{height:36px;border-radius:8px;border:1px solid #163a63;background:#071225;color:var(--txt);padding:0 10px;min-width:220px}
+    .btn{height:36px;border-radius:8px;border:0;padding:0 14px;font-weight:700;cursor:pointer}
+    .btnGreen{background:#1fbf7a;color:#062015}
+    .btnOrange{background:var(--orange);color:#2b1300}
+    .btnBlue{background:var(--blueBtn);color:#06203a}
+    .btnRed{background:var(--red);color:#2b0000}
+    .small{font-size:12px;color:var(--muted)}
+    .msg{margin-top:10px;font-size:12px;color:var(--orange)}
+    .msgErr{color:var(--red)}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border-bottom:1px solid var(--line);padding:10px 8px;font-size:13px;text-align:left}
+    th{color:var(--orange);font-weight:800}
+    .right{margin-left:auto}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--line);font-size:12px;color:var(--muted)}
+    .downloadBar{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+    .hint{margin-top:8px;font-size:12px;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .line{height:1px;background:var(--line);margin:10px 0}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>TESOURA - BANCO DE DADOS (GUARDIÃO)</h1>
+
+    <div class="card">
+      <div class="row">
+        <div class="field">
+          <label>PAINEL / ARQUIVO</label>
+          <select id="fPainel">
+            <option value="jogadores">jogadores</option>
+            <option value="presenca">presenca</option>
+            <option value="escalacao">escalacao</option>
+            <option value="controle geral">controle geral</option>
+            <option value="mensalidade">mensalidade</option>
+            <option value="caixa">caixa</option>
+            <option value="gols">gols</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>PERÍODO</label>
+          <select id="fPeriodo">
+            <option value="unico">unico</option>
+            <option value="semanal">semanal</option>
+            <option value="mensal">mensal</option>
+            <option value="anual">anual</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>REFERÊNCIA</label>
+          <input id="fRef" placeholder="Sem referência (arquivo único)" />
+          <div class="small">Ex.: domingo, mês, ano (quando existir)</div>
+        </div>
+
+        <div class="actions right">
+          <button class="btn btnGreen" id="btnBuscar">BUSCAR</button>
+          <button class="btn btnOrange" id="btnLimpar">LIMPAR</button>
+        </div>
+      </div>
+
+      <div id="msg" class="msg" style="display:none"></div>
+
+      <div class="line"></div>
+
+      <div class="small">
+        Aqui você vê apenas o histórico de arquivos salvos e pode baixar. Visualização/edição é feita no próprio painel.
+      </div>
+
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th>criado em</th>
+            <th>título</th>
+            <th>referência</th>
+            <th>tipo</th>
+            <th>excluir</th>
+          </tr>
+        </thead>
+        <tbody id="tb"></tbody>
+      </table>
+
+      <div class="downloadBar">
+        <button class="btn btnBlue" id="btnPDF" disabled>BAIXAR PDF</button>
+        <button class="btn btnBlue" id="btnCSV" disabled>BAIXAR CSV</button>
+        <button class="btn btnBlue" id="btnXLSX" disabled>BAIXAR EXCEL</button>
+      </div>
+
+      <div class="hint">
+        Banco de Dados é somente leitura. Diretoria pode excluir arquivos de teste (quando disponível).
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =========================================================
+   SUPABASE (via postMessage do index / login)
+   ========================================================= */
+let SUPABASE_URL = null;
+let SUPABASE_ANON_KEY = null;
+let supabaseClient = null;
+
+function showMsg(text, isErr=false){
+  const el = document.getElementById("msg");
+  el.style.display = "block";
+  el.textContent = text;
+  el.className = isErr ? "msg msgErr" : "msg";
+}
+
+function clearMsg(){
+  const el = document.getElementById("msg");
+  el.style.display = "none";
+  el.textContent = "";
+}
+
+/* =========================================================
+   EXPORTAÇÃO (colunas por painel)
+   - aqui está o “conserto” do PDF “diferente do original”
+   ========================================================= */
+const EXPORT_TEMPLATES = {
+  "jogadores": {
+    columns: [
+      { key: "id",        label: "ID" },
+      { key: "apelido",   label: "APELIDO" },
+      { key: "nome",      label: "NOME" },
+      { key: "celular",   label: "CELULAR" },
+      { key: "posicao",   label: "POSIÇÃO" },
+      { key: "hab",       label: "HAB" },
+      { key: "vel",       label: "VEL" },
+      { key: "mov",       label: "MOV" },
+      { key: "pontos",    label: "PONTOS" },
+      { key: "camisa",    label: "CAMISA" },
+      { key: "data_nasc", label: "DATA NASC" },
+      { key: "idade",     label: "IDADE" },
+      {
+        key: "ativo",
+        label: "ATIVO",
+        format: (v) => (v === true || v === "true") ? "SIM" : (v === false || v === "false") ? "NÃO" : (v ?? "")
+      }
+    ],
+    sort: (a,b) => {
+      const aa = (a?.apelido ?? "").toString().toUpperCase();
+      const bb = (b?.apelido ?? "").toString().toUpperCase();
+      if(aa < bb) return -1;
+      if(aa > bb) return  1;
+      return (Number(a?.id) || 0) - (Number(b?.id) || 0);
+    }
+  }
+};
+
+function applyExportTemplate(painel, data){
+  const key = (painel || "").toString().toLowerCase().trim();
+  const tpl = EXPORT_TEMPLATES[key];
+  if(!tpl) return null;
+
+  const arr = Array.isArray(data) ? data : (data ? [data] : []);
+  const sorted = tpl.sort ? [...arr].sort(tpl.sort) : arr;
+
+  const columns = tpl.columns.map(c => c.label);
+  const rows = sorted.map(obj => tpl.columns.map(c => {
+    const v = obj ? obj[c.key] : "";
+    return c.format ? c.format(v) : (v ?? "");
+  }));
+
+  return { columns, rows };
+}
+
+/* =========================================================
+   NORMALIZA CONTEÚDO SALVO
+   ========================================================= */
+function normalizeConteudo(conteudo, painel){
+  let c = conteudo;
+  try{
+    if(typeof c === "string"){
+      const s = c.trim();
+      if((s.startsWith("{") && s.endsWith("}")) || (s.startsWith("[") && s.endsWith("]"))){
+        c = JSON.parse(s);
+      }
+    }
+  }catch(e){ /* mantém como está */ }
+
+  // Template por painel (para PDF/CSV/Excel ficarem iguais ao painel)
+  const templated = applyExportTemplate(painel, c);
+  if(templated) return templated;
+
+  // fallback genérico (exporta tudo)
+  if(Array.isArray(c)){
+    const first = c[0] || {};
+    const columns = Object.keys(first);
+    const rows = c.map(obj => columns.map(k => obj?.[k] ?? ""));
+    return { columns, rows };
+  }
+
+  if(typeof c === "object" && c){
+    const columns = Object.keys(c);
+    const rows = [columns.map(k => c[k] ?? "")];
+    return { columns, rows };
+  }
+
+  return { columns: ["conteúdo"], rows: [[String(c ?? "")]] };
+}
+
+/* =========================================================
+   DOWNLOADS
+   ========================================================= */
+function safeFilename(s){
+  return (s || "arquivo")
+    .toString()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-zA-Z0-9_\-\.]+/g,"_")
+    .replace(/_+/g,"_")
+    .replace(/^_+|_+$/g,"");
+}
+
+function downloadCSV(filename, columns, rows){
+  const esc = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
+  const csv = [columns.map(esc).join(","), ...rows.map(r => r.map(esc).join(","))].join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function downloadXLSX(filename, columns, rows){
+  const data = [columns, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "dados");
+  XLSX.writeFile(wb, filename);
+}
+
+function downloadPDF(filename, title, columns, rows){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(12);
+  doc.text(title, 40, 40);
+
+  doc.autoTable({
+    startY: 60,
+    head: [columns],
+    body: rows,
+    theme: "grid",
+    styles: { fontSize: 8, cellPadding: 3, lineWidth: 0.4, lineColor: [220,220,220] },
+    headStyles: { fillColor: [255, 127, 39], textColor: [255,255,255], fontStyle: "bold" }
+  });
+
+  doc.save(filename);
+}
+
+/* =========================================================
+   BUSCA / LISTA
+   ========================================================= */
+let itens = [];
+let selecionado = null;
+
+function render(){
+  const tb = document.getElementById("tb");
+  tb.innerHTML = "";
+
+  if(!itens.length){
+    tb.innerHTML = `<tr><td colspan="5" class="muted">Nenhum arquivo salvo encontrado para este filtro.</td></tr>`;
+    setDownloadEnabled(false);
+    return;
+  }
+
+  itens.forEach((item, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${item.criado_em ?? "-"}</td>
+      <td>${item.titulo ?? "-"}</td>
+      <td>${item.referencia ?? "-"}</td>
+      <td><span class="pill">${item.periodo ?? "-"}</span></td>
+      <td><button class="btn btnRed" style="height:30px" data-del="${idx}">EXCLUIR</button></td>
+    `;
+    tr.style.cursor = "pointer";
+    tr.addEventListener("click", (e) => {
+      // evita conflito com botão excluir
+      if(e.target && e.target.getAttribute && e.target.getAttribute("data-del") !== null) return;
+      selecionado = item;
+      setDownloadEnabled(true);
+      clearMsg();
+    });
+    tb.appendChild(tr);
+  });
+
+  // excluir (diretoria)
+  tb.querySelectorAll("button[data-del]").forEach(btn=>{
+    btn.addEventListener("click", async (e)=>{
+      e.stopPropagation();
+      const i = Number(btn.getAttribute("data-del"));
+      const item = itens[i];
+      if(!item) return;
+      if(!confirm("Excluir este arquivo salvo?")) return;
+
+      try{
+        const { error } = await supabaseClient
+          .from("arquivos_app")
+          .delete()
+          .eq("id", item.id);
+
+        if(error) throw error;
+        showMsg("Arquivo excluído.");
+        await buscar();
+      }catch(err){
+        showMsg("Erro ao excluir: " + (err?.message || err), true);
+      }
+    });
+  });
+
+  setDownloadEnabled(false);
+}
+
+function setDownloadEnabled(v){
+  document.getElementById("btnPDF").disabled = !v;
+  document.getElementById("btnCSV").disabled = !v;
+  document.getElementById("btnXLSX").disabled = !v;
+}
+
+async function buscar(){
+  clearMsg();
+  if(!supabaseClient){
+    showMsg("Supabase não inicializado (volte para o login).", true);
+    return;
+  }
+
+  const painel = document.getElementById("fPainel").value;
+  const periodo = document.getElementById("fPeriodo").value;
+  const ref = (document.getElementById("fRef").value || "").trim();
+
+  let q = supabaseClient
+    .from("arquivos_app")
+    .select("*")
+    .eq("painel", painel)
+    .eq("periodo", periodo)
+    .order("criado_em", { ascending: false });
+
+  // só filtra referência se foi digitado
+  if(ref) q = q.eq("referencia", ref);
+
+  const { data, error } = await q;
+  if(error){
+    showMsg("Erro ao buscar: " + error.message, true);
+    return;
+  }
+
+  itens = (data || []).map(x => ({
+    id: x.id,
+    painel: x.painel,
+    periodo: x.periodo,
+    referencia: x.referencia,
+    titulo: x.titulo,
+    criado_em: x.criado_em,
+    conteudo: x.conteudo
+  }));
+
+  selecionado = null;
+  render();
+}
+
+function limpar(){
+  document.getElementById("fRef").value = "";
+  itens = [];
+  selecionado = null;
+  clearMsg();
+  render();
+}
+
+/* =========================================================
+   BAIXAR (PDF / CSV / XLSX)
+   ========================================================= */
+function baixar(tipo){
+  if(!selecionado){
+    showMsg("Selecione um arquivo salvo na lista.", true);
+    return;
+  }
+  const item = selecionado;
+
+  const norm = normalizeConteudo(item.conteudo, item.painel);
+  const columns = norm.columns || ["dados"];
+  const rows = norm.rows || [];
+
+  const stamp = new Date().toISOString().replace(/[:\-]/g,"").slice(0,15);
+  const base = `${safeFilename(item.painel)}_${safeFilename(item.periodo)}_${stamp}`;
+  const title = item.titulo || "Arquivo salvo";
+
+  if(tipo === "pdf"){
+    downloadPDF(`${base}.pdf`, title, columns, rows);
+  }else if(tipo === "csv"){
+    downloadCSV(`${base}.csv`, columns, rows);
+  }else{
+    downloadXLSX(`${base}.xlsx`, columns, rows);
+  }
+}
+
+/* =========================================================
+   INIT
+   ========================================================= */
+window.addEventListener("message", (ev)=>{
+  const msg = ev.data || {};
+  if(msg.type === "TESOURA_SUPABASE_CONFIG"){
+    SUPABASE_URL = msg.url;
+    SUPABASE_ANON_KEY = msg.key;
+    try{
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      clearMsg();
+    }catch(e){
+      showMsg("Erro ao iniciar Supabase: " + e.message, true);
+    }
+  }
+});
+
+document.getElementById("btnBuscar").addEventListener("click", buscar);
+document.getElementById("btnLimpar").addEventListener("click", limpar);
+document.getElementById("btnPDF").addEventListener("click", ()=>baixar("pdf"));
+document.getElementById("btnCSV").addEventListener("click", ()=>baixar("csv"));
+document.getElementById("btnXLSX").addEventListener("click", ()=>baixar("xlsx"));
+
+render();
+</script>
+</body>
+</html>
