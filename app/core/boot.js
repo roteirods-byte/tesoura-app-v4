@@ -36,6 +36,10 @@
     const frame = $("frame");
     if(!frame) return setTopMsg("ERRO: iframe #frame não encontrado.");
 
+
+      // ANTI-PISCA: esconde o quadro antes de trocar a página
+      frame.style.visibility = "hidden";
+      frame.onload = () => { frame.style.visibility = "visible"; };
     const url = map[tabId];
     if(!url) return setTopMsg("ERRO: aba sem página: " + tabId);
 
