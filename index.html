@@ -416,17 +416,6 @@ function setBadge(){
       abrirAba("aba-jogadores");
     }
 
-    window.TESOURA_ROLE = "diretoria";
-    window.TESOURA_CAN_CAIXA = !!info.can_caixa;
-
-    setBadge();
-    setMsg("");
-    showLogin(false);
-      // carrega painel após login
-      abrirAba((document.querySelector(".tabBtn.active")||{id:"aba-controle"}).id || "aba-controle");
-
-    lockIframeForJogador(false);
-  }
 
   function TESOURA_SAIR(){
     if ($("senhaJogador")) $("senhaJogador").value = "";
