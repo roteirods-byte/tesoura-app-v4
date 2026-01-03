@@ -8,11 +8,9 @@
     body { margin:0; font-family: Arial, sans-serif; background:#0b1220; color:#fff; }
     header { padding:14px 18px; border-bottom:2px solid #f97316; display:flex; align-items:center; justify-content:space-between; background:#07101f; gap:12px; }
     header h1 { margin:0; font-size:16px; letter-spacing:.5px; color:#f97316; text-transform:uppercase; font-weight:900; }
-
     .wrap { max-width: 1100px; margin: 18px auto; padding: 0 12px; }
     .painel { background:#020617; border:1px solid #0f172a; border-radius:12px; padding:12px; margin-bottom:14px; box-shadow:0 6px 16px rgba(0,0,0,.35); }
     .painel h2 { margin:0 0 10px; color:#f97316; font-size:14px; letter-spacing:.5px; text-transform:uppercase; font-weight:900; }
-
     .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
     label { font-weight:900; text-transform:uppercase; font-size:12px; color:#fff; }
     select, input[type="date"] {
@@ -22,7 +20,6 @@
     }
     select { min-width:140px; }
     .status { margin-top:8px; font-size:12px; color:#9ca3af; }
-
     .btn {
       border:0; border-radius:10px; padding:10px 14px; font-weight:900;
       text-transform:uppercase; cursor:pointer; font-size:12px;
@@ -31,7 +28,7 @@
     .btn:active { transform: translateY(1px); }
     .btn-pdf { background:#f97316; color:#220b00; }
     .hint { font-size:12px; color:#cbd5e1; margin:10px 0 0; line-height:1.35; }
-
+    .totalbox { margin-top:10px; font-size:12px; color:#e5e7eb; font-weight:900; text-transform:uppercase; }
     table { width:100%; border-collapse:collapse; margin-top:10px; background:#020617; font-size:12px; }
     thead th {
       position: sticky; top: 0; z-index: 2;
@@ -46,7 +43,6 @@
       background:#020617; text-transform:uppercase;
     }
     tbody tr:nth-child(even) td { background:#061024; }
-
     .col-atleta { text-align:left; font-weight:900; padding-left:10px; }
     .col-valor { font-weight:900; }
     .pverde { color:#22c55e; font-weight:900; }
@@ -89,9 +85,10 @@
     <div class="hint">
       Regras: valor <b>R$ 70</b> até o <b>2º domingo</b> do mês. Depois: <b>R$ 80</b>.<br/>
       A coluna <b>STATUS</b> é o <b>P</b>: fica <span class="pverde">verde</span> quando marcar pago, e fica <span class="pvermelho">vermelho</span> somente na <b>segunda-feira após o 2º domingo</b> se não pagar.<br/>
-      <b>Sem botão recarregar:</b> ao editar, o app salva automaticamente.
+      Ao editar, o app salva automaticamente.
     </div>
 
+    <div class="totalbox" id="totalPagoMes">TOTAL PAGO NO MÊS: R$ 0 (0)</div>
     <div class="status" id="status">A lista carrega automaticamente.</div>
   </div>
 
@@ -131,17 +128,16 @@
   const tbody = document.getElementById("tbody");
   const toastEl = document.getElementById("toast");
   const btnPdf = document.getElementById("btnPdf");
+  const totalPagoMesEl = document.getElementById("totalPagoMes");
 
   const hoje = new Date();
   const anoAtual = hoje.getFullYear();
   const mesAtual = hoje.getMonth() + 1;
 
   function pad2(n){ return String(n).padStart(2,"0"); }
-  function isoFromYMD(y,m,d){ return `${y}-${pad2(m)}-${pad2(d)}`; }
-  function brFromIso(iso){
-    if(!iso) return "";
-    const [y,m,d] = iso.split("-");
-    return `${d}/${m}/${y}`;
+  function isoToday(){
+    const d = new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
   }
 
   function toast(msg){
@@ -152,7 +148,6 @@
   }
 
   function getSecondSunday(year, month){
-    // month: 1-12
     const d = new Date(year, month-1, 1);
     let sundays = 0;
     while(d.getMonth() === month-1){
@@ -169,21 +164,18 @@
     const second = getSecondSunday(year, month);
     if(!second) return null;
     const m = new Date(second.getFullYear(), second.getMonth(), second.getDate());
-    m.setDate(m.getDate() + 1); // segunda
+    m.setDate(m.getDate() + 1);
     m.setHours(0,0,0,0);
     return m;
   }
 
   function suggestedValueForMonth(year, month){
-    // valor exibido no painel (70 até vencer, depois 80)
     const dueMonday = mondayAfterSecondSunday(year, month);
     if(!dueMonday) return 70;
-    const now = new Date();
-    return (now >= dueMonday) ? 80 : 70;
+    return (new Date() >= dueMonday) ? 80 : 70;
   }
 
   function valueByPaymentDate(year, month, isoPayDate){
-    // valor real do pagamento (70 até o 2º domingo, depois 80)
     if(!isoPayDate) return null;
     const second = getSecondSunday(year, month);
     if(!second) return 70;
@@ -194,18 +186,12 @@
 
   function statusP(pago, year, month){
     if(pago) return { text: "P", cls: "pverde" };
-
     const dueMonday = mondayAfterSecondSunday(year, month);
     if(!dueMonday) return { text:"", cls:"" };
-
-    const now = new Date();
-    if(now >= dueMonday) return { text:"P", cls:"pvermelho" };
-
-    return { text:"", cls:"" };
+    return (new Date() >= dueMonday) ? { text:"P", cls:"pvermelho" } : { text:"", cls:"" };
   }
 
   function fillFiltro(){
-    // ANO (igual padrão)
     for(let a = anoAtual - 1; a <= anoAtual + 1; a++){
       const opt = document.createElement("option");
       opt.value = a;
@@ -213,11 +199,7 @@
       if(a === anoAtual) opt.selected = true;
       selAno.appendChild(opt);
     }
-    // MÊS (1..12)
-    const meses = [
-      "01 - JAN","02 - FEV","03 - MAR","04 - ABR","05 - MAI","06 - JUN",
-      "07 - JUL","08 - AGO","09 - SET","10 - OUT","11 - NOV","12 - DEZ"
-    ];
+    const meses = ["01 - JAN","02 - FEV","03 - MAR","04 - ABR","05 - MAI","06 - JUN","07 - JUL","08 - AGO","09 - SET","10 - OUT","11 - NOV","12 - DEZ"];
     meses.forEach((txt, idx)=>{
       const m = idx+1;
       const opt = document.createElement("option");
@@ -228,6 +210,50 @@
     });
   }
 
+  // >>> SALVAMENTO MAIS SEGURO: tenta UPDATE, se não existir tenta INSERT, sem DELETE.
+  async function salvarMensalidade(apel, year, month, pago, data_pagamento, valor){
+    // tenta achar 1 registro existente
+    const { data: existing, error: errSel } = await sb
+      .from("mensalidades")
+      .select("*")
+      .eq("apelido", apel)
+      .eq("ano", year)
+      .eq("mes", month)
+      .limit(1);
+
+    if(errSel){
+      alert("ERRO ao salvar (consulta): " + (errSel.message || "sem detalhe"));
+      return false;
+    }
+
+    const payload = { apelido: apel, ano: year, mes: month, pago: !!pago, data_pagamento: data_pagamento || null, valor: valor };
+
+    if(existing && existing.length){
+      const { error: errUp } = await sb
+        .from("mensalidades")
+        .update(payload)
+        .eq("apelido", apel)
+        .eq("ano", year)
+        .eq("mes", month);
+
+      if(errUp){
+        alert("ERRO ao salvar (atualizar): " + (errUp.message || "sem detalhe"));
+        return false;
+      }
+      return true;
+    } else {
+      const { error: errIns } = await sb
+        .from("mensalidades")
+        .insert([payload]);
+
+      if(errIns){
+        alert("ERRO ao salvar (inserir): " + (errIns.message || "sem detalhe"));
+        return false;
+      }
+      return true;
+    }
+  }
+
   async function load(){
     const year = Number(selAno.value);
     const month = Number(selMes.value);
@@ -235,24 +261,26 @@
     try{
       statusEl.textContent = "CARREGANDO...";
       tbody.innerHTML = "";
+      totalPagoMesEl.textContent = "TOTAL PAGO NO MÊS: R$ 0 (0)";
 
-      // jogadores
       const { data: jogadores, error: errJog } = await sb
         .from("jogadores")
         .select("apelido")
         .order("apelido", { ascending:true });
       if(errJog){ statusEl.textContent = "ERRO AO BUSCAR JOGADORES."; return; }
 
-      // mensalidades do mês/ano
       const { data: mens, error: errMen } = await sb
         .from("mensalidades")
-        .select("apelido, ano, mes, pago, data_pagamento, valor")
+        .select("*")
         .eq("ano", year)
         .eq("mes", month);
       if(errMen){ statusEl.textContent = "ERRO AO BUSCAR MENSALIDADES."; return; }
 
       const mapa = {};
       (mens || []).forEach(r => { mapa[(r.apelido||"").toUpperCase()] = r; });
+
+      let totalPago = 0;
+      let qtdPago = 0;
 
       const sug = suggestedValueForMonth(year, month);
 
@@ -263,13 +291,13 @@
         const pago = !!(r && (r.pago === true || r.pago === 1));
         const dataPag = (r && r.data_pagamento) ? String(r.data_pagamento).slice(0,10) : "";
 
-        // valor exibido:
-        // - se pagou: usa valor do registro (se tiver) senão calcula pela data do pagamento
-        // - se não pagou: mostra sugestão do mês (70/80), mas NÃO cadastra até marcar pago
         let valorExibido = sug;
         if(pago){
           if(r && r.valor != null && r.valor !== "") valorExibido = Number(r.valor);
           else valorExibido = valueByPaymentDate(year, month, dataPag) ?? sug;
+
+          totalPago += Number(valorExibido || 0);
+          qtdPago += 1;
         }
 
         const st = statusP(pago, year, month);
@@ -298,7 +326,6 @@
         const inpDate = document.createElement("input");
         inpDate.type = "date";
         inpDate.value = dataPag;
-        // só libera data se pago estiver marcado
         inpDate.disabled = !chk.checked;
         tdD.appendChild(inpDate);
         tr.appendChild(tdD);
@@ -311,84 +338,54 @@
         async function salvarAutomatico(){
           const year = Number(selAno.value);
           const month = Number(selMes.value);
-          const apel = apelido;
 
           const pagoAgora = chk.checked;
-          const dtPay = inpDate.value || "";
 
-          // Atualiza UI imediata
+          if(pagoAgora && !inpDate.value){
+            inpDate.value = isoToday(); // coloca hoje automaticamente
+          }
+
           inpDate.disabled = !pagoAgora;
+
           const stNow = statusP(pagoAgora, year, month);
           tdS.textContent = stNow.text;
           tdS.className = stNow.cls;
 
-          // VALOR ao pagar
+          // valor
           let valor = null;
           if(pagoAgora){
-            const v = valueByPaymentDate(year, month, dtPay) ?? suggestedValueForMonth(year, month);
+            const v = valueByPaymentDate(year, month, inpDate.value) ?? suggestedValueForMonth(year, month);
             valor = v;
             tdV.textContent = `R$ ${Number(v).toFixed(0)}`;
           } else {
-            // não pago: só sugestão na tela
             const v = suggestedValueForMonth(year, month);
             tdV.textContent = `R$ ${Number(v).toFixed(0)}`;
+            inpDate.value = "";
           }
 
-          try{
-            // regra: só cadastra depois de editar pagamento
-            // - Se NÃO pago: remove registro do mês/ano (se existir) e não insere nada.
-            // - Se PAGO: salva registro com valor e data.
-            if(!pagoAgora){
-              await sb.from("mensalidades").delete().eq("apelido", apel).eq("ano", year).eq("mes", month);
-              toast(`SALVO: ${apel} (sem pagamento)`);
-              return;
-            }
+          // salvar
+          if(!pagoAgora){
+            // não cadastra nada: mantém registro "não pago" vazio (apaga NÃO, para não depender de policy de delete)
+            // Só salva quando marcar pago.
+            toast("OK (não pago).");
+            return;
+          }
 
-            if(!dtPay){
-              toast("ERRO: informe a DATA do pagamento.");
-              return;
-            }
-
-            // garante 1 registro (deleta e insere)
-            await sb.from("mensalidades").delete().eq("apelido", apel).eq("ano", year).eq("mes", month);
-
-            const row = {
-              apelido: apel,
-              ano: year,
-              mes: month,
-              pago: true,
-              data_pagamento: dtPay,
-              valor: valor
-            };
-
-            const { error: errIns } = await sb.from("mensalidades").insert([row]);
-            if(errIns){
-              console.error(errIns);
-              toast("ERRO ao salvar.");
-              return;
-            }
-
-            toast(`SALVO: ${apel} (pago)`);
-          }catch(e){
-            console.error(e);
-            toast("ERRO ao salvar.");
+          const ok = await salvarMensalidade(apelido, year, month, true, inpDate.value, valor);
+          if(ok){
+            toast(`SALVO: ${apelido}`);
+            // recarrega totais (rápido)
+            load();
           }
         }
 
-        chk.addEventListener("change", async () => {
-          // se marcou pago e não tem data, coloca hoje automaticamente (pode editar)
-          if(chk.checked && !inpDate.value){
-            const now = new Date();
-            inpDate.value = isoFromYMD(now.getFullYear(), now.getMonth()+1, now.getDate());
-          }
-          await salvarAutomatico();
-        });
-
+        chk.addEventListener("change", salvarAutomatico);
         inpDate.addEventListener("change", salvarAutomatico);
 
         tbody.appendChild(tr);
       });
 
+      totalPagoMesEl.textContent = `TOTAL PAGO NO MÊS: R$ ${Number(totalPago).toFixed(0)} (${qtdPago})`;
       statusEl.textContent = `LISTA CARREGADA. (${pad2(month)}/${year})`;
     }catch(e){
       console.error(e);
@@ -396,15 +393,9 @@
     }
   }
 
-  // PDF
-  btnPdf.addEventListener("click", () => {
-    // imprime a página (usuário escolhe "Salvar em PDF")
-    window.print();
-  });
+  btnPdf.addEventListener("click", () => window.print());
 
-  // init
   fillFiltro();
-
   btnConsultar.addEventListener("click", load);
   window.addEventListener("load", load);
 </script>
