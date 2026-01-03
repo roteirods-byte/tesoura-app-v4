@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>TESOURA - CAIXA (TESTE)</title>
+  <title>TESOURA - CAIXA</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body{margin:0;font-family:Arial,sans-serif;background:#0b1220;color:#fff}
@@ -23,7 +23,9 @@
     .btn:disabled{opacity:.45;cursor:not-allowed}
     .status{margin-top:8px;font-size:12px;color:#9ca3af}
 
+    /* SEM BARRA DE ROLAGEM INTERNA */
     .table-wrap{overflow:visible;max-height:none;border-radius:12px;border:1px solid #0f172a}
+
     table{border-collapse:collapse;font-size:12px;width:100%;table-layout:fixed}
     thead th{
       position:sticky;top:0;background:#f97316;color:#fff;z-index:2;
@@ -40,16 +42,12 @@
     .pos{color:#22c55e}
     .neg{color:#ef4444}
     .saldo{font-weight:900}
-    .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-weight:900;font-size:11px}
-    .pill-rec{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.35)}
-    .pill-desp{background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.35)}
     .readonly{opacity:.65}
 
-    /* larguras (sem rolagem) */
+    /* Larguras (sem TIPO) */
     th.col-data, td.col-data{width:110px}
-    th.col-tipo, td.col-tipo{width:120px}
-    th.col-desc, td.col-desc{width:360px}
-    th.col-obs,  td.col-obs{width:180px}
+    th.col-desc, td.col-desc{width:420px}
+    th.col-obs,  td.col-obs{width:170px}
     th.col-rec,  td.col-rec{width:130px}
     th.col-desp, td.col-desp{width:130px}
     th.col-saldo,td.col-saldo{width:140px}
@@ -58,7 +56,6 @@
     td.col-desc, td.col-obs{white-space:normal}
     td.col-desc input, td.col-obs input{width:100% !important; box-sizing:border-box}
 
-    /* impressão/PDF */
     @media print{
       header,#painelFiltro,.no-print{display:none !important}
       body{background:#fff;color:#000}
@@ -123,16 +120,15 @@
   <div class="painel">
     <h2>LANÇAMENTOS</h2>
 
-    <!-- linha de lançamento (sem botão NOVO) -->
+    <!-- SEM HORA -->
     <div class="row no-print" style="margin-bottom:10px;gap:8px;">
       <input id="inData" type="date" />
-      <input id="inHora" type="time" />
       <select id="inTipo">
         <option value="RECEITA">RECEITA</option>
         <option value="DESPESA">DESPESA</option>
       </select>
-      <input id="inDesc" type="text" placeholder="DESCRIÇÃO" style="width:260px;" />
-      <input id="inObs" type="text" placeholder="OBS" style="width:180px;" />
+      <input id="inDesc" type="text" placeholder="DESCRIÇÃO" style="width:320px;" />
+      <input id="inObs" type="text" placeholder="OBS" style="width:170px;" />
       <input id="inValor" type="number" step="0.01" placeholder="VALOR (R$)" />
       <button id="btnAdd" class="btn btn-azul">SALVAR</button>
     </div>
@@ -142,7 +138,6 @@
         <thead>
           <tr>
             <th class="col-data">DATA</th>
-            <th class="col-tipo">TIPO</th>
             <th class="col-desc">DESCRIÇÃO</th>
             <th class="col-obs">OBS</th>
             <th class="col-rec">RECEITA (R$)</th>
@@ -186,7 +181,6 @@
   const saldoFinalEl    = document.getElementById("saldoFinal");
 
   const inData = document.getElementById("inData");
-  const inHora = document.getElementById("inHora");
   const inTipo = document.getElementById("inTipo");
   const inDesc = document.getElementById("inDesc");
   const inObs  = document.getElementById("inObs");
@@ -195,22 +189,17 @@
 
   // ===== HELPERS =====
   const pad2 = n => String(n).padStart(2,"0");
-  const money = (v) => {
-    const n = Number(v || 0);
-    return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  const money = (v) => Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  const toBR = (iso) => {
+    if (!iso) return "";
+    const s = String(iso).slice(0,10);
+    const y=s.slice(0,4), m=s.slice(5,7), d=s.slice(8,10);
+    if (y && m && d) return `${d}/${m}/${y}`;
+    return s;
   };
-  const isoDate = (d) => {
-    if (!d) return "";
-    if (typeof d === "string") return d.slice(0,10);
-    const x = new Date(d);
-    return `${x.getFullYear()}-${pad2(x.getMonth()+1)}-${pad2(x.getDate())}`;
-  };
-  const isoTime = (d) => {
-    if (!d) return "";
-    if (typeof d === "string" && d.includes(":")) return d.slice(0,5);
-    const x = new Date(d);
-    return `${pad2(x.getHours())}:${pad2(x.getMinutes())}`;
-  };
+  const escapeHtml = (str) => String(str ?? "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
 
   function startOfWeekMonday(dateObj){
     const d = new Date(dateObj.getTime());
@@ -223,63 +212,21 @@
   function addDays(d, n){ const x = new Date(d.getTime()); x.setDate(x.getDate()+n); return x; }
   function lastDayOfMonth(y,m){ return new Date(y, m, 0).getDate(); } // m = 1..12
 
-  // ===== SCHEMA FLEXÍVEL (para não quebrar com coluna diferente) =====
-  function pickCol(obj, candidates){
-    for (const c of candidates){
-      if (obj && Object.prototype.hasOwnProperty.call(obj, c)) return c;
-    }
-    return null;
-  }
+  // Mensalidade (R$ 70) NÃO EXISTE: ocultar tudo que for mensalidade
+  function isMensalidadeRow(r){
+    const desc = String(r?.descricao || "").toUpperCase();
+    const obs  = String(r?.obs || "").toUpperCase();
+    const tipo = String(r?.tipo || "").toUpperCase();
+    const valor = Number(r?.valor || 0);
 
-  function getSignedValue(row){
-    // 1) se existir "valor" (padrão): + receita / - despesa
-    if (row && row.valor !== undefined && row.valor !== null && row.valor !== "") return Number(row.valor);
+    // regra: remove receitas de 70 e textos de mensalidade
+    if (Math.abs(valor) === 70) return true;
+    if (desc.includes("MENSALIDADE")) return true;
+    if (obs.includes("MENSALIDADE")) return true;
+    // (segurança extra)
+    if (tipo.includes("MENSALIDADE")) return true;
 
-    // 2) se existir receita/despesa separado
-    const rec = Number(row && (row.receita ?? row.entrada ?? 0)) || 0;
-    const desp= Number(row && (row.despesa ?? row.saida ?? 0)) || 0;
-    // despesa pode estar positiva no banco -> vira negativa aqui
-    return rec - Math.abs(desp);
-  }
-
-  function isMensalidade(row){
-    const origem = String(row?.origem || row?.source || "").toUpperCase();
-    const desc = String(row?.descricao || row?.descrição || row?.desc || "").toUpperCase();
-    return origem.includes("MENSAL") || desc.startsWith("MENSALIDADE -");
-  }
-
-  function escapeHtml(str){
-    return String(str ?? "")
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-
-  async function getMensalidadePagoCount(ano, mes){
-    // retorna quantidade de pagamentos "pago=true" no mês (ou null se não conseguir consultar)
-    try{
-      const { count, error } = await sb
-        .from("mensalidades")
-        .select("apelido", { count:"exact", head:true })
-        .eq("ano", ano)
-        .eq("mes", mes)
-        .eq("pago", true);
-      if (error) return null;
-      return Number(count || 0);
-    }catch(e){
-      return null;
-    }
-  }
-
-  function rowYearMonth(row, cols){
-    const dataCol = cols?.dateCol || pickCol(row, ["data","data_lancamento","data_mov","dia"]);
-    const createdCol = cols?.createdCol || pickCol(row, ["created_at","criado_em","createdAt"]);
-    const dt = dataCol ? row?.[dataCol] : (createdCol ? row?.[createdCol] : null);
-    const iso = isoDate(dt);
-    if (!iso) return { y:null, m:null };
-    return { y:Number(iso.slice(0,4)), m:Number(iso.slice(5,7)) };
+    return false;
   }
 
   function buildPrintHTML(){
@@ -297,7 +244,6 @@
     const trs = rows.map(r => `
       <tr>
         <td>${escapeHtml(r.data)}</td>
-        <td>${escapeHtml(r.tipo)}</td>
         <td style="text-align:left;">${escapeHtml(r.descricao)}</td>
         <td style="text-align:left;">${escapeHtml(r.obs)}</td>
         <td style="text-align:right;">${escapeHtml(r.receita)}</td>
@@ -329,9 +275,8 @@
     <thead>
       <tr>
         <th style="width:80px;">DATA</th>
-        <th style="width:70px;">TIPO</th>
-        <th style="width:260px;">DESCRIÇÃO</th>
-        <th style="width:160px;">OBS</th>
+        <th style="width:300px;">DESCRIÇÃO</th>
+        <th style="width:200px;">OBS</th>
         <th style="width:90px;">RECEITA (R$)</th>
         <th style="width:90px;">DESPESA (R$)</th>
         <th style="width:90px;">SALDO (R$)</th>
@@ -382,7 +327,6 @@ window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
 
   function buildSemanaOptions(){
     selSemana.innerHTML = "";
-    // semanas do ano selecionado (segunda->segunda)
     const ano = Number(selAno.value) || (new Date()).getFullYear();
     const start = startOfWeekMonday(new Date(ano,0,1));
     const end = new Date(ano,11,31);
@@ -392,7 +336,7 @@ window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
       const fim = addDays(ini, 7);
       const label = `${ini.toLocaleDateString("pt-BR")} → ${addDays(fim,-1).toLocaleDateString("pt-BR")}`;
       const opt = document.createElement("option");
-      opt.value = `${isoDate(ini)}|${isoDate(fim)}`;
+      opt.value = `${ini.toISOString().slice(0,10)}|${fim.toISOString().slice(0,10)}`;
       opt.textContent = label;
       selSemana.appendChild(opt);
       cur = fim;
@@ -400,8 +344,7 @@ window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
   }
 
   function updateUIByPeriodo(){
-    const p = String(selPeriodo.value);
-    wrapSemana.style.display = (p==="SEMANAL") ? "" : "none";
+    wrapSemana.style.display = (String(selPeriodo.value)==="SEMANAL") ? "" : "none";
   }
 
   function getRange(){
@@ -416,135 +359,80 @@ window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
       const ini = `${ano}-${pad2(mes)}-01`;
       const ld = lastDayOfMonth(ano, mes);
       const fim = `${ano}-${pad2(mes)}-${pad2(ld)}`;
-      const fimPlus = isoDate(addDays(new Date(fim+"T00:00:00"), 1));
+      const fimPlus = addDays(new Date(fim+"T00:00:00"), 1).toISOString().slice(0,10);
       return { ini, fim: fimPlus };
     }
-    // semanal
     const v = String(selSemana.value || "");
     const parts = v.split("|");
     const ini = parts[0] || `${ano}-${pad2(mes)}-01`;
-    const fim = parts[1] || isoDate(addDays(new Date(ini+"T00:00:00"),7));
+    const fim = parts[1] || addDays(new Date(ini+"T00:00:00"),7).toISOString().slice(0,10);
     return { ini, fim };
   }
 
-  // ===== CRUD =====
-  async function fetchAllWithin(ini, fim){
-    // usa select('*') para não quebrar com nomes de coluna diferentes
-    // tenta filtrar por coluna "data" se existir; senão usa created_at
-    const { data: sample, error: errSample } = await sb.from("caixa").select("*").limit(1);
-    if (errSample) throw errSample;
-
-    const dateCol = pickCol(sample?.[0], ["data","data_lancamento","data_mov","dia"]);
-    const createdCol = pickCol(sample?.[0], ["created_at","criado_em","createdAt"]);
-
-    let q = sb.from("caixa").select("*");
-    if (dateCol){
-      q = q.gte(dateCol, ini).lt(dateCol, fim);
-      q = q.order(dateCol, {ascending:true});
-    } else if (createdCol){
-      q = q.gte(createdCol, ini).lt(createdCol, fim);
-      q = q.order(createdCol, {ascending:true});
-    } else {
-      q = q.order("id", {ascending:true});
-    }
-
-    const { data, error } = await q;
+  // ===== CRUD (schema correto: data, tipo, descricao, valor, obs) =====
+  async function fetchWithin(ini, fim){
+    const { data, error } = await sb
+      .from("caixa")
+      .select("*")
+      .gte("data", ini)
+      .lt("data", fim)
+      .order("data", {ascending:true});
     if (error) throw error;
-    return { rows: data || [], dateCol, createdCol };
+    return data || [];
   }
 
   async function sumBefore(ini){
-    // saldo anterior: soma de tudo antes do início (limitado ao próprio ano para não ficar pesado)
     const ano = String(ini).slice(0,4);
     const iniAno = `${ano}-01-01`;
-
-    const { data: sample } = await sb.from("caixa").select("*").limit(1);
-    const dateCol = pickCol(sample?.[0], ["data","data_lancamento","data_mov","dia"]);
-    const createdCol = pickCol(sample?.[0], ["created_at","criado_em","createdAt"]);
-
-    let q = sb.from("caixa").select("*");
-    if (dateCol){
-      q = q.gte(dateCol, iniAno).lt(dateCol, ini);
-      q = q.order(dateCol, {ascending:true});
-    } else if (createdCol){
-      q = q.gte(createdCol, iniAno).lt(createdCol, ini);
-      q = q.order(createdCol, {ascending:true});
-    } else {
-      q = q.limit(0);
-    }
-
-    const { data, error } = await q;
+    const { data, error } = await sb
+      .from("caixa")
+      .select("*")
+      .gte("data", iniAno)
+      .lt("data", ini)
+      .order("data", {ascending:true});
     if (error) throw error;
 
     let total = 0;
-    (data || []).forEach(r => total += getSignedValue(r));
+    (data || []).forEach(r=>{
+      const tipo = String(r.tipo || "").toUpperCase();
+      const v = Number(r.valor || 0);
+      total += (tipo === "DESPESA") ? -Math.abs(v) : Math.abs(v);
+    });
     return total;
   }
 
-  function render(rows, cols){
+  function render(rows){
     tbody.innerHTML = "";
-
-    // detect colunas comuns (sem travar)
-    const idCol   = pickCol(rows?.[0], ["id","uuid","ID"]);
-    const dataCol = cols.dateCol || pickCol(rows?.[0], ["data","data_lancamento","data_mov","dia"]);
-    const horaCol = pickCol(rows?.[0], ["hora","horario","time","hora_lancamento"]);
-    const createdCol = cols.createdCol || pickCol(rows?.[0], ["created_at","criado_em","createdAt"]);
-    const tipoCol = pickCol(rows?.[0], ["tipo","categoria","kind"]);
-    const descCol = pickCol(rows?.[0], ["descricao","descrição","descricao_texto","desc"]);
-    const obsCol  = pickCol(rows?.[0], ["obs","observacao","observação","nota","notas"]);
-    const origemCol = pickCol(rows?.[0], ["origem","source"]);
-    const valorCol = pickCol(rows?.[0], ["valor","value","signed","valor_mov"]);
-    const receitaCol = pickCol(rows?.[0], ["receita","entrada"]);
-    const despesaCol = pickCol(rows?.[0], ["despesa","saida"]);
-
     let saldo = window.__saldoAnterior || 0;
     let saldoPeriodo = 0;
 
     window.__printRows = [];
 
-    rows.forEach((r) => {
+    rows.forEach((r)=>{
       const tr = document.createElement("tr");
 
-      const dt = dataCol ? r[dataCol] : (createdCol ? r[createdCol] : null);
-      const hr = horaCol ? r[horaCol] : (createdCol ? r[createdCol] : null);
+      const tipo = String(r.tipo || "").toUpperCase();
+      const v = Number(r.valor || 0);
+      const signed = (tipo === "DESPESA") ? -Math.abs(v) : Math.abs(v);
 
-      const signed = getSignedValue(r);
+      const receita = (tipo === "RECEITA") ? Math.abs(v) : 0;
+      const despesa = (tipo === "DESPESA") ? Math.abs(v) : 0;
+
       saldo += signed;
       saldoPeriodo += signed;
-
-      const tipo = String((tipoCol ? r[tipoCol] : "") || "").toUpperCase();
-      const isRec = (tipo === "RECEITA") || (signed >= 0);
-      const isDesp = (tipo === "DESPESA") || (signed < 0);
-
-      const receita = isRec ? Math.abs(signed) : 0;
-      const despesa = isDesp ? Math.abs(signed) : 0;
-
-      const mensal = isMensalidade(r);
 
       // DATA
       const tdData = document.createElement("td");
       tdData.className = "col-data";
-      tdData.textContent = isoDate(dt) ? new Date(isoDate(dt)+"T00:00:00").toLocaleDateString("pt-BR") : "";
+      tdData.textContent = toBR(r.data);
       tr.appendChild(tdData);
-
-      // TIPO (editável)
-      const tdTipo = document.createElement("td");
-      tdTipo.className = "col-tipo";
-      const sel = document.createElement("select");
-      sel.innerHTML = `<option value="RECEITA">RECEITA</option><option value="DESPESA">DESPESA</option>`;
-      sel.value = (tipo === "DESPESA") ? "DESPESA" : "RECEITA";
-      if (mensal) { sel.disabled = true; sel.classList.add("readonly"); }
-      tdTipo.appendChild(sel);
-      tr.appendChild(tdTipo);
 
       // DESCRIÇÃO (editável)
       const tdDesc = document.createElement("td");
       tdDesc.className = "left col-desc";
       const inD = document.createElement("input");
       inD.type = "text";
-      inD.value = String((descCol ? r[descCol] : "") || "");
-      inD.style.width = "100%";
-      if (mensal) { inD.disabled = true; inD.classList.add("readonly"); }
+      inD.value = String(r.descricao || "");
       tdDesc.appendChild(inD);
       tr.appendChild(tdDesc);
 
@@ -553,9 +441,7 @@ window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
       tdObs.className = "left col-obs";
       const inO = document.createElement("input");
       inO.type = "text";
-      inO.value = String((obsCol ? r[obsCol] : "") || "");
-      inO.style.width = "100%";
-      if (mensal) { inO.disabled = true; inO.classList.add("readonly"); }
+      inO.value = String(r.obs || "");
       tdObs.appendChild(inO);
       tr.appendChild(tdObs);
 
@@ -580,84 +466,52 @@ window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
       // AÇÕES
       const tdA = document.createElement("td");
       tdA.className = "no-print col-acoes";
-      const btnDel = document.createElement("button");
-      btnDel.className = "btn btn-vermelho";
-      btnDel.textContent = "EXCLUIR";
-      if (mensal || !idCol) btnDel.disabled = true;
 
-      tdA.appendChild(btnDel);
+      const btnSalvar = document.createElement("button");
+      btnSalvar.className = "btn btn-azul";
+      btnSalvar.textContent = "EDITAR";
+
+      const btnExcluir = document.createElement("button");
+      btnExcluir.className = "btn btn-vermelho";
+      btnExcluir.textContent = "EXCLUIR";
+      btnExcluir.style.marginLeft = "6px";
+
+      tdA.appendChild(btnSalvar);
+      tdA.appendChild(btnExcluir);
       tr.appendChild(tdA);
 
-      // autosave (on change / blur) — não salva mensalidade aqui
-      async function autosave(){
-        if (mensal || !idCol) return;
-        const id = r[idCol];
-        const novoTipo = sel.value;
-        const novoDesc = inD.value || "";
-        const novoObs  = inO.value || "";
+      btnSalvar.addEventListener("click", async ()=>{
+        try{
+          btnSalvar.disabled = true;
+          status2.textContent = "";
 
-        // valor é derivado do tipo + valor antigo (mantém magnitude)
-        const mag = Math.abs(getSignedValue(r) || 0);
-        const novoSigned = (novoTipo === "DESPESA") ? -mag : mag;
+          const novaDesc = (inD.value || "").toUpperCase();
+          const novaObs  = (inO.value || "").toUpperCase();
 
-        // atualiza usando os nomes reais das colunas (evita erro 400)
-        const payload = {};
-        payload[(tipoCol || "tipo")] = novoTipo;
-        payload[(descCol || "descricao")] = novoDesc;
-        payload[(obsCol  || "obs")] = novoObs;
+          const { error } = await sb
+            .from("caixa")
+            .update({ descricao: novaDesc, obs: novaObs })
+            .eq("id", r.id);
 
-        if (valorCol) {
-          payload[valorCol] = novoSigned;
-        } else {
-          // tenta padrão
-          payload["valor"] = novoSigned;
-        }
-
-        // se existir colunas separadas, preenche também
-        if (receitaCol) payload[receitaCol] = (novoTipo==="RECEITA") ? mag : 0;
-        if (despesaCol) payload[despesaCol] = (novoTipo==="DESPESA") ? mag : 0;
-
-        // tenta salvar; se falhar, cai no modo "tentativas" (compatibilidade)
-        let ok = false, lastErr = null;
-
-        {
-          const { error } = await sb.from("caixa").update(payload).eq(idCol, id);
-          if (!error) ok = true;
-          else lastErr = error;
-        }
-
-        if (!ok){
-          const payloads = [
-            { tipo: novoTipo, descricao: novoDesc, obs: novoObs, valor: novoSigned },
-            { tipo: novoTipo, descricao: novoDesc, obs: novoObs,
-              receita: (novoTipo==="RECEITA") ? mag : 0,
-              despesa: (novoTipo==="DESPESA") ? mag : 0
-            }
-          ];
-          for (const p of payloads){
-            const { error } = await sb.from("caixa").update(p).eq(idCol, id);
-            if (!error){ ok=true; break; }
-            lastErr = error;
+          if (error){
+            alert("ERRO ao editar (ver console).");
+            console.error(error);
+            return;
           }
+          status2.textContent = "Editado.";
+          setTimeout(()=>{ if(status2.textContent==="Editado.") status2.textContent=""; }, 800);
+        } finally {
+          btnSalvar.disabled = false;
         }
-        if (!ok){
-          console.warn("Autosave falhou:", lastErr);
-          status2.textContent = "Aviso: não consegui salvar uma edição (ver console).";
-        } else {
-          status2.textContent = "Salvo.";
-          setTimeout(()=>{ if(status2.textContent==="Salvo.") status2.textContent=""; }, 800);
-        }
-      }
+      });
 
-      sel.addEventListener("change", autosave);
-      inD.addEventListener("blur", autosave);
-      inO.addEventListener("blur", autosave);
-
-      btnDel.addEventListener("click", async ()=>{
-        if (mensal || !idCol) return;
+      btnExcluir.addEventListener("click", async ()=>{
         if (!confirm("Excluir este lançamento?")) return;
-        const id = r[idCol];
-        const { error } = await sb.from("caixa").delete().eq(idCol, id);
+        const { error } = await sb
+          .from("caixa")
+          .delete()
+          .eq("id", r.id);
+
         if (error){
           alert("ERRO ao excluir (ver console).");
           console.error(error);
@@ -666,157 +520,7 @@ window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
         carregar();
       });
 
-      // linha para PDF (sem inputs)
       window.__printRows.push({
         data: tdData.textContent,
-        tipo: sel.value,
-        descricao: inD.value,
-        obs: inO.value,
-        receita: receita ? money(receita) : "",
-        despesa: despesa ? money(despesa) : "",
-        saldo: money(saldo)
-      });
-
-      tbody.appendChild(tr);
-    });
-
-    saldoPeriodoEl.textContent = money(saldoPeriodo);
-    saldoFinalEl.textContent = money(saldo);
-  }
-
-  async function addLancamento(){
-    try{
-      btnAdd.disabled = true;
-      status2.textContent = "";
-
-      const data = inData.value;
-      const hora = inHora.value;
-      const tipo = String(inTipo.value || "RECEITA").toUpperCase();
-      const desc = String(inDesc.value || "").trim();
-      const obs  = String(inObs.value || "").trim();
-      const val  = Number(inValor.value || 0);
-
-      // BLOQUEIO: se Mensalidade do mês estiver zerada, não permitir lançar "MENSALIDADE" no Caixa
-      const anoSel = Number(selAno.value);
-      const mesSel = Number(selMes.value);
-      const descUp = String(desc || "").toUpperCase();
-      if (descUp.includes("MENSALIDADE")){
-        const pagoCount = (window.__mensalidadePagoCount != null) ? Number(window.__mensalidadePagoCount) : await getMensalidadePagoCount(anoSel, mesSel);
-        if (pagoCount === 0){
-          alert("Mensalidade do mês está zerada. Não é permitido lançar MENSALIDADE no Caixa.");
-          return;
-        }
-      }
-
-      if (!data || !hora || !desc || !val){
-        alert("Preencha: DATA, HORA, DESCRIÇÃO e VALOR.");
-        return;
-      }
-
-      const signed = (tipo === "DESPESA") ? -Math.abs(val) : Math.abs(val);
-
-      // tenta inserir com várias possibilidades de nomes de coluna
-      const payloads = [
-        { data, hora, tipo, descricao: desc, obs, valor: signed },
-        { data, horario: hora, tipo, descricao: desc, obs, valor: signed },
-        { data_lancamento: data, hora, tipo, descricao: desc, obs, valor: signed },
-        { data, hora, tipo, descricao: desc, obs, receita: (tipo==="RECEITA")?Math.abs(val):0, despesa: (tipo==="DESPESA")?Math.abs(val):0 },
-        { data_lancamento: data, hora, tipo, descricao: desc, obs, receita: (tipo==="RECEITA")?Math.abs(val):0, despesa: (tipo==="DESPESA")?Math.abs(val):0 }
-      ];
-
-      let ok=false, lastErr=null;
-      for (const p of payloads){
-        const { error } = await sb.from("caixa").insert(p);
-        if (!error){ ok=true; break; }
-        lastErr = error;
-      }
-
-      if (!ok){
-        alert("ERRO ao criar (ver console).");
-        console.error(lastErr);
-        return;
-      }
-
-      // limpa inputs
-      inDesc.value = "";
-      inObs.value = "";
-      inValor.value = "";
-
-      carregar();
-    } finally {
-      btnAdd.disabled = false;
-    }
-  }
-
-  async function carregar(){
-    try{
-      statusEl.textContent = "CARREGANDO...";
-      status2.textContent = "";
-      tbody.innerHTML = "";
-
-      updateUIByPeriodo();
-      const {ini, fim} = getRange();
-
-      // saldo anterior
-      let saldoAnt = 0;
-      try{
-        saldoAnt = await sumBefore(ini);
-      }catch(e){
-        console.warn("Aviso: não consegui calcular saldo anterior.", e);
-        saldoAnt = 0;
-      }
-      window.__saldoAnterior = saldoAnt;
-      saldoAnteriorEl.textContent = money(saldoAnt);
-
-      const data = await fetchAllWithin(ini, fim);
-      let rows = data.rows || [];
-
-      // REGRA: se Mensalidade do mês está zerada, não mostrar lançamentos automáticos "MENSALIDADE" no Caixa
-      const ano = Number(selAno.value);
-      const mes = Number(selMes.value);
-      const pagoCount = await getMensalidadePagoCount(ano, mes);
-      window.__mensalidadePagoCount = pagoCount;
-
-      if (pagoCount === 0){
-        rows = rows.filter(r => !isMensalidade(r));
-      }
-
-      render(rows, data);
-
-      statusEl.textContent = `LISTA CARREGADA. Registros: ${rows.length}` + (pagoCount === 0 ? " (Mensalidade do mês zerada: lançamentos MENSALIDADE ocultos)" : "");
-    }catch(e){
-      console.error(e);
-      statusEl.textContent = "ERRO ao buscar CAIXA (ver console).";
-      alert("ERRO ao buscar CAIXA (ver console).");
-    }
-  }
-
-  // ===== eventos =====
-  btnPdf.addEventListener("click", baixarPDF);
-  btnConsultar.addEventListener("click", carregar);
-  btnAdd.addEventListener("click", addLancamento);
-
-  selPeriodo.addEventListener("change", ()=>{ updateUIByPeriodo(); });
-  selAno.addEventListener("change", ()=>{ /* anual/mensal dependem do ano */ });
-  selMes.addEventListener("change", ()=>{ /* mensal depende do mês */ });
-
-  // init
-  (function init(){
-    buildAnoOptions();
-    buildMesOptions();
-    buildSemanaOptions();
-    updateUIByPeriodo();
-
-    // default inputs
-    const now = new Date();
-    inData.value = isoDate(now);
-    inHora.value = isoTime(now);
-
-    // mês atual
-    selMes.value = String(now.getMonth()+1);
-
-    carregar();
-  })();
-</script>
-</body>
-</html>
+        descricao: inD.value || "",
+        obs: inO.value
