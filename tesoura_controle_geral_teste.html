@@ -2,20 +2,16 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>TESOURA - CONTROLE GERAL</title>
+  <title>TESOURA - CONTROLE GERAL (TESTE)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { margin: 0; font-family: Arial, sans-serif; background: #0b1220; color: #fff; }
-    header { padding: 14px 18px; border-bottom: 2px solid #f97316; display:flex; align-items:center; justify-content:space-between; background:#07101f; }
+    header {
+      padding: 14px 18px; border-bottom: 2px solid #f97316;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      background:#07101f;
+    }
     header h1 { margin: 0; font-size: 16px; letter-spacing: .5px; color:#f97316; text-transform:uppercase; font-weight:900; }
-
-    .wrap { max-width: 1100px; margin: 18px auto; padding: 0 12px; }
-    .painel { background:#020617; border:1px solid #0f172a; border-radius:12px; padding:12px; margin-bottom:14px; box-shadow:0 6px 16px rgba(0,0,0,.35); }
-    .painel h2 { margin:0 0 10px; color:#f97316; font-size:14px; letter-spacing:.5px; text-transform:uppercase; font-weight:900; }
-    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-
-    select { border-radius:10px; border:1px solid #0f172a; padding:10px 12px; font-weight:900; text-transform:uppercase; font-size:12px; background:#0b1220; color:#fff; min-width:140px; }
-    .status { margin-top: 8px; font-size: 12px; color: #9ca3af; }
 
     .btn {
       border: 0;
@@ -23,13 +19,26 @@
       padding: 10px 14px;
       font-weight: 900;
       text-transform: uppercase;
-      font-size: 12px;
       cursor: pointer;
-      color:#062018;
-      background:#60a5fa;
+      background: #f97316;
+      color: #111827;
+      box-shadow: 0 6px 16px rgba(0,0,0,.25);
     }
-    .btn:hover { filter: brightness(1.05); }
     .btn:active { transform: translateY(1px); }
+
+    .wrap { max-width: 1100px; margin: 18px auto; padding: 0 12px; }
+    .painel { background:#020617; border:1px solid #0f172a; border-radius:12px; padding:12px; margin-bottom:14px; box-shadow:0 6px 16px rgba(0,0,0,.35); }
+    .painel h2 { margin:0 0 10px; color:#f97316; font-size:14px; letter-spacing:.5px; text-transform:uppercase; font-weight:900; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    select { border-radius:10px; border:1px solid #0f172a; padding:10px 12px; font-weight:900; text-transform:uppercase; font-size:12px; background:#0b1220; color:#fff; min-width:140px; }
+    .status { margin-top: 8px; font-size: 12px; color: #9ca3af; }
+
+    /* wrapper do scroll horizontal */
+    #wrapTabela{
+      overflow: auto;
+      padding-bottom: 8px; /* ajuda a “barra de correr” ficar completa */
+      border-radius: 12px;
+    }
 
     table { border-collapse: collapse; font-size: 12px; width: max-content; min-width: 100%; }
     thead th {
@@ -48,24 +57,23 @@
     .sticky-faltas { position: sticky; left: 140px; z-index:3; background:#020617; }
     thead .sticky-atleta, thead .sticky-faltas { z-index:5; background:#f97316; color:#ffffff; }
 
-    /* 2 linhas verticais no TOTAL FALTAS */
-    .linha-total-faltas {
-      border-left: 3px solid rgba(255,127,39,0.95) !important;
-      border-right: 3px solid rgba(255,127,39,0.95) !important;
+    /* ✅ 2 linhas verticais na coluna TOTAL FALTAS */
+    .faltas-divisoria {
+      border-left: 3px solid rgba(255,255,255,.65) !important;
+      border-right: 3px solid rgba(255,255,255,.65) !important;
     }
 
     .pverde { color:#22c55e; font-weight:900; }
     .pvermelho { color:#ef4444; font-weight:900; }
 
-    /* Impressão em PDF (Chrome: Salvar como PDF) */
+    /* ===== PDF (print) ===== */
     @media print {
-      @page { size: A4 landscape; margin: 10mm; }
-      body { background:#ffffff !important; color:#000 !important; }
-      header, .no-print { display:none !important; }
-      .wrap { max-width: none !important; margin: 0 !important; padding: 0 !important; }
-      .painel { box-shadow:none !important; border:0 !important; }
-      #wrapTabela { overflow: visible !important; }
-      table { font-size: 10px !important; }
+      body { background:#fff; color:#000; }
+      header, .painel#painelFiltro { display:none !important; }
+      .wrap { max-width: none; margin: 0; padding: 0; }
+      .painel { box-shadow:none; border:0; background:#fff; padding:0; margin:0; }
+      #wrapTabela{ overflow: visible !important; }
+      table { width: 100% !important; min-width: 100% !important; }
       thead th { position: static !important; }
       .sticky-atleta, .sticky-faltas { position: static !important; }
     }
@@ -75,20 +83,20 @@
 
 <header>
   <h1>TESOURA - CONTROLE GERAL</h1>
-  <div style="font-size:12px;color:#9ca3af;">(somente visualização)</div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button id="btnPdf" class="btn" title="Salvar em PDF">BAIXAR PDF</button>
+    <div style="font-size:12px;color:#9ca3af;">(somente visualização)</div>
+  </div>
 </header>
 
 <div class="wrap">
-  <div class="painel">
+  <div class="painel" id="painelFiltro">
     <h2>FILTRO</h2>
-
-    <div class="row no-print">
+    <div class="row">
       <div style="display:flex;align-items:center;gap:8px;">
         <label style="font-weight:900;text-transform:uppercase;">ANO:</label>
         <select id="selAno"></select>
       </div>
-
-      <button id="btnPdf" class="btn" title="Salvar em PDF">BAIXAR PDF</button>
     </div>
 
     <p style="margin:10px 0 0;font-size:12px;color:#cbd5e1;">
@@ -99,7 +107,7 @@
     <div class="status" id="status">A lista carrega automaticamente.</div>
   </div>
 
-  <div class="painel" id="wrapTabela" style="overflow-x:auto;">
+  <div class="painel" id="wrapTabela">
     <h2>JOGADORES X DOMINGOS</h2>
     <table id="tblControle">
       <thead id="theadControle"></thead>
@@ -111,232 +119,246 @@
 <script src="app/js/config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const CFG = window.TESOURA_CONFIG || {};
-  const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
-  const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+  // trava para não inicializar 2x no iframe
+  if (window.__TESOURA_INIT_CONTROLE_GERAL__) {
+    console.log("CONTROLE GERAL já inicializado");
+  } else {
+    window.__TESOURA_INIT_CONTROLE_GERAL__ = true;
 
-  const selAno = document.getElementById("selAno");
-  const statusEl = document.getElementById("status");
-  const theadControle = document.getElementById("theadControle");
-  const tbodyControle = document.getElementById("tbodyControle");
+    const CFG = window.TESOURA_CONFIG || {};
+    const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
+    const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+    const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-  const hoje = new Date();
-  const anoAtual = hoje.getFullYear();
-  for (let a = anoAtual - 1; a <= anoAtual + 1; a++) {
-    const opt = document.createElement("option");
-    opt.value = a;
-    opt.textContent = a;
-    if (a === anoAtual) opt.selected = true;
-    selAno.appendChild(opt);
-  }
+    const selAno = document.getElementById("selAno");
+    const statusEl = document.getElementById("status");
+    const theadControle = document.getElementById("theadControle");
+    const tbodyControle = document.getElementById("tbodyControle");
+    const btnPdf = document.getElementById("btnPdf");
 
-  document.getElementById("btnPdf")?.addEventListener("click", () => {
-    // Você escolhe "Salvar como PDF"
-    window.print();
-  });
+    btnPdf.addEventListener("click", ()=> window.print());
 
-  const nomesMes = {
-    1:"JANEIRO",2:"FEVEREIRO",3:"MARÇO",4:"ABRIL",5:"MAIO",6:"JUNHO",
-    7:"JULHO",8:"AGOSTO",9:"SETEMBRO",10:"OUTUBRO",11:"NOVEMBRO",12:"DEZEMBRO"
-  };
+    const hoje = new Date();
+    const anoAtual = hoje.getFullYear();
+    for (let a = anoAtual - 1; a <= anoAtual + 1; a++) {
+      const opt = document.createElement("option");
+      opt.value = a;
+      opt.textContent = a;
+      if (a === anoAtual) opt.selected = true;
+      selAno.appendChild(opt);
+    }
 
-  function getDomingosMes(ano, mes) {
-    const domingos = [];
-    const dt = new Date(ano, mes - 1, 1);
-    while (dt.getMonth() === mes - 1) {
-      if (dt.getDay() === 0) {
-        const anoStr = dt.getFullYear();
-        const mesStr = String(dt.getMonth() + 1).padStart(2, "0");
-        const diaStr = String(dt.getDate()).padStart(2, "0");
-        domingos.push({ iso: `${anoStr}-${mesStr}-${diaStr}`, rotulo: `${diaStr}/${mesStr}` });
+    const nomesMes = {
+      1:"JANEIRO",2:"FEVEREIRO",3:"MARÇO",4:"ABRIL",5:"MAIO",6:"JUNHO",
+      7:"JULHO",8:"AGOSTO",9:"SETEMBRO",10:"OUTUBRO",11:"NOVEMBRO",12:"DEZEMBRO"
+    };
+
+    const norm = (s)=> String(s || "").trim().toUpperCase();
+
+    function getDomingosMes(ano, mes) {
+      const domingos = [];
+      const dt = new Date(ano, mes - 1, 1);
+      while (dt.getMonth() === mes - 1) {
+        if (dt.getDay() === 0) {
+          const anoStr = dt.getFullYear();
+          const mesStr = String(dt.getMonth() + 1).padStart(2, "0");
+          const diaStr = String(dt.getDate()).padStart(2, "0");
+          domingos.push({ iso: `${anoStr}-${mesStr}-${diaStr}`, rotulo: `${diaStr}/${mesStr}` });
+        }
+        dt.setDate(dt.getDate() + 1);
       }
-      dt.setDate(dt.getDate() + 1);
+      return domingos;
     }
-    return domingos;
-  }
 
-  // ✅ AGORA: só 3 meses (mês atual + 2 anteriores)
-  // Exemplo em janeiro: 11/ano anterior, 12/ano anterior, 01/ano atual
-  function buildMesesOrdem(anoSelecionado) {
-    const now = new Date();
-    const anoHoje = now.getFullYear();
-    const mesHoje = now.getMonth() + 1;
+    function buildMesesOrdem(anoSelecionado) {
+      const agora = new Date();
+      const anoAgora = agora.getFullYear();
+      const mesAgora = agora.getMonth() + 1;
 
-    let baseAno = (anoSelecionado === anoHoje) ? anoHoje : anoSelecionado;
-    let baseMes = (anoSelecionado === anoHoje) ? mesHoje : 12;
-
-    const meses = [];
-    for (let i = 2; i >= 0; i--) {
-      let mm = baseMes - i;
-      let aa = baseAno;
-      if (mm <= 0) { aa = baseAno - 1; mm = 12 + mm; }
-      meses.push({ ano: aa, mes: mm });
+      const meses = [];
+      // se estamos em jan/fev e selecionou o ano atual: inclui nov/dez do ano anterior
+      if (anoSelecionado === anoAgora && mesAgora <= 2) {
+        meses.push({ ano: anoAgora - 1, mes: 11 });
+        meses.push({ ano: anoAgora - 1, mes: 12 });
+      }
+      for (let m = 1; m <= 12; m++) meses.push({ ano: anoSelecionado, mes: m });
+      return meses;
     }
-    return meses;
-  }
 
-  function toBool(v){
-    if (v === true) return true;
-    if (v === 1) return true;
-    if (v === "1") return true;
-    if (typeof v === "string" && v.trim().toUpperCase() === "TRUE") return true;
-    return false;
-  }
+    // ✅ rola automaticamente para mostrar: mês atual + 2 anteriores (ex.: em JAN mostra NOV/DEZ/JAN)
+    function scrollUltimos3Meses() {
+      const wrap = document.getElementById("wrapTabela");
+      if (!wrap) return;
 
-  async function carregarLista() {
-    try {
-      statusEl.textContent = "CARREGANDO...";
-      theadControle.innerHTML = "";
-      tbodyControle.innerHTML = "";
+      const agora = new Date();
+      let start = new Date(agora.getFullYear(), agora.getMonth(), 1);
+      start.setMonth(start.getMonth() - 2); // 2 meses atrás
+      const alvoAno = start.getFullYear();
+      const alvoMes = start.getMonth() + 1;
 
-      const anoSel = Number(selAno.value);
+      const doms = getDomingosMes(alvoAno, alvoMes);
+      if (!doms.length) return;
 
-      const mesesOrdem = buildMesesOrdem(anoSel);
-      const domingosMes = mesesOrdem.map(mm => getDomingosMes(mm.ano, mm.mes));
+      const th = wrap.querySelector(`th[data-iso="${doms[0].iso}"]`);
+      if (!th) return;
 
-      // Cabeçalho
-      const trMeses = document.createElement("tr");
-      const trDias = document.createElement("tr");
-
-      const thAtletaSpan = document.createElement("th");
-      thAtletaSpan.textContent = "ATLETA";
-      thAtletaSpan.rowSpan = 2;
-      thAtletaSpan.className = "col-atleta sticky-atleta";
-      trMeses.appendChild(thAtletaSpan);
-
-      const thFaltasTop = document.createElement("th");
-      thFaltasTop.textContent = "TOTAL";
-      thFaltasTop.className = "col-faltas sticky-faltas linha-total-faltas";
-      trMeses.appendChild(thFaltasTop);
-
-      const thFaltasBottom = document.createElement("th");
-      thFaltasBottom.textContent = "FALTAS";
-      thFaltasBottom.className = "col-faltas sticky-faltas linha-total-faltas";
-      trDias.appendChild(thFaltasBottom);
-
-      mesesOrdem.forEach((mm, idx) => {
-        const listaDom = domingosMes[idx] || [];
-        const thMes = document.createElement("th");
-        thMes.colSpan = Math.max(1, listaDom.length);
-        const nomeMes = nomesMes[mm.mes] || `MÊS ${mm.mes}`;
-        thMes.textContent = `MÊS ${String(mm.mes).padStart(2,"0")} - ${nomeMes} - ${mm.ano}`;
-        trMeses.appendChild(thMes);
-
-        listaDom.forEach(d => {
-          const thDia = document.createElement("th");
-          thDia.textContent = d.rotulo;
-          thDia.dataset.iso = d.iso;
-          trDias.appendChild(thDia);
+      // faz depois de renderizar tudo (mais confiável)
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{
+          wrap.scrollLeft = Math.max(0, th.offsetLeft - 10);
         });
       });
+    }
 
-      theadControle.appendChild(trMeses);
-      theadControle.appendChild(trDias);
+    async function carregarLista() {
+      try {
+        statusEl.textContent = "CARREGANDO...";
+        theadControle.innerHTML = "";
+        tbodyControle.innerHTML = "";
 
-      // Intervalo de busca (somente os 3 meses exibidos)
-      const iniIso = `${mesesOrdem[0].ano}-${String(mesesOrdem[0].mes).padStart(2, "0")}-01`;
-      const last = mesesOrdem[mesesOrdem.length - 1];
-      const fimIso = `${last.ano}-${String(last.mes).padStart(2, "0")}-31`;
+        const ano = Number(selAno.value);
+        const mesesOrdem = buildMesesOrdem(ano);
+        const domingosMes = mesesOrdem.map(mm => getDomingosMes(mm.ano, mm.mes));
 
-      // Jogadores
-      const { data: jogadores, error: errJog } = await sb
-        .from("jogadores")
-        .select("apelido")
-        .order("apelido", { ascending: true });
-      if (errJog) return (statusEl.textContent = "ERRO AO BUSCAR JOGADORES.");
+        const trMeses = document.createElement("tr");
+        const trDias = document.createElement("tr");
 
-      // Presenças
-      const { data: pres, error: errPres } = await sb
-        .from("presencas")
-        .select("data_jogo, apelido, presenca, faltoso, obs")
-        .gte("data_jogo", iniIso)
-        .lte("data_jogo", fimIso);
-      if (errPres) return (statusEl.textContent = "ERRO AO BUSCAR PRESENÇAS.");
+        const thAtletaSpan = document.createElement("th");
+        thAtletaSpan.textContent = "ATLETA";
+        thAtletaSpan.rowSpan = 2;
+        thAtletaSpan.className = "col-atleta sticky-atleta";
+        trMeses.appendChild(thAtletaSpan);
 
-      const mapaPres = {};
-      (pres || []).forEach(p => { mapaPres[`${p.apelido}::${p.data_jogo}`] = p; });
+        const thFaltasTop = document.createElement("th");
+        thFaltasTop.textContent = "TOTAL";
+        thFaltasTop.className = "col-faltas sticky-faltas faltas-divisoria";
+        trMeses.appendChild(thFaltasTop);
 
-      // Escalação (1º / 2º)
-      const { data: esc, error: errEsc } = await sb
-        .from("escalacao")
-        .select("data_jogo, apelido, tempo")
-        .gte("data_jogo", iniIso)
-        .lte("data_jogo", fimIso);
-      if (errEsc) return (statusEl.textContent = "ERRO AO BUSCAR ESCALAÇÃO.");
-
-      const mapaEsc = {};
-      (esc || []).forEach(e => {
-        const key = `${e.apelido}::${e.data_jogo}`;
-        if (!mapaEsc[key]) mapaEsc[key] = new Set();
-        if (e.tempo !== null && e.tempo !== undefined && e.tempo !== "") mapaEsc[key].add(e.tempo);
-      });
-
-      // Linhas
-      (jogadores || []).forEach(j => {
-        const apelido = j.apelido;
-        const tr = document.createElement("tr");
-
-        const tdAtleta = document.createElement("td");
-        tdAtleta.textContent = (apelido || "").toUpperCase();
-        tdAtleta.className = "col-atleta sticky-atleta";
-        tr.appendChild(tdAtleta);
-
-        const tdFaltas = document.createElement("td");
-        tdFaltas.textContent = "0";
-        tdFaltas.className = "col-faltas sticky-faltas linha-total-faltas";
-        tr.appendChild(tdFaltas);
-
-        let totalFaltas = 0;
+        const thFaltasBottom = document.createElement("th");
+        thFaltasBottom.textContent = "FALTAS";
+        thFaltasBottom.className = "col-faltas sticky-faltas faltas-divisoria";
+        trDias.appendChild(thFaltasBottom);
 
         mesesOrdem.forEach((mm, idx) => {
           const listaDom = domingosMes[idx] || [];
+          const thMes = document.createElement("th");
+          thMes.colSpan = Math.max(1, listaDom.length);
+          const nomeMes = nomesMes[mm.mes] || `MÊS ${mm.mes}`;
+          thMes.textContent = `MÊS ${String(mm.mes).padStart(2,"0")} - ${nomeMes} - ${mm.ano}`;
+          trMeses.appendChild(thMes);
+
           listaDom.forEach(d => {
-            const td = document.createElement("td");
-            const key = `${apelido}::${d.iso}`;
-            const presDia = mapaPres[key];
-
-            let valor = "";
-
-            if (presDia) {
-              const obs = String(presDia.obs || "").trim().toUpperCase();
-
-              // compatível com versões antigas
-              const isFalt = toBool(presDia.faltoso) || obs === "F";
-              const isPres = toBool(presDia.presenca) || obs === "C";
-
-              if (isFalt) {
-                valor = "F";
-                totalFaltas += 1;
-              } else if (isPres) {
-                const setTempos = mapaEsc[key] || new Set();
-                const t1 = setTempos.has(1) || setTempos.has("1");
-                const t2 = setTempos.has(2) || setTempos.has("2");
-                if (t1 && t2) valor = "1-2";
-                else if (t2) valor = "2";
-                else if (t1) valor = "1";
-                else valor = "C";
-              }
-            }
-
-            td.textContent = valor;
-            tr.appendChild(td);
+            const thDia = document.createElement("th");
+            thDia.textContent = d.rotulo;
+            thDia.dataset.iso = d.iso;
+            trDias.appendChild(thDia);
           });
         });
 
-        tdFaltas.textContent = String(totalFaltas);
-        tbodyControle.appendChild(tr);
-      });
+        theadControle.appendChild(trMeses);
+        theadControle.appendChild(trDias);
 
-      statusEl.textContent = "LISTA CARREGADA.";
-    } catch (e) {
-      console.error(e);
-      statusEl.textContent = "ERRO (ver Console).";
+        const { data: jogadores, error: errJog } = await sb
+          .from("jogadores")
+          .select("apelido")
+          .order("apelido", { ascending: true });
+
+        if (errJog) { statusEl.textContent = "ERRO AO BUSCAR JOGADORES."; return; }
+
+        const firstMM = mesesOrdem[0];
+        const iniIso = `${firstMM.ano}-${String(firstMM.mes).padStart(2, "0")}-01`;
+        const fimIso = `${ano}-12-31`;
+
+        const { data: pres, error: errPres } = await sb
+          .from("presencas")
+          .select("data_jogo, apelido, presenca, faltoso")
+          .gte("data_jogo", iniIso)
+          .lte("data_jogo", fimIso);
+
+        if (errPres) { statusEl.textContent = "ERRO AO BUSCAR PRESENÇAS."; return; }
+
+        const mapaPres = {};
+        (pres || []).forEach(p => {
+          mapaPres[`${norm(p.apelido)}::${String(p.data_jogo).slice(0,10)}`] = p;
+        });
+
+        const { data: esc, error: errEsc } = await sb
+          .from("escalacao")
+          .select("data_jogo, apelido, tempo")
+          .gte("data_jogo", iniIso)
+          .lte("data_jogo", fimIso);
+
+        if (errEsc) { statusEl.textContent = "ERRO AO BUSCAR ESCALAÇÃO."; return; }
+
+        const mapaEsc = {};
+        (esc || []).forEach(e => {
+          const key = `${norm(e.apelido)}::${String(e.data_jogo).slice(0,10)}`;
+          if (!mapaEsc[key]) mapaEsc[key] = new Set();
+          if (e.tempo !== null && e.tempo !== undefined && e.tempo !== "") mapaEsc[key].add(String(e.tempo));
+        });
+
+        (jogadores || []).forEach(j => {
+          const apelido = norm(j.apelido);
+          const tr = document.createElement("tr");
+
+          const tdAtleta = document.createElement("td");
+          tdAtleta.textContent = apelido;
+          tdAtleta.className = "col-atleta sticky-atleta";
+          tr.appendChild(tdAtleta);
+
+          const tdFaltas = document.createElement("td");
+          tdFaltas.textContent = "0";
+          tdFaltas.className = "col-faltas sticky-faltas faltas-divisoria";
+          tr.appendChild(tdFaltas);
+
+          let totalFaltas = 0;
+
+          mesesOrdem.forEach((mm, idx) => {
+            const listaDom = domingosMes[idx] || [];
+            listaDom.forEach(d => {
+              const td = document.createElement("td");
+              const key = `${apelido}::${d.iso}`;
+              const presDia = mapaPres[key];
+              let valor = "";
+
+              if (presDia) {
+                const presencaVal = presDia.presenca === true || presDia.presenca === "true" || presDia.presenca === 1 || presDia.presenca === "1";
+                const faltosoVal = presDia.faltoso === true || presDia.faltoso === "true" || presDia.faltoso === 1 || presDia.faltoso === "1";
+
+                if (presencaVal) {
+                  const setTempos = mapaEsc[key] || new Set();
+                  const t1 = setTempos.has("1");
+                  const t2 = setTempos.has("2");
+                  if (t1 && t2) valor = "1-2";
+                  else if (t2) valor = "2";
+                  else if (t1) valor = "1";
+                  else valor = "C";
+                } else if (faltosoVal) {
+                  valor = "F";
+                  totalFaltas += 1;
+                }
+              }
+
+              td.textContent = valor;
+              tr.appendChild(td);
+            });
+          });
+
+          tdFaltas.textContent = String(totalFaltas);
+          tbodyControle.appendChild(tr);
+        });
+
+        statusEl.textContent = "LISTA CARREGADA.";
+        scrollUltimos3Meses();
+      } catch (e) {
+        console.error(e);
+        statusEl.textContent = "ERRO (ver Console).";
+      }
     }
-  }
 
-  selAno.addEventListener("change", carregarLista);
-  window.addEventListener("load", carregarLista);
+    selAno.addEventListener("change", carregarLista);
+    window.addEventListener("load", carregarLista);
+  }
 </script>
 </body>
 </html>
