@@ -1,746 +1,637 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
+  <title>TESOURA - CAIXA (TESTE)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TESOURA - CAIXA</title>
-
-  <!-- Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <style>
-    :root{
-      --bg:#0b1220;
-      --panel:#0f172a;
-      --panel2:#0b1020;
-      --border:#1f2937;
-      --orange:#ff7f27;
-      --white:#ffffff;
-      --muted:#a3a3a3;
-      --green:#22c55e;
-      --red:#ef4444;
-      --blue:#38bdf8;
-      --btnDark:#111827;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Arial, sans-serif;background:var(--bg);color:var(--white);}
-    header{
-      padding:14px 18px;
-      border-bottom:2px solid var(--orange);
-      display:flex;align-items:center;justify-content:space-between;
-      background:#07101f;
-    }
-    header h1{margin:0;font-size:16px;letter-spacing:.5px;color:var(--orange);text-transform:uppercase;font-weight:900;}
-    .wrap{width:98vw;max-width:1600px;margin:18px auto;padding:0 10px;}
-    .panel{
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:14px;
-      padding:14px;
-      box-shadow:0 6px 16px rgba(0,0,0,.35);
-      margin-bottom:14px;
-    }
-    .panel h2{
-      margin:0 0 10px 0;
-      color:var(--orange);
-      font-size:14px;
-      text-transform:uppercase;
-      letter-spacing:.5px;
-      font-weight:900;
-    }
-    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:end;}
-    label{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:var(--white);}
-    select,input[type="date"],input[type="text"],input[type="number"]{
-      height:38px;
-      border-radius:10px;
-      border:1px solid var(--border);
-      padding:8px 10px;
-      background:var(--bg);
-      color:var(--white);
-      font-weight:700;
-      outline:none;
-    }
-    input[type="text"]{min-width:220px}
-    .w-sm{width:140px}
-    .w-md{width:180px}
-    .w-lg{width:320px}
-    .w-obs{width:180px}
-    .btn{
-      height:38px;
-      border:0;
-      border-radius:10px;
-      padding:0 14px;
-      font-weight:900;
-      text-transform:uppercase;
-      cursor:pointer;
-    }
-    .btn-blue{background:var(--blue);color:#031019;}
-    .btn-orange{background:var(--orange);color:#111827;}
-    .btn-dark{background:var(--btnDark);color:var(--white);border:1px solid var(--border);}
-    .btn:disabled{opacity:.5;cursor:not-allowed}
-    .status{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.4}
-    .totais{margin-top:8px;font-size:12px;color:var(--white);font-weight:900}
-    .totais span{color:var(--muted);font-weight:700}
-    .totais b{color:var(--white)}
-    .table-wrap{overflow:visible;border-radius:12px;border:1px solid var(--border);}
-    table{border-collapse:collapse;width:100%;table-layout:fixed;}
+    body{margin:0;font-family:Arial,sans-serif;background:#0b1220;color:#fff}
+    header{padding:14px 18px;border-bottom:2px solid #f97316;display:flex;align-items:center;justify-content:space-between;background:#07101f}
+    header h1{margin:0;font-size:16px;letter-spacing:.5px;color:#f97316;text-transform:uppercase;font-weight:900}
+    .wrap{max-width:1100px;margin:18px auto;padding:0 12px}
+    .painel{background:#020617;border:1px solid #0f172a;border-radius:12px;padding:12px;margin-bottom:14px;box-shadow:0 6px 16px rgba(0,0,0,.35)}
+    .painel h2{margin:0 0 10px;color:#f97316;font-size:14px;letter-spacing:.5px;text-transform:uppercase;font-weight:900}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    label{font-size:12px;font-weight:900;text-transform:uppercase;color:#cbd5e1}
+    select,input{border-radius:10px;border:1px solid #0f172a;padding:10px 12px;font-weight:900;text-transform:uppercase;font-size:12px;background:#0b1220;color:#fff;outline:none}
+    input[type="text"]{text-transform:none;font-weight:800}
+    input[type="number"]{text-transform:none;font-weight:900;width:140px}
+    .btn{border:0;border-radius:10px;padding:10px 12px;font-weight:900;text-transform:uppercase;font-size:12px;cursor:pointer}
+    .btn-azul{background:#38bdf8;color:#031019}
+    .btn-laranja{background:#f97316;color:#111827}
+    .btn-vermelho{background:#ef4444;color:#111827}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+    .status{margin-top:8px;font-size:12px;color:#9ca3af}
+
+    .table-wrap{overflow:auto;border-radius:12px;border:1px solid #0f172a}
+    table{border-collapse:collapse;font-size:12px;width:max-content;min-width:1100px}
     thead th{
-      position:sticky;top:0;
-      background:var(--orange);
-      color:#111827;
-      padding:9px 8px;
-      font-size:12px;
-      text-transform:uppercase;
-      letter-spacing:.4px;
-      white-space:nowrap;
-      z-index:2;
+      position:sticky;top:0;background:#f97316;color:#fff;z-index:2;
+      border:1px solid rgba(255,255,255,.45);padding:8px 8px;text-align:center;white-space:nowrap;
+      font-weight:900;text-transform:uppercase
     }
     tbody td{
-      background:var(--panel2);
-      border-top:1px solid rgba(255,255,255,.10);
-      padding:8px 8px;
-      font-size:12px;
-      vertical-align:middle;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
+      border:1px solid rgba(255,255,255,.20);padding:6px 8px;text-align:center;white-space:nowrap;
+      background:#020617
     }
-    tbody tr:hover td{background:#0e1a33}
-    .money-pos{color:var(--green);font-weight:900;}
-    .money-neg{color:var(--red);font-weight:900;}
-    .muted{color:var(--muted)}
-    .pill{
-      display:inline-block;
-      padding:3px 8px;
-      border-radius:999px;
-      font-weight:900;
-      font-size:11px;
-      text-transform:uppercase;
-      letter-spacing:.3px;
-      border:1px solid rgba(255,255,255,.12);
+    tbody tr:nth-child(even) td{background:#061024}
+    td.left{text-align:left}
+    .money{font-weight:900}
+    .pos{color:#22c55e}
+    .neg{color:#ef4444}
+    .saldo{font-weight:900}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-weight:900;font-size:11px}
+    .pill-rec{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.35)}
+    .pill-desp{background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.35)}
+    .readonly{opacity:.65}
+
+    /* impressão/PDF */
+    @media print{
+      header,#painelFiltro,.no-print{display:none !important}
+      body{background:#fff;color:#000}
+      .wrap{max-width:none;margin:0;padding:0}
+      .painel{box-shadow:none;border:0}
+      thead th{position:static !important}
     }
-    .pill-rec{background:rgba(34,197,94,.15);color:var(--green);}
-    .pill-desp{background:rgba(239,68,68,.15);color:var(--red);}
-    .actions{display:flex;gap:8px}
-    .linkbtn{
-      border:1px solid rgba(255,255,255,.16);
-      background:transparent;
-      color:var(--white);
-      height:28px;
-      padding:0 10px;
-      border-radius:10px;
-      font-weight:900;
-      cursor:pointer;
-      text-transform:uppercase;
-      font-size:11px;
-    }
-    .linkbtn.red{border-color:rgba(239,68,68,.5);color:var(--red);}
-    .linkbtn.green{border-color:rgba(34,197,94,.5);color:var(--green);}
-    .note{font-size:12px;color:var(--muted);margin-top:8px}
-    .hidden{display:none !important}
-  
-#obs{width:160px;}
-#descricao{width:260px;}
-</style>
+  </style>
 </head>
-
 <body>
-  <header>
-    <h1>TESOURA - CAIXA</h1>
-    <div style="font-size:12px;color:var(--muted);font-weight:900">(auto-save)</div>
-  </header>
+<header>
+  <h1>TESOURA - CAIXA</h1>
+  <div style="font-size:12px;color:#9ca3af;">(auto-save)</div>
+</header>
 
-  <div class="wrap">
+<div class="wrap">
+  <div class="painel" id="painelFiltro">
+    <h2>FILTRO</h2>
 
-    <div class="panel">
-      <h2>Filtro</h2>
+    <div class="row" style="justify-content:space-between;width:100%;">
       <div class="row">
-        <div>
-          <label>ANO:</label><br/>
-          <select id="fAno" class="w-sm"></select>
+        <div class="row">
+          <label>ANO:</label>
+          <select id="selAno"></select>
         </div>
 
-        <div>
-          <label>MÊS:</label><br/>
-          <select id="fMes" class="w-sm"></select>
+        <div class="row">
+          <label>MÊS:</label>
+          <select id="selMes"></select>
         </div>
 
-        <div>
-          <label>PERÍODO:</label><br/>
-          <select id="fPeriodo" class="w-md">
+        <div class="row">
+          <label>PERÍODO:</label>
+          <select id="selPeriodo">
             <option value="SEMANAL">SEMANAL</option>
             <option value="MENSAL">MENSAL</option>
             <option value="ANUAL">ANUAL</option>
           </select>
         </div>
 
-        <div id="boxSemana">
-          <label>SEMANA:</label><br/>
-          <select id="fSemana" class="w-lg"></select>
+        <div class="row" id="wrapSemana">
+          <label>SEMANA:</label>
+          <select id="selSemana"></select>
         </div>
-
-        <button id="btnConsultar" class="btn btn-blue">CONSULTAR</button>
-        <button id="btnPDF" class="btn btn-orange">BAIXAR PDF</button>
       </div>
 
-      <div class="status" id="statusFiltro"></div>
-      <div class="totais" id="totais"></div>
-      <div class="note">
-        Regra: a visão semanal é <b>segunda → segunda</b>. O saldo é <b>acumulativo</b> (não zera).
+      <div class="row">
+        <button id="btnConsultar" class="btn btn-azul no-print">CONSULTAR</button>
+        <button id="btnPdf" class="btn btn-laranja no-print" title="Salvar em PDF">BAIXAR PDF</button>
       </div>
     </div>
 
-    <div class="panel">
-      <h2>Lançamentos</h2>
+    <div class="status" id="status">Carregando…</div>
 
-      <div class="row" style="margin-bottom:10px;">
-        <div>
-          <label>DATA:</label><br/>
-          <input id="iData" type="date" class="w-md"/>
-        </div>
-
-        <div>
-          <label>TIPO:</label><br/>
-          <select id="iTipo" class="w-md">
-            <option value="RECEITA">RECEITA</option>
-            <option value="DESPESA">DESPESA</option>
-          </select>
-        </div>
-
-        <div>
-          <label>DESCRIÇÃO:</label><br/>
-          <input id="iDescricao" type="text" class="w-lg" placeholder="Ex: bola, arbitragem, doação..."/>
-        </div>
-
-        <div>
-          <label>OBS:</label><br/>
-          <input id="iObs" type="text" class="w-obs" placeholder="Opcional"/>
-        </div>
-
-        <div>
-          <label>VALOR (R$):</label><br/>
-          <input id="iValor" type="number" class="w-sm" step="0.01" min="0"/>
-        </div>
-
-        <button id="btnSalvar" class="btn btn-blue">SALVAR</button>
-        <button id="btnCancelarEdicao" class="btn btn-dark hidden">CANCELAR</button>
-      </div>
-
-      <div class="table-wrap">
-        <table id="tbl">
-          <thead>
-            <tr>
-              <th style="width:110px;">DATA</th>
-              <th style="width:95px;">TIPO</th>
-              <th>DESCRIÇÃO</th>
-              <th style="width:160px;">OBS</th>
-              <th style="width:130px;">RECEITA (R$)</th>
-              <th style="width:130px;">DESPESA (R$)</th>
-              <th style="width:130px;">SALDO (R$)</th>
-              <th style="width:150px;">AÇÕES</th>
-            </tr>
-          </thead>
-          <tbody id="tbody">
-            <tr><td colspan="8" class="muted">Carregando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="note">
-        * Mensalidades aparecem aqui apenas para <b>visualização</b> (não editáveis neste painel).
-      </div>
+    <div style="margin-top:10px;display:flex;gap:14px;flex-wrap:wrap;">
+      <div style="font-size:12px;color:#cbd5e1;"><b>SALDO ANTERIOR:</b> <span id="saldoAnterior">R$ 0,00</span></div>
+      <div style="font-size:12px;color:#cbd5e1;"><b>SALDO NO PERÍODO:</b> <span id="saldoPeriodo">R$ 0,00</span></div>
+      <div style="font-size:12px;color:#cbd5e1;"><b>SALDO FINAL:</b> <span id="saldoFinal">R$ 0,00</span></div>
     </div>
-
   </div>
 
+  <div class="painel">
+    <h2>LANÇAMENTOS</h2>
+
+    <!-- linha de lançamento (sem botão NOVO) -->
+    <div class="row no-print" style="margin-bottom:10px;gap:8px;">
+      <input id="inData" type="date" />
+      <input id="inHora" type="time" />
+      <select id="inTipo">
+        <option value="RECEITA">RECEITA</option>
+        <option value="DESPESA">DESPESA</option>
+      </select>
+      <input id="inDesc" type="text" placeholder="DESCRIÇÃO" style="width:260px;" />
+      <input id="inObs" type="text" placeholder="OBS" style="width:260px;" />
+      <input id="inValor" type="number" step="0.01" placeholder="VALOR (R$)" />
+      <button id="btnAdd" class="btn btn-azul">SALVAR</button>
+    </div>
+
+    <div class="table-wrap" id="wrapTabela">
+      <table>
+        <thead>
+          <tr>
+            <th>DATA</th>
+            <th>HORA</th>
+            <th>TIPO</th>
+            <th>DESCRIÇÃO</th>
+            <th>OBS</th>
+            <th>RECEITA (R$)</th>
+            <th>DESPESA (R$)</th>
+            <th>SALDO (R$)</th>
+            <th class="no-print">AÇÕES</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="status" id="status2"></div>
+  </div>
+</div>
+
+<script src="app/core/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* =========================================================
-   IMPORTANTE: cole aqui as suas credenciais (as mesmas dos outros painéis)
-   ========================================================= */
-const SUPABASE_URL = "__COLE_AQUI_SUA_SUPABASE_URL__";
-const SUPABASE_ANON_KEY = "__COLE_AQUI_SUA_SUPABASE_ANON_KEY__";
+  // ===== SUPABASE =====
+  const CFG = window.TESOURA_CONFIG || {};
+  const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
+  const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-/* =========================================================
-   CLIENT
-   ========================================================= */
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // ===== UI =====
+  const selAno = document.getElementById("selAno");
+  const selMes = document.getElementById("selMes");
+  const selPeriodo = document.getElementById("selPeriodo");
+  const wrapSemana = document.getElementById("wrapSemana");
+  const selSemana = document.getElementById("selSemana");
+  const btnConsultar = document.getElementById("btnConsultar");
+  const btnPdf = document.getElementById("btnPdf");
 
-/* =========================================================
-   UTIL
-   ========================================================= */
-const pad2 = (n)=> String(n).padStart(2,'0');
-const money = (v)=> (Number(v||0)).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-const ymd = (d)=> {
-  const dt = new Date(d);
-  const y = dt.getFullYear();
-  const m = pad2(dt.getMonth()+1);
-  const day = pad2(dt.getDate());
-  return `${y}-${m}-${day}`;
-};
-const br = (ymdStr)=> {
-  if(!ymdStr) return "";
-  const [y,m,d] = ymdStr.split("-");
-  return `${d}/${m}/${y}`;
-};
-function addDays(dateStr, days){
-  const d = new Date(dateStr+"T00:00:00");
-  d.setDate(d.getDate()+days);
-  return ymd(d);
-}
-function startOfWeekMonday(dateStr){
-  const d = new Date(dateStr+"T00:00:00");
-  const day = d.getDay(); // 0 dom, 1 seg...
-  const diff = (day===0? -6 : 1-day); // volta até segunda
-  d.setDate(d.getDate()+diff);
-  return ymd(d);
-}
+  const statusEl = document.getElementById("status");
+  const status2 = document.getElementById("status2");
+  const tbody = document.getElementById("tbody");
 
-/* =========================================================
-   STATE
-   ========================================================= */
-let editingId = null;
-let cache = { rows: [], mensalidades: [] };
+  const saldoAnteriorEl = document.getElementById("saldoAnterior");
+  const saldoPeriodoEl  = document.getElementById("saldoPeriodo");
+  const saldoFinalEl    = document.getElementById("saldoFinal");
 
-/* =========================================================
-   FILTROS UI
-   ========================================================= */
-const fAno = document.getElementById("fAno");
-const fMes = document.getElementById("fMes");
-const fPeriodo = document.getElementById("fPeriodo");
-const fSemana = document.getElementById("fSemana");
-const boxSemana = document.getElementById("boxSemana");
-const statusFiltro = document.getElementById("statusFiltro");
-const totaisEl = document.getElementById("totais");
+  const inData = document.getElementById("inData");
+  const inHora = document.getElementById("inHora");
+  const inTipo = document.getElementById("inTipo");
+  const inDesc = document.getElementById("inDesc");
+  const inObs  = document.getElementById("inObs");
+  const inValor= document.getElementById("inValor");
+  const btnAdd = document.getElementById("btnAdd");
 
-const btnConsultar = document.getElementById("btnConsultar");
-const btnPDF = document.getElementById("btnPDF");
+  // ===== HELPERS =====
+  const pad2 = n => String(n).padStart(2,"0");
+  const money = (v) => {
+    const n = Number(v || 0);
+    return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  };
+  const isoDate = (d) => {
+    if (!d) return "";
+    if (typeof d === "string") return d.slice(0,10);
+    const x = new Date(d);
+    return `${x.getFullYear()}-${pad2(x.getMonth()+1)}-${pad2(x.getDate())}`;
+  };
+  const isoTime = (d) => {
+    if (!d) return "";
+    if (typeof d === "string" && d.includes(":")) return d.slice(0,5);
+    const x = new Date(d);
+    return `${pad2(x.getHours())}:${pad2(x.getMinutes())}`;
+  };
 
-const iData = document.getElementById("iData");
-const iTipo = document.getElementById("iTipo");
-const iDescricao = document.getElementById("iDescricao");
-const iObs = document.getElementById("iObs");
-const iValor = document.getElementById("iValor");
-const btnSalvar = document.getElementById("btnSalvar");
-const btnCancelarEdicao = document.getElementById("btnCancelarEdicao");
-
-function buildAnoMes(){
-  const now = new Date();
-  const anoAtual = now.getFullYear();
-  // ANO
-  fAno.innerHTML = "";
-  for(let a = anoAtual-1; a<=anoAtual+1; a++){
-    const opt = document.createElement("option");
-    opt.value = String(a);
-    opt.textContent = String(a);
-    if(a===anoAtual) opt.selected = true;
-    fAno.appendChild(opt);
+  function startOfWeekMonday(dateObj){
+    const d = new Date(dateObj.getTime());
+    d.setHours(0,0,0,0);
+    const day = d.getDay(); // 0 dom
+    const diff = (day === 0) ? -6 : (1 - day);
+    d.setDate(d.getDate() + diff);
+    return d;
   }
-  // MÊS
-  const meses = ["01 - JAN","02 - FEV","03 - MAR","04 - ABR","05 - MAI","06 - JUN","07 - JUL","08 - AGO","09 - SET","10 - OUT","11 - NOV","12 - DEZ"];
-  fMes.innerHTML = "";
-  meses.forEach((txt, idx)=>{
-    const mm = pad2(idx+1);
-    const opt = document.createElement("option");
-    opt.value = mm;
-    opt.textContent = txt;
-    if(idx===now.getMonth()) opt.selected = true;
-    fMes.appendChild(opt);
-  });
-}
+  function addDays(d, n){ const x = new Date(d.getTime()); x.setDate(x.getDate()+n); return x; }
+  function lastDayOfMonth(y,m){ return new Date(y, m, 0).getDate(); } // m = 1..12
 
-function buildSemanas(){
-  // gera últimas 14 semanas baseadas na data de hoje
-  const hoje = ymd(new Date());
-  const monday = startOfWeekMonday(hoje);
-  fSemana.innerHTML = "";
-  for(let i=0;i<14;i++){
-    const ini = addDays(monday, -7*i);
-    const fim = addDays(ini, 7); // segunda -> próxima segunda
-    const opt = document.createElement("option");
-    opt.value = `${ini}|${fim}`;
-    opt.textContent = `${br(ini)} → ${br(fim)}`;
-    if(i===0) opt.selected = true;
-    fSemana.appendChild(opt);
-  }
-}
-
-function getRange(){
-  const ano = fAno.value;
-  const mes = fMes.value;
-  const periodo = fPeriodo.value;
-
-  if(periodo==="ANUAL"){
-    const ini = `${ano}-01-01`;
-    const fim = `${ano}-12-31`;
-    return {periodo, ini, fim, label:`Ano ${ano}`};
+  // ===== SCHEMA FLEXÍVEL (para não quebrar com coluna diferente) =====
+  function pickCol(obj, candidates){
+    for (const c of candidates){
+      if (obj && Object.prototype.hasOwnProperty.call(obj, c)) return c;
+    }
+    return null;
   }
 
-  if(periodo==="MENSAL"){
-    const ini = `${ano}-${mes}-01`;
-    const fim = addDays(addDays(ini, 32).slice(0,7)+"-01", -1); // último dia do mês
-    return {periodo, ini, fim, label:`Mês ${mes}/${ano}`};
+  function getSignedValue(row){
+    // 1) se existir "valor" (padrão): + receita / - despesa
+    if (row && row.valor !== undefined && row.valor !== null && row.valor !== "") return Number(row.valor);
+
+    // 2) se existir receita/despesa separado
+    const rec = Number(row && (row.receita ?? row.entrada ?? 0)) || 0;
+    const desp= Number(row && (row.despesa ?? row.saida ?? 0)) || 0;
+    // despesa pode estar positiva no banco -> vira negativa aqui
+    return rec - Math.abs(desp);
   }
 
-  // SEMANAL
-  const parts = (fSemana.value || "").split("|");
-  const ini = parts[0];
-  const fim = parts[1];
-  return {periodo, ini, fim, label:`Semana ${br(ini)} → ${br(fim)}`};
-}
+  function isMensalidade(row){
+    const d = String(row?.descricao || "").toUpperCase();
+    const o = String(row?.origem || "").toUpperCase();
+    return d.startsWith("MENSALIDADE -") || o === "MENSALIDADE";
+  }
 
-function syncSemanaVisibility(){
-  const p = fPeriodo.value;
-  boxSemana.classList.toggle("hidden", p!=="SEMANAL");
-}
-
-/* =========================================================
-   DATA ACCESS
-   Tabela CAIXA: usamos SOMENTE colunas seguras (evita 400 por schema)
-   - id (PK)
-   - data (date)
-   - descricao (text)
-   - obs (text)
-   - valor (numeric) -> positivo receita, negativo despesa
-   ========================================================= */
-async function listCaixa(ini, fim){
-  const { data, error } = await sb
-    .from("caixa")
-    .select("id,data,descricao,obs,valor,created_at")
-    .gte("data", ini)
-    .lte("data", fim)
-    .order("data", { ascending: true })
-    .order("id", { ascending: true });
-
-  if(error) throw error;
-  return data || [];
-}
-
-async function sumCaixaBefore(ini){
-  const { data, error } = await sb
-    .from("caixa")
-    .select("valor")
-    .lt("data", ini);
-  if(error) throw error;
-  let s = 0;
-  for(const r of (data||[])) s += Number(r.valor||0);
-  return s;
-}
-
-async function listMensalidadesPagas(ini, fim){
-  const { data, error } = await sb
-    .from("mensalidades")
-    .select("id,apelido,mes,ano,valor,pago,data_pagamento")
-    .eq("pago", true);
-
-  if(error) throw error;
-
-  const out = [];
-  for(const m of (data||[])){
-    if(!m.data_pagamento) continue;
-    const dp = ymd(m.data_pagamento);
-    if(dp < ini || dp > fim) continue;
-    const mm = pad2(Number(m.mes||0));
-    const aa = String(m.ano||"");
-    out.push({
-      _kind: "mensalidade",
-      id: m.id,
-      data: dp,
-      descricao: `Mensalidade - ${m.apelido} (${mm}/${aa})`,
-      obs: "",
-      valor: Number(m.valor||0)
+  // ===== PERÍODOS =====
+  function buildMesOptions(){
+    const meses = [
+      "01 - JAN","02 - FEV","03 - MAR","04 - ABR","05 - MAI","06 - JUN",
+      "07 - JUL","08 - AGO","09 - SET","10 - OUT","11 - NOV","12 - DEZ"
+    ];
+    selMes.innerHTML = "";
+    meses.forEach((t,i)=>{
+      const opt = document.createElement("option");
+      opt.value = String(i+1);
+      opt.textContent = t;
+      selMes.appendChild(opt);
     });
   }
-  out.sort((a,b)=> (a.data===b.data ? String(a.id).localeCompare(String(b.id)) : (a.data<b.data ? -1 : 1)));
-  return out;
-}
 
-async function insertCaixa(payload){
-  const { error } = await sb.from("caixa").insert(payload);
-  if(error) throw error;
-}
-
-async function updateCaixa(id, payload){
-  const { error } = await sb.from("caixa").update(payload).eq("id", id);
-  if(error) throw error;
-}
-
-async function deleteCaixa(id){
-  const { error } = await sb.from("caixa").delete().eq("id", id);
-  if(error) throw error;
-}
-
-/* =========================================================
-   RENDER
-   ========================================================= */
-function renderTable(allRows, saldoAnterior){
-  const tb = document.getElementById("tbody");
-  tb.innerHTML = "";
-
-  let saldo = Number(saldoAnterior||0);
-
-  if(allRows.length===0){
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="8" class="muted">Sem registros no período.</td>`;
-    tb.appendChild(tr);
-    return;
+  function buildAnoOptions(){
+    const hoje = new Date();
+    const a = hoje.getFullYear();
+    selAno.innerHTML = "";
+    for (let y=a-1;y<=a+1;y++){
+      const opt=document.createElement("option");
+      opt.value=String(y);
+      opt.textContent=String(y);
+      if (y===a) opt.selected=true;
+      selAno.appendChild(opt);
+    }
   }
 
-  for(const r of allRows){
-    const isMensalidade = r._kind==="mensalidade";
-    const v = Number(r.valor||0);
-    const tipo = v>=0 ? "RECEITA" : "DESPESA";
-    const receita = v>=0 ? v : 0;
-    const despesa = v<0 ? Math.abs(v) : 0;
-    saldo += v;
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td title="${r.data||""}">${br(r.data)}</td>
-      <td>${tipo==="RECEITA" ? `<span class="pill pill-rec">RECEITA</span>` : `<span class="pill pill-desp">DESPESA</span>`}</td>
-      <td title="${(r.descricao||"").replaceAll('"','&quot;')}">${r.descricao||""}</td>
-      <td title="${(r.obs||"").replaceAll('"','&quot;')}">${r.obs||""}</td>
-      <td class="${receita>0?'money-pos':'muted'}">${receita>0?money(receita):""}</td>
-      <td class="${despesa>0?'money-neg':'muted'}">${despesa>0?money(despesa):""}</td>
-      <td><b>${money(saldo)}</b></td>
-      <td>
-        ${
-          isMensalidade
-          ? `<span class="muted" style="font-weight:900;">BLOQUEADO</span>`
-          : `<div class="actions">
-              <button class="linkbtn green" data-edit="${r.id}">EDITAR</button>
-              <button class="linkbtn red" data-del="${r.id}">EXCLUIR</button>
-            </div>`
-        }
-      </td>
-    `;
-    tb.appendChild(tr);
+  function buildSemanaOptions(){
+    // últimas 10 semanas (segunda a segunda)
+    selSemana.innerHTML = "";
+    const hoje = new Date();
+    const base = startOfWeekMonday(hoje);
+    for (let i=0;i<10;i++){
+      const ini = addDays(base, -7*i);
+      const fim = addDays(ini, 7);
+      const opt = document.createElement("option");
+      opt.value = `${isoDate(ini)}|${isoDate(fim)}`;
+      opt.textContent = `${ini.toLocaleDateString("pt-BR")} → ${fim.toLocaleDateString("pt-BR")}`;
+      if (i===0) opt.selected = true;
+      selSemana.appendChild(opt);
+    }
   }
 
-  tb.querySelectorAll("[data-edit]").forEach(btn=>{
-    btn.addEventListener("click", ()=> startEdit(Number(btn.getAttribute("data-edit"))));
-  });
-  tb.querySelectorAll("[data-del]").forEach(btn=>{
-    btn.addEventListener("click", ()=> doDelete(Number(btn.getAttribute("data-del"))));
-  });
-}
+  function getRange(){
+    const ano = Number(selAno.value);
+    const mes = Number(selMes.value);
+    const periodo = String(selPeriodo.value);
 
-function renderTotais(info){
-  statusFiltro.textContent = info.status || "";
-  totaisEl.innerHTML = `
-    <span>LISTA CARREGADA.</span>
-    <b> Registros:</b> ${info.qtd}
-    &nbsp;&nbsp; | &nbsp;&nbsp;
-    <b>Saldo anterior:</b> ${money(info.saldoAnterior)}
-    &nbsp;&nbsp; | &nbsp;&nbsp;
-    <b>Saldo no período:</b> ${money(info.saldoPeriodo)}
-    &nbsp;&nbsp; | &nbsp;&nbsp;
-    <b>Saldo final:</b> ${money(info.saldoFinal)}
-  `;
-}
+    if (periodo === "ANUAL"){
+      return {ini:`${ano}-01-01`, fim:`${ano}-12-31`};
+    }
+    if (periodo === "MENSAL"){
+      const last = lastDayOfMonth(ano, mes);
+      return {ini:`${ano}-${pad2(mes)}-01`, fim:`${ano}-${pad2(mes)}-${pad2(last)}`};
+    }
+    // SEMANAL
+    const v = String(selSemana.value || "");
+    const [ini,fim] = v.split("|");
+    return {ini, fim}; // fim é segunda da próxima semana
+  }
 
-/* =========================================================
-   LOAD
-   ========================================================= */
-async function carregar(){
-  try{
-    const {ini, fim, label} = getRange();
-    statusFiltro.textContent = `Carregando... (${label})`;
-    totaisEl.textContent = "";
+  function updateUIByPeriodo(){
+    const p = String(selPeriodo.value);
+    wrapSemana.style.display = (p==="SEMANAL") ? "" : "none";
+  }
 
-    const saldoAnterior = await sumCaixaBefore(ini);
+  // ===== CRUD =====
+  async function fetchAllWithin(ini, fim){
+    // usa select('*') para não quebrar com nomes de coluna diferentes
+    // tenta filtrar por coluna "data" se existir; senão usa created_at
+    const { data: sample, error: errSample } = await sb.from("caixa").select("*").limit(1);
+    if (errSample) throw errSample;
 
-    const [rowsCaixa, rowsMens] = await Promise.all([
-      listCaixa(ini, fim),
-      listMensalidadesPagas(ini, fim)
-    ]);
+    const dateCol = pickCol(sample?.[0], ["data","data_lancamento","data_mov","dia"]);
+    const createdCol = pickCol(sample?.[0], ["created_at","criado_em","createdAt"]);
 
-    const cx = (rowsCaixa||[]).map(r=>({
-      _kind:"caixa",
-      id:r.id,
-      data: ymd(r.data),
-      descricao: r.descricao || "",
-      obs: r.obs || "",
-      valor: Number(r.valor||0)
-    }));
+    let q = sb.from("caixa").select("*");
+    if (dateCol){
+      q = q.gte(dateCol, ini).lt(dateCol, fim);
+      q = q.order(dateCol, {ascending:true});
+    } else if (createdCol){
+      q = q.gte(createdCol, ini).lt(createdCol, fim);
+      q = q.order(createdCol, {ascending:true});
+    } else {
+      q = q.order("id", {ascending:true});
+    }
 
-    const all = cx.concat(rowsMens||[]).sort((a,b)=>{
-      if(a.data===b.data){
-        return String(a.id).localeCompare(String(b.id));
-      }
-      return a.data < b.data ? -1 : 1;
-    });
+    const { data, error } = await q;
+    if (error) throw error;
+    return { rows: data || [], dateCol, createdCol };
+  }
 
-    cache.rows = cx;
-    cache.mensalidades = rowsMens||[];
+  async function sumBefore(ini){
+    // saldo anterior: soma de tudo antes do início (limitado ao próprio ano para não ficar pesado)
+    const ano = String(ini).slice(0,4);
+    const iniAno = `${ano}-01-01`;
 
-    let saldo = Number(saldoAnterior||0);
+    const { data: sample } = await sb.from("caixa").select("*").limit(1);
+    const dateCol = pickCol(sample?.[0], ["data","data_lancamento","data_mov","dia"]);
+    const createdCol = pickCol(sample?.[0], ["created_at","criado_em","createdAt"]);
+
+    let q = sb.from("caixa").select("*");
+    if (dateCol){
+      q = q.gte(dateCol, iniAno).lt(dateCol, ini);
+      q = q.order(dateCol, {ascending:true});
+    } else if (createdCol){
+      q = q.gte(createdCol, iniAno).lt(createdCol, ini);
+      q = q.order(createdCol, {ascending:true});
+    } else {
+      q = q.limit(0);
+    }
+
+    const { data, error } = await q;
+    if (error) throw error;
+
+    let total = 0;
+    (data || []).forEach(r => total += getSignedValue(r));
+    return total;
+  }
+
+  function render(rows, cols){
+    tbody.innerHTML = "";
+
+    // detect colunas comuns (sem travar)
+    const idCol   = pickCol(rows?.[0], ["id","uuid","ID"]);
+    const dataCol = cols.dateCol || pickCol(rows?.[0], ["data","data_lancamento","data_mov","dia"]);
+    const horaCol = pickCol(rows?.[0], ["hora","horario","time","hora_lancamento"]);
+    const createdCol = cols.createdCol || pickCol(rows?.[0], ["created_at","criado_em","createdAt"]);
+    const tipoCol = pickCol(rows?.[0], ["tipo","categoria","kind"]);
+    const descCol = pickCol(rows?.[0], ["descricao","descrição","descricao_texto","desc"]);
+    const obsCol  = pickCol(rows?.[0], ["obs","observacao","observação","nota","notas"]);
+    const origemCol = pickCol(rows?.[0], ["origem","source"]);
+
+    let saldo = window.__saldoAnterior || 0;
     let saldoPeriodo = 0;
-    for(const r of all){
-      saldo += Number(r.valor||0);
-      saldoPeriodo += Number(r.valor||0);
-    }
 
-    renderTotais({
-      status: `Período: ${label}`,
-      qtd: all.length,
-      saldoAnterior,
-      saldoPeriodo,
-      saldoFinal: saldo
+    rows.forEach((r) => {
+      const tr = document.createElement("tr");
+
+      const dt = dataCol ? r[dataCol] : (createdCol ? r[createdCol] : null);
+      const hr = horaCol ? r[horaCol] : (createdCol ? r[createdCol] : null);
+
+      const signed = getSignedValue(r);
+      saldo += signed;
+      saldoPeriodo += signed;
+
+      const tipo = String((tipoCol ? r[tipoCol] : "") || "").toUpperCase();
+      const isRec = (tipo === "RECEITA") || (signed >= 0);
+      const isDesp = (tipo === "DESPESA") || (signed < 0);
+
+      const receita = isRec ? Math.abs(signed) : 0;
+      const despesa = isDesp ? Math.abs(signed) : 0;
+
+      const mensal = isMensalidade(r);
+
+      // DATA
+      const tdData = document.createElement("td");
+      tdData.textContent = isoDate(dt) ? new Date(isoDate(dt)+"T00:00:00").toLocaleDateString("pt-BR") : "";
+      tr.appendChild(tdData);
+
+      // HORA
+      const tdHora = document.createElement("td");
+      tdHora.textContent = isoTime(hr);
+      tr.appendChild(tdHora);
+
+      // TIPO (editável)
+      const tdTipo = document.createElement("td");
+      const sel = document.createElement("select");
+      sel.innerHTML = `<option value="RECEITA">RECEITA</option><option value="DESPESA">DESPESA</option>`;
+      sel.value = (tipo === "DESPESA") ? "DESPESA" : "RECEITA";
+      if (mensal) { sel.disabled = true; sel.classList.add("readonly"); }
+      tdTipo.appendChild(sel);
+      tr.appendChild(tdTipo);
+
+      // DESCRIÇÃO (editável)
+      const tdDesc = document.createElement("td");
+      tdDesc.className = "left";
+      const inD = document.createElement("input");
+      inD.type = "text";
+      inD.value = String((descCol ? r[descCol] : "") || "");
+      inD.style.width = "260px";
+      if (mensal) { inD.disabled = true; inD.classList.add("readonly"); }
+      tdDesc.appendChild(inD);
+      tr.appendChild(tdDesc);
+
+      // OBS (editável)
+      const tdObs = document.createElement("td");
+      tdObs.className = "left";
+      const inO = document.createElement("input");
+      inO.type = "text";
+      inO.value = String((obsCol ? r[obsCol] : "") || "");
+      inO.style.width = "260px";
+      if (mensal) { inO.disabled = true; inO.classList.add("readonly"); }
+      tdObs.appendChild(inO);
+      tr.appendChild(tdObs);
+
+      // RECEITA
+      const tdR = document.createElement("td");
+      tdR.innerHTML = receita ? `<span class="money pos">${money(receita)}</span>` : "";
+      tr.appendChild(tdR);
+
+      // DESPESA
+      const tdE = document.createElement("td");
+      tdE.innerHTML = despesa ? `<span class="money neg">${money(despesa)}</span>` : "";
+      tr.appendChild(tdE);
+
+      // SALDO
+      const tdS = document.createElement("td");
+      tdS.innerHTML = `<span class="saldo">${money(saldo)}</span>`;
+      tr.appendChild(tdS);
+
+      // AÇÕES
+      const tdA = document.createElement("td");
+      tdA.className = "no-print";
+      const btnDel = document.createElement("button");
+      btnDel.className = "btn btn-vermelho";
+      btnDel.textContent = "EXCLUIR";
+      if (mensal || !idCol) btnDel.disabled = true;
+
+      tdA.appendChild(btnDel);
+      tr.appendChild(tdA);
+
+      // autosave (on change / blur) — não salva mensalidade aqui
+      async function autosave(){
+        if (mensal || !idCol) return;
+        const id = r[idCol];
+        const novoTipo = sel.value;
+        const novoDesc = inD.value || "";
+        const novoObs  = inO.value || "";
+
+        // valor é derivado do tipo + valor antigo (mantém magnitude)
+        const mag = Math.abs(getSignedValue(r) || 0);
+        const novoSigned = (novoTipo === "DESPESA") ? -mag : mag;
+
+        // tenta atualizar de forma flexível
+        const payloads = [];
+
+        // payload A: valor assinado
+        payloads.push({ tipo: novoTipo, descricao: novoDesc, obs: novoObs, valor: novoSigned });
+
+        // payload B: receita/despesa separados (se existir no banco)
+        payloads.push({ tipo: novoTipo, descricao: novoDesc, obs: novoObs,
+          receita: (novoTipo==="RECEITA") ? mag : 0,
+          despesa: (novoTipo==="DESPESA") ? mag : 0
+        });
+
+        let ok = false, lastErr = null;
+        for (const p of payloads){
+          const { error } = await sb.from("caixa").update(p).eq(idCol, id);
+          if (!error){ ok=true; break; }
+          lastErr = error;
+        }
+        if (!ok){
+          console.warn("Autosave falhou:", lastErr);
+          status2.textContent = "Aviso: não consegui salvar uma edição (ver console).";
+        } else {
+          status2.textContent = "Salvo.";
+          setTimeout(()=>{ if(status2.textContent==="Salvo.") status2.textContent=""; }, 800);
+        }
+      }
+
+      sel.addEventListener("change", autosave);
+      inD.addEventListener("blur", autosave);
+      inO.addEventListener("blur", autosave);
+
+      btnDel.addEventListener("click", async ()=>{
+        if (mensal || !idCol) return;
+        if (!confirm("Excluir este lançamento?")) return;
+        const id = r[idCol];
+        const { error } = await sb.from("caixa").delete().eq(idCol, id);
+        if (error){
+          alert("ERRO ao excluir (ver console).");
+          console.error(error);
+          return;
+        }
+        carregar();
+      });
+
+      tbody.appendChild(tr);
     });
 
-    renderTable(all, saldoAnterior);
-  }catch(err){
-    console.error(err);
-    statusFiltro.textContent = "ERRO ao buscar CAIXA (ver console).";
-    totaisEl.textContent = "";
-    const tb = document.getElementById("tbody");
-    tb.innerHTML = `<tr><td colspan="8" class="money-neg">ERRO: ${err?.message || err}</td></tr>`;
-    alert("ERRO ao carregar. Abra o console (F12) e me mande a mensagem em vermelho.");
+    saldoPeriodoEl.textContent = money(saldoPeriodo);
+    saldoFinalEl.textContent = money(saldo);
   }
-}
 
-/* =========================================================
-   EDIT / SAVE / DELETE
-   ========================================================= */
-function resetForm(){
-  editingId = null;
-  btnCancelarEdicao.classList.add("hidden");
-  iData.value = ymd(new Date());
-  iTipo.value = "RECEITA";
-  iDescricao.value = "";
-  iObs.value = "";
-  iValor.value = "";
-  btnSalvar.textContent = "SALVAR";
-}
+  async function addLancamento(){
+    try{
+      btnAdd.disabled = true;
+      status2.textContent = "";
 
-function startEdit(id){
-  const r = cache.rows.find(x=>x.id===id);
-  if(!r) return;
-  editingId = id;
-  btnCancelarEdicao.classList.remove("hidden");
-  btnSalvar.textContent = "ATUALIZAR";
+      const data = inData.value;
+      const hora = inHora.value;
+      const tipo = String(inTipo.value || "RECEITA").toUpperCase();
+      const desc = String(inDesc.value || "").trim();
+      const obs  = String(inObs.value || "").trim();
+      const val  = Number(inValor.value || 0);
 
-  iData.value = r.data;
-  iTipo.value = (Number(r.valor)>=0) ? "RECEITA" : "DESPESA";
-  iDescricao.value = r.descricao || "";
-  iObs.value = r.obs || "";
-  iValor.value = Math.abs(Number(r.valor||0)).toFixed(2);
-  window.scrollTo({top:0, behavior:"smooth"});
-}
+      if (!data || !hora || !desc || !val){
+        alert("Preencha: DATA, HORA, DESCRIÇÃO e VALOR.");
+        return;
+      }
 
-async function doDelete(id){
-  const r = cache.rows.find(x=>x.id===id);
-  if(!r) return;
-  if(!confirm("Excluir este lançamento?")) return;
-  try{
-    await deleteCaixa(id);
-    await carregar();
-  }catch(err){
-    console.error(err);
-    alert("ERRO ao excluir (ver console).");
-  }
-}
+      const signed = (tipo === "DESPESA") ? -Math.abs(val) : Math.abs(val);
 
-async function doSave(){
-  const data = iData.value;
-  const tipo = iTipo.value;
-  const descricao = (iDescricao.value||"").trim();
-  const obs = (iObs.value||"").trim();
-  const valorAbs = Number(iValor.value||0);
+      // tenta inserir com várias possibilidades de nomes de coluna
+      const payloads = [
+        { data, hora, tipo, descricao: desc, obs, valor: signed },
+        { data, horario: hora, tipo, descricao: desc, obs, valor: signed },
+        { data_lancamento: data, hora, tipo, descricao: desc, obs, valor: signed },
+        { data, hora, tipo, descricao: desc, obs, receita: (tipo==="RECEITA")?Math.abs(val):0, despesa: (tipo==="DESPESA")?Math.abs(val):0 },
+        { data_lancamento: data, hora, tipo, descricao: desc, obs, receita: (tipo==="RECEITA")?Math.abs(val):0, despesa: (tipo==="DESPESA")?Math.abs(val):0 }
+      ];
 
-  if(!data){ alert("Preencha a DATA."); return; }
-  if(!descricao){ alert("Preencha a DESCRIÇÃO."); return; }
-  if(!(valorAbs>0)){ alert("Preencha o VALOR (maior que 0)."); return; }
+      let ok=false, lastErr=null;
+      for (const p of payloads){
+        const { error } = await sb.from("caixa").insert(p);
+        if (!error){ ok=true; break; }
+        lastErr = error;
+      }
 
-  const valor = (tipo==="DESPESA") ? -Math.abs(valorAbs) : Math.abs(valorAbs);
+      if (!ok){
+        alert("ERRO ao criar (ver console).");
+        console.error(lastErr);
+        return;
+      }
 
-  try{
-    if(editingId){
-      await updateCaixa(editingId, { data, descricao, obs, valor });
-    }else{
-      await insertCaixa({ data, descricao, obs, valor });
+      // limpa inputs
+      inDesc.value = "";
+      inObs.value = "";
+      inValor.value = "";
+
+      carregar();
+    } finally {
+      btnAdd.disabled = false;
     }
-    resetForm();
-    await carregar();
-  }catch(err){
-    console.error(err);
-    alert("ERRO ao salvar (ver console).");
   }
-}
 
-/* =========================================================
-   PDF (imprime o período selecionado sem cortar colunas)
-   ========================================================= */
-function buildPrintHTML(){
-  const {label} = getRange();
-  const rows = document.querySelectorAll("#tbody tr");
+  async function carregar(){
+    try{
+      statusEl.textContent = "CARREGANDO...";
+      status2.textContent = "";
+      tbody.innerHTML = "";
 
-  const thead = document.querySelector("#tbl thead").cloneNode(true);
-  thead.querySelector("tr").removeChild(thead.querySelectorAll("th")[7]); // remove AÇÕES
+      updateUIByPeriodo();
+      const {ini, fim} = getRange();
 
-  const tbody = document.createElement("tbody");
-  rows.forEach(tr=>{
-    const tds = tr.querySelectorAll("td");
-    if(tds.length<8) return;
-    const tr2 = document.createElement("tr");
-    for(let i=0;i<7;i++){
-      const td = document.createElement("td");
-      td.innerHTML = tds[i].innerHTML;
-      tr2.appendChild(td);
+      // saldo anterior
+      let saldoAnt = 0;
+      try{
+        saldoAnt = await sumBefore(ini);
+      }catch(e){
+        console.warn("Aviso: não consegui calcular saldo anterior.", e);
+        saldoAnt = 0;
+      }
+      window.__saldoAnterior = saldoAnt;
+      saldoAnteriorEl.textContent = money(saldoAnt);
+
+      const data = await fetchAllWithin(ini, fim);
+      const rows = data.rows || [];
+      render(rows, data);
+
+      statusEl.textContent = `LISTA CARREGADA. Registros: ${rows.length}`;
+    }catch(e){
+      console.error(e);
+      statusEl.textContent = "ERRO ao buscar CAIXA (ver console).";
+      alert("ERRO ao buscar CAIXA (ver console).");
     }
-    tbody.appendChild(tr2);
-  });
+  }
 
-  const table = document.createElement("table");
-  table.appendChild(thead);
-  table.appendChild(tbody);
+  // ===== eventos =====
+  btnPdf.addEventListener("click", ()=>window.print());
+  btnConsultar.addEventListener("click", carregar);
+  btnAdd.addEventListener("click", addLancamento);
 
-  return `
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"/>
-<title>TESOURA - CAIXA</title>
-<style>
-  @page{ size: landscape; margin: 10mm; }
-  body{font-family:Arial, sans-serif; color:#111; }
-  h1{margin:0 0 6px 0; font-size:16px; text-transform:uppercase;}
-  .meta{font-size:12px; margin-bottom:10px;}
-  table{border-collapse:collapse; width:100%; table-layout:fixed;}
-  th,td{border:1px solid #ddd; padding:6px; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  th{background:#ff7f27; color:#111; text-transform:uppercase; letter-spacing:.3px;}
-  .money-pos{color:#0a7a2a; font-weight:900;}
-  .money-neg{color:#b91c1c; font-weight:900;}
-</style>
-</head><body>
-  <h1>TESOURA - CAIXA</h1>
-  <div class="meta">${label}<br/>${document.getElementById("totais").innerText}</div>
-  ${table.outerHTML}
-  
-</body></html>`;
-}
+  selPeriodo.addEventListener("change", ()=>{ updateUIByPeriodo(); });
+  selAno.addEventListener("change", ()=>{ /* anual/mensal dependem do ano */ });
+  selMes.addEventListener("change", ()=>{ /* mensal depende do mês */ });
 
-function baixarPDF(){
-  const w = window.open("", "_blank");
-  w.document.open();
-  w.document.write(buildPrintHTML());
-  w.document.close();
-setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 250);
-}
+  // init
+  (function init(){
+    buildAnoOptions();
+    buildMesOptions();
+    buildSemanaOptions();
+    updateUIByPeriodo();
 
-/* =========================================================
-   INIT
-   ========================================================= */
-buildAnoMes();
-buildSemanas();
-syncSemanaVisibility();
-resetForm();
+    // default inputs
+    const now = new Date();
+    inData.value = isoDate(now);
+    inHora.value = isoTime(now);
 
-fPeriodo.addEventListener("change", syncSemanaVisibility);
-btnConsultar.addEventListener("click", carregar);
-btnPDF.addEventListener("click", baixarPDF);
-btnSalvar.addEventListener("click", doSave);
-btnCancelarEdicao.addEventListener("click", resetForm);
+    // mês atual
+    selMes.value = String(now.getMonth()+1);
 
-window.addEventListener("load", carregar);
+    carregar();
+  })();
 </script>
-
 </body>
 </html>
