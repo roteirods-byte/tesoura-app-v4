@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR_allow">
 <head>
   <meta charset="utf-8" />
   <title>TESOURA - MENSALIDADE</title>
@@ -27,6 +27,8 @@
     }
     .btn:active { transform: translateY(1px); }
     .btn-pdf { background:#f97316; color:#220b00; }
+    .btn-del { background:#ef4444; color:#1b0000; }
+    .btn-edt { background:#22c55e; color:#001b08; }
     .hint { font-size:12px; color:#cbd5e1; margin:10px 0 0; line-height:1.35; }
     .totalbox { margin-top:10px; font-size:12px; color:#e5e7eb; font-weight:900; text-transform:uppercase; }
     table { width:100%; border-collapse:collapse; margin-top:10px; background:#020617; font-size:12px; }
@@ -84,8 +86,8 @@
 
     <div class="hint">
       Regras: valor <b>R$ 70</b> até o <b>2º domingo</b> do mês. Depois: <b>R$ 80</b>.<br/>
-      A coluna <b>STATUS</b> é o <b>P</b>: fica <span class="pverde">verde</span> quando marcar pago, e fica <span class="pvermelho">vermelho</span> somente na <b>segunda-feira após o 2º domingo</b> se não pagar.<br/>
-      Ao editar, o app salva automaticamente.
+      STATUS é o <b>P</b>: fica <span class="pverde">verde</span> quando pagar, e fica <span class="pvermelho">vermelho</span> na <b>segunda-feira após o 2º domingo</b> se não pagar.<br/>
+      Ao marcar/desmarcar, salva automaticamente.
     </div>
 
     <div class="totalbox" id="totalPagoMes">TOTAL PAGO NO MÊS: R$ 0 (0)</div>
@@ -103,6 +105,8 @@
             <th style="min-width:90px;">PAGO?</th>
             <th style="min-width:160px;">DATA PAGAMENTO</th>
             <th style="min-width:90px;">STATUS</th>
+            <th style="min-width:110px;">EDITAR</th>
+            <th style="min-width:110px;">EXCLUIR</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -144,7 +148,7 @@
     toastEl.textContent = msg;
     toastEl.style.display = "block";
     clearTimeout(toastEl._t);
-    toastEl._t = setTimeout(()=> toastEl.style.display="none", 1800);
+    toastEl._t = setTimeout(()=> toastEl.style.display="none", 1600);
   }
 
   function getSecondSunday(year, month){
@@ -160,28 +164,34 @@
     return null;
   }
 
+  function isoSecondSunday(year, month){
+    const s = getSecondSunday(year, month);
+    if(!s) return `${year}-${pad2(month)}-01`;
+    return `${s.getFullYear()}-${pad2(s.getMonth()+1)}-${pad2(s.getDate())}`;
+  }
+
   function mondayAfterSecondSunday(year, month){
-    const second = getSecondSunday(year, month);
-    if(!second) return null;
-    const m = new Date(second.getFullYear(), second.getMonth(), second.getDate());
+    const s = getSecondSunday(year, month);
+    if(!s) return null;
+    const m = new Date(s.getFullYear(), s.getMonth(), s.getDate());
     m.setDate(m.getDate() + 1);
     m.setHours(0,0,0,0);
     return m;
   }
 
-  function suggestedValueForMonth(year, month){
+  function suggestedValueNow(year, month){
     const dueMonday = mondayAfterSecondSunday(year, month);
     if(!dueMonday) return 70;
     return (new Date() >= dueMonday) ? 80 : 70;
   }
 
   function valueByPaymentDate(year, month, isoPayDate){
-    if(!isoPayDate) return null;
-    const second = getSecondSunday(year, month);
-    if(!second) return 70;
+    if(!isoPayDate) return suggestedValueNow(year, month);
+    const s = getSecondSunday(year, month);
+    if(!s) return 70;
     const pay = new Date(isoPayDate + "T00:00:00");
-    const s = new Date(second.getFullYear(), second.getMonth(), second.getDate(), 23,59,59,999);
-    return (pay <= s) ? 70 : 80;
+    const limite = new Date(s.getFullYear(), s.getMonth(), s.getDate(), 23,59,59,999);
+    return (pay <= limite) ? 70 : 80;
   }
 
   function statusP(pago, year, month){
@@ -210,48 +220,71 @@
     });
   }
 
-  // >>> SALVAMENTO MAIS SEGURO: tenta UPDATE, se não existir tenta INSERT, sem DELETE.
-  async function salvarMensalidade(apel, year, month, pago, data_pagamento, valor){
-    // tenta achar 1 registro existente
-    const { data: existing, error: errSel } = await sb
+  async function getExisting(apel, year, month){
+    const { data, error } = await sb
       .from("mensalidades")
       .select("*")
       .eq("apelido", apel)
       .eq("ano", year)
       .eq("mes", month)
       .limit(1);
+    if(error) return { ok:false, error };
+    return { ok:true, row: (data && data.length ? data[0] : null) };
+  }
 
-    if(errSel){
-      alert("ERRO ao salvar (consulta): " + (errSel.message || "sem detalhe"));
+  async function salvarRegistro(apel, year, month, pago, data_pagamento, valor, data_vencimento){
+    const ex = await getExisting(apel, year, month);
+    if(!ex.ok){
+      alert("ERRO ao salvar (consulta): " + (ex.error.message || "sem detalhe"));
       return false;
     }
 
-    const payload = { apelido: apel, ano: year, mes: month, pago: !!pago, data_pagamento: data_pagamento || null, valor: valor };
+    const payload = {
+      apelido: apel,
+      ano: year,
+      mes: month,
+      pago: !!pago,
+      data_pagamento: data_pagamento || null,
+      valor: (valor == null ? null : Number(valor)),
+      data_vencimento: data_vencimento
+    };
 
-    if(existing && existing.length){
-      const { error: errUp } = await sb
+    if(ex.row){
+      const { error } = await sb
         .from("mensalidades")
         .update(payload)
         .eq("apelido", apel)
         .eq("ano", year)
         .eq("mes", month);
-
-      if(errUp){
-        alert("ERRO ao salvar (atualizar): " + (errUp.message || "sem detalhe"));
+      if(error){
+        alert("ERRO ao salvar (atualizar): " + (error.message || "sem detalhe"));
         return false;
       }
       return true;
     } else {
-      const { error: errIns } = await sb
+      const { error } = await sb
         .from("mensalidades")
         .insert([payload]);
-
-      if(errIns){
-        alert("ERRO ao salvar (inserir): " + (errIns.message || "sem detalhe"));
+      if(error){
+        alert("ERRO ao salvar (inserir): " + (error.message || "sem detalhe"));
         return false;
       }
       return true;
     }
+  }
+
+  async function excluirRegistro(apel, year, month){
+    const { error } = await sb
+      .from("mensalidades")
+      .delete()
+      .eq("apelido", apel)
+      .eq("ano", year)
+      .eq("mes", month);
+    if(error){
+      alert("ERRO ao excluir: " + (error.message || "sem detalhe"));
+      return false;
+    }
+    return true;
   }
 
   async function load(){
@@ -282,7 +315,7 @@
       let totalPago = 0;
       let qtdPago = 0;
 
-      const sug = suggestedValueForMonth(year, month);
+      const vencIso = isoSecondSunday(year, month);
 
       (jogadores || []).forEach(j => {
         const apelido = (j.apelido || "").toUpperCase();
@@ -291,10 +324,10 @@
         const pago = !!(r && (r.pago === true || r.pago === 1));
         const dataPag = (r && r.data_pagamento) ? String(r.data_pagamento).slice(0,10) : "";
 
-        let valorExibido = sug;
+        let valorExibido = suggestedValueNow(year, month);
         if(pago){
           if(r && r.valor != null && r.valor !== "") valorExibido = Number(r.valor);
-          else valorExibido = valueByPaymentDate(year, month, dataPag) ?? sug;
+          else valorExibido = valueByPaymentDate(year, month, dataPag);
 
           totalPago += Number(valorExibido || 0);
           qtdPago += 1;
@@ -335,52 +368,80 @@
         tdS.className = st.cls;
         tr.appendChild(tdS);
 
-        async function salvarAutomatico(){
-          const year = Number(selAno.value);
-          const month = Number(selMes.value);
+        const tdE = document.createElement("td");
+        const btnEdt = document.createElement("button");
+        btnEdt.className = "btn btn-edt";
+        btnEdt.textContent = "EDITAR";
+        tdE.appendChild(btnEdt);
+        tr.appendChild(tdE);
+
+        const tdX = document.createElement("td");
+        const btnDel = document.createElement("button");
+        btnDel.className = "btn btn-del";
+        btnDel.textContent = "EXCLUIR";
+        tdX.appendChild(btnDel);
+        tr.appendChild(tdX);
+
+        async function salvarAgora(){
+          const year2 = Number(selAno.value);
+          const month2 = Number(selMes.value);
+          const vencIso2 = isoSecondSunday(year2, month2);
 
           const pagoAgora = chk.checked;
 
           if(pagoAgora && !inpDate.value){
-            inpDate.value = isoToday(); // coloca hoje automaticamente
+            inpDate.value = isoToday();
           }
-
           inpDate.disabled = !pagoAgora;
 
-          const stNow = statusP(pagoAgora, year, month);
-          tdS.textContent = stNow.text;
-          tdS.className = stNow.cls;
-
-          // valor
-          let valor = null;
+          let valor = suggestedValueNow(year2, month2);
           if(pagoAgora){
-            const v = valueByPaymentDate(year, month, inpDate.value) ?? suggestedValueForMonth(year, month);
-            valor = v;
-            tdV.textContent = `R$ ${Number(v).toFixed(0)}`;
+            valor = valueByPaymentDate(year2, month2, inpDate.value);
           } else {
-            const v = suggestedValueForMonth(year, month);
-            tdV.textContent = `R$ ${Number(v).toFixed(0)}`;
             inpDate.value = "";
           }
 
-          // salvar
-          if(!pagoAgora){
-            // não cadastra nada: mantém registro "não pago" vazio (apaga NÃO, para não depender de policy de delete)
-            // Só salva quando marcar pago.
-            toast("OK (não pago).");
-            return;
-          }
+          tdV.textContent = `R$ ${Number(valor).toFixed(0)}`;
 
-          const ok = await salvarMensalidade(apelido, year, month, true, inpDate.value, valor);
+          const stNow = statusP(pagoAgora, year2, month2);
+          tdS.textContent = stNow.text;
+          tdS.className = stNow.cls;
+
+          // >>> aqui salva SEMPRE: marcar e desmarcar
+          const ok = await salvarRegistro(
+            apelido,
+            year2,
+            month2,
+            pagoAgora,
+            (pagoAgora ? inpDate.value : null),
+            valor,
+            vencIso2
+          );
+
           if(ok){
-            toast(`SALVO: ${apelido}`);
-            // recarrega totais (rápido)
+            toast(pagoAgora ? `SALVO (PAGO): ${apelido}` : `SALVO (NÃO PAGO): ${apelido}`);
             load();
           }
         }
 
-        chk.addEventListener("change", salvarAutomatico);
-        inpDate.addEventListener("change", salvarAutomatico);
+        chk.addEventListener("change", salvarAgora);
+        inpDate.addEventListener("change", salvarAgora);
+        btnEdt.addEventListener("click", salvarAgora);
+
+        btnDel.addEventListener("click", async ()=>{
+          const year2 = Number(selAno.value);
+          const month2 = Number(selMes.value);
+          if(!confirm(`Excluir mensalidade de ${apelido} (${pad2(month2)}/${year2})?`)) return;
+
+          const ok = await excluirRegistro(apelido, year2, month2);
+          if(ok){
+            toast("EXCLUIDO.");
+            chk.checked = false;
+            inpDate.value = "";
+            inpDate.disabled = true;
+            load();
+          }
+        });
 
         tbody.appendChild(tr);
       });
