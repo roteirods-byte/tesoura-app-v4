@@ -138,7 +138,10 @@
     .linkbtn.green{border-color:rgba(34,197,94,.5);color:var(--green);}
     .note{font-size:12px;color:var(--muted);margin-top:8px}
     .hidden{display:none !important}
-  </style>
+  
+#obs{width:160px;}
+#descricao{width:260px;}
+</style>
 </head>
 
 <body>
@@ -230,7 +233,7 @@
               <th style="width:110px;">DATA</th>
               <th style="width:95px;">TIPO</th>
               <th>DESCRIÇÃO</th>
-              <th style="width:120px;">OBS</th>
+              <th style="width:160px;">OBS</th>
               <th style="width:130px;">RECEITA (R$)</th>
               <th style="width:130px;">DESPESA (R$)</th>
               <th style="width:130px;">SALDO (R$)</th>
@@ -710,7 +713,7 @@ function buildPrintHTML(){
   <h1>TESOURA - CAIXA</h1>
   <div class="meta">${label}<br/>${document.getElementById("totais").innerText}</div>
   ${table.outerHTML}
-  <script>window.onload=()=>{window.print();};</script>
+  
 </body></html>`;
 }
 
@@ -719,6 +722,7 @@ function baixarPDF(){
   w.document.open();
   w.document.write(buildPrintHTML());
   w.document.close();
+setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 250);
 }
 
 /* =========================================================
