@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>TESOURA - BANCO DE DADOS (GUARDIÃO)</title>
 
+  <!-- config do app (para pegar SUPABASE_URL / SUPABASE_ANON_KEY se existirem) -->
+  <script src="app/core/config.js"></script>
+
   <!-- libs -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -109,7 +112,6 @@
             <th>título</th>
             <th>referência</th>
             <th>tipo</th>
-            <th>excluir</th>
           </tr>
         </thead>
         <tbody id="tb"></tbody>
@@ -122,18 +124,27 @@
       </div>
 
       <div class="hint">
-        Banco de Dados é somente leitura. Diretoria pode excluir arquivos de teste (quando disponível).
+        Banco de Dados é somente leitura: não edita, não salva e não exclui.
       </div>
     </div>
   </div>
 
 <script>
 /* =========================================================
-   SUPABASE (via postMessage do index / login)
+   SUPABASE (mesmo padrão dos outros painéis)
+   - tenta ler do app/core/config.js
+   - se não existir, usa fallback (mesmo do CAIXA)
    ========================================================= */
-let SUPABASE_URL = null;
-let SUPABASE_ANON_KEY = null;
+const CFG = window.TESOURA_CONFIG || {};
+const SUPABASE_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
+const SUPABASE_ANON_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+
 let supabaseClient = null;
+try{
+  supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}catch(e){
+  supabaseClient = null;
+}
 
 function showMsg(text, isErr=false){
   const el = document.getElementById("msg");
@@ -150,7 +161,6 @@ function clearMsg(){
 
 /* =========================================================
    EXPORTAÇÃO (colunas por painel)
-   - aqui está o “conserto” do PDF “diferente do original”
    ========================================================= */
 const EXPORT_TEMPLATES = {
   "jogadores": {
@@ -212,13 +222,11 @@ function normalizeConteudo(conteudo, painel){
         c = JSON.parse(s);
       }
     }
-  }catch(e){ /* mantém como está */ }
+  }catch(e){}
 
-  // Template por painel (para PDF/CSV/Excel ficarem iguais ao painel)
   const templated = applyExportTemplate(painel, c);
   if(templated) return templated;
 
-  // fallback genérico (exporta tudo)
   if(Array.isArray(c)){
     const first = c[0] || {};
     const columns = Object.keys(first);
@@ -297,53 +305,26 @@ function render(){
   tb.innerHTML = "";
 
   if(!itens.length){
-    tb.innerHTML = `<tr><td colspan="5" class="muted">Nenhum arquivo salvo encontrado para este filtro.</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="4" class="muted">Nenhum arquivo salvo encontrado para este filtro.</td></tr>`;
     setDownloadEnabled(false);
     return;
   }
 
-  itens.forEach((item, idx) => {
+  itens.forEach((item) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${item.criado_em ?? "-"}</td>
       <td>${item.titulo ?? "-"}</td>
       <td>${item.referencia ?? "-"}</td>
       <td><span class="pill">${item.periodo ?? "-"}</span></td>
-      <td><button class="btn btnRed" style="height:30px" data-del="${idx}">EXCLUIR</button></td>
     `;
     tr.style.cursor = "pointer";
-    tr.addEventListener("click", (e) => {
-      // evita conflito com botão excluir
-      if(e.target && e.target.getAttribute && e.target.getAttribute("data-del") !== null) return;
+    tr.addEventListener("click", () => {
       selecionado = item;
       setDownloadEnabled(true);
       clearMsg();
     });
     tb.appendChild(tr);
-  });
-
-  // excluir (diretoria)
-  tb.querySelectorAll("button[data-del]").forEach(btn=>{
-    btn.addEventListener("click", async (e)=>{
-      e.stopPropagation();
-      const i = Number(btn.getAttribute("data-del"));
-      const item = itens[i];
-      if(!item) return;
-      if(!confirm("Excluir este arquivo salvo?")) return;
-
-      try{
-        const { error } = await supabaseClient
-          .from("arquivos_app")
-          .delete()
-          .eq("id", item.id);
-
-        if(error) throw error;
-        showMsg("Arquivo excluído.");
-        await buscar();
-      }catch(err){
-        showMsg("Erro ao excluir: " + (err?.message || err), true);
-      }
-    });
   });
 
   setDownloadEnabled(false);
@@ -355,10 +336,56 @@ function setDownloadEnabled(v){
   document.getElementById("btnXLSX").disabled = !v;
 }
 
+/* =========================================================
+   REGRAS DE FILTRO (simples)
+   ========================================================= */
+function applyPainelRules(){
+  const painelEl = document.getElementById("fPainel");
+  const periodoEl = document.getElementById("fPeriodo");
+  const refEl = document.getElementById("fRef");
+  const refField = refEl?.parentElement;
+  const help = refField ? refField.querySelector(".small") : null;
+
+  const painel = (painelEl?.value || "").toLowerCase();
+
+  if(periodoEl) periodoEl.disabled = false;
+  if(refField) refField.style.display = "flex";
+  if(help) help.textContent = "Ex.: domingo, mês, ano (quando existir)";
+  if(refEl) refEl.placeholder = "Sem referência (arquivo único)";
+
+  if(painel === "jogadores" || painel === "gols"){
+    if(periodoEl){ periodoEl.value = "unico"; periodoEl.disabled = true; }
+    if(refEl) refEl.value = "";
+    if(refField) refField.style.display = "none";
+    return;
+  }
+
+  if(painel === "controle geral"){
+    if(periodoEl){ periodoEl.value = "unico"; periodoEl.disabled = true; }
+    if(refEl) refEl.value = "";
+    if(refField) refField.style.display = "none";
+    return;
+  }
+
+  if(painel === "presenca" || painel === "escalacao"){
+    if(periodoEl){ periodoEl.value = "semanal"; periodoEl.disabled = true; }
+    if(help) help.textContent = "Ex.: domingo (YYYY-MM-DD)";
+    if(refEl) refEl.placeholder = "Ex: 2026-01-04";
+    return;
+  }
+
+  if(painel === "mensalidade" || painel === "caixa"){
+    if(periodoEl){ periodoEl.value = "mensal"; periodoEl.disabled = true; }
+    if(help) help.textContent = "Ex.: mês (MM/AAAA)";
+    if(refEl) refEl.placeholder = "Ex: 01/2026";
+    return;
+  }
+}
+
 async function buscar(){
   clearMsg();
   if(!supabaseClient){
-    showMsg("Supabase não inicializado (volte para o login).", true);
+    showMsg("Supabase não inicializado (verifique SUPABASE_URL / SUPABASE_ANON_KEY no config.js).", true);
     return;
   }
 
@@ -373,7 +400,6 @@ async function buscar(){
     .eq("periodo", periodo)
     .order("criado_em", { ascending: false });
 
-  // só filtra referência se foi digitado
   if(ref) q = q.eq("referencia", ref);
 
   const { data, error } = await q;
@@ -404,9 +430,6 @@ function limpar(){
   render();
 }
 
-/* =========================================================
-   BAIXAR (PDF / CSV / XLSX)
-   ========================================================= */
 function baixar(tipo){
   if(!selecionado){
     showMsg("Selecione um arquivo salvo na lista.", true);
@@ -434,25 +457,18 @@ function baixar(tipo){
 /* =========================================================
    INIT
    ========================================================= */
-window.addEventListener("message", (ev)=>{
-  const msg = ev.data || {};
-  if(msg.type === "TESOURA_SUPABASE_CONFIG"){
-    SUPABASE_URL = msg.url;
-    SUPABASE_ANON_KEY = msg.key;
-    try{
-      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      clearMsg();
-    }catch(e){
-      showMsg("Erro ao iniciar Supabase: " + e.message, true);
-    }
-  }
-});
+if(!supabaseClient){
+  showMsg("Supabase não inicializado (verifique SUPABASE_URL / SUPABASE_ANON_KEY no config.js).", true);
+}
 
 document.getElementById("btnBuscar").addEventListener("click", buscar);
 document.getElementById("btnLimpar").addEventListener("click", limpar);
 document.getElementById("btnPDF").addEventListener("click", ()=>baixar("pdf"));
 document.getElementById("btnCSV").addEventListener("click", ()=>baixar("csv"));
 document.getElementById("btnXLSX").addEventListener("click", ()=>baixar("xlsx"));
+
+document.getElementById("fPainel").addEventListener("change", applyPainelRules);
+applyPainelRules();
 
 render();
 </script>
