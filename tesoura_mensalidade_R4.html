@@ -57,26 +57,20 @@
     }
     .wrap-table { overflow:auto; max-height: 70vh; border-radius:10px; }
     .chk { width:18px; height:18px; cursor:pointer; }
-  
-/* PRINT FULL (REV_PDF_MENS_2026_01_03) */
-@page { size: A4 portrait; margin: 10mm; }
-@media print{
-  /* não cortar tabela/lista por causa de scroll */
-  .wrap, .painel, .panel, .table-wrap, #wrapTabela, #wrapLista, #lista, #listaJogadores{
-    max-height: none !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
 
-  /* garante quebra de página normal */
-  table{ width: 100% !important; }
-  tr{ page-break-inside: avoid; }
-
-  /* esconde botões no print */
-  .no-print, button{ display:none !important; }
-}
-
-</style>
+    /* PRINT FULL (REV_PDF_MENS_2026_01_03) */
+    @page { size: A4 portrait; margin: 10mm; }
+    @media print{
+      .wrap, .painel, .panel, .table-wrap, #wrapTabela, #wrapLista, #lista, #listaJogadores{
+        max-height: none !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+      table{ width: 100% !important; }
+      tr{ page-break-inside: avoid; }
+      .no-print, button{ display:none !important; }
+    }
+  </style>
 </head>
 <body>
 
@@ -106,7 +100,7 @@
     <div class="hint">
       Regras: valor <b>R$ 70</b> até o <b>2º domingo</b> do mês. Depois: <b>R$ 80</b>.<br/>
       STATUS é o <b>P</b>: fica <span class="pverde">verde</span> quando pagar, e fica <span class="pvermelho">vermelho</span> na <b>segunda-feira após o 2º domingo</b> se não pagar.<br/>
-      Ao marcar/desmarcar, salva automaticamente.
+      Ao marcar/desmarcar, salva automaticamente. No botão <b>EDITAR</b> você pode digitar um valor diferente (ex.: 60, 90, etc).
     </div>
 
     <div class="totalbox" id="totalPagoMes">TOTAL PAGO NO MÊS: R$ 0 (0)</div>
@@ -264,7 +258,8 @@
       mes: month,
       pago: !!pago,
       data_pagamento: data_pagamento || null,
-      valor: (valor == null ? null : Number(valor)),
+      // REGRA: se NÃO PAGO, valor fica NULL no banco
+      valor: (pago ? (valor == null ? null : Number(valor)) : null),
       data_vencimento: data_vencimento
     };
 
@@ -413,27 +408,28 @@
           }
           inpDate.disabled = !pagoAgora;
 
-          let valor = suggestedValueNow(year2, month2);
+          // se já existe valor customizado no banco, mantém; senão calcula 70/80
+          let valorCalc = suggestedValueNow(year2, month2);
           if(pagoAgora){
-            valor = valueByPaymentDate(year2, month2, inpDate.value);
+            if(r && r.valor != null && r.valor !== "") valorCalc = Number(r.valor);
+            else valorCalc = valueByPaymentDate(year2, month2, inpDate.value);
           } else {
             inpDate.value = "";
           }
 
-          tdV.textContent = `R$ ${Number(valor).toFixed(0)}`;
+          tdV.textContent = `R$ ${Number(valorCalc).toFixed(0)}`;
 
           const stNow = statusP(pagoAgora, year2, month2);
           tdS.textContent = stNow.text;
           tdS.className = stNow.cls;
 
-          // >>> aqui salva SEMPRE: marcar e desmarcar
           const ok = await salvarRegistro(
             apelido,
             year2,
             month2,
             pagoAgora,
             (pagoAgora ? inpDate.value : null),
-            valor,
+            (pagoAgora ? valorCalc : null),
             vencIso2
           );
 
@@ -445,7 +441,50 @@
 
         chk.addEventListener("change", salvarAgora);
         inpDate.addEventListener("change", salvarAgora);
-        btnEdt.addEventListener("click", salvarAgora);
+
+        // EDITAR: permite digitar qualquer valor
+        btnEdt.addEventListener("click", async ()=>{
+          const year2 = Number(selAno.value);
+          const month2 = Number(selMes.value);
+          const vencIso2 = isoSecondSunday(year2, month2);
+
+          // ao editar: garante que está como PAGO
+          if(!chk.checked){
+            chk.checked = true;
+            if(!inpDate.value) inpDate.value = isoToday();
+            inpDate.disabled = false;
+          }
+
+          const valorAtual = (r && r.valor != null && r.valor !== "") ? Number(r.valor) : Number(tdV.textContent.replace(/[^\d.,-]/g,"").replace(",",".") || 70);
+          const resp = prompt(`Digite o valor da mensalidade de ${apelido} (${pad2(month2)}/${year2})`, String(isFinite(valorAtual) ? valorAtual : 70));
+          if(resp === null) return;
+
+          const v = Number(String(resp).trim().replace(",", "."));
+          if(!isFinite(v) || v <= 0){
+            alert("Valor inválido.");
+            return;
+          }
+
+          tdV.textContent = `R$ ${Number(v).toFixed(0)}`;
+          const stNow = statusP(true, year2, month2);
+          tdS.textContent = stNow.text;
+          tdS.className = stNow.cls;
+
+          const ok = await salvarRegistro(
+            apelido,
+            year2,
+            month2,
+            true,
+            (inpDate.value || isoToday()),
+            v,
+            vencIso2
+          );
+
+          if(ok){
+            toast(`SALVO (VALOR): ${apelido} = R$ ${Number(v).toFixed(0)}`);
+            load();
+          }
+        });
 
         btnDel.addEventListener("click", async ()=>{
           const year2 = Number(selAno.value);
