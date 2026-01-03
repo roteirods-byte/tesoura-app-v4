@@ -42,9 +42,8 @@
     .pos{color:#22c55e}
     .neg{color:#ef4444}
     .saldo{font-weight:900}
-    .readonly{opacity:.65}
 
-    /* Larguras (sem TIPO) */
+    /* Larguras (sem coluna TIPO) */
     th.col-data, td.col-data{width:110px}
     th.col-desc, td.col-desc{width:420px}
     th.col-obs,  td.col-obs{width:170px}
@@ -104,7 +103,7 @@
 
       <div class="row">
         <button id="btnConsultar" class="btn btn-azul no-print">CONSULTAR</button>
-        <button id="btnPdf" class="btn btn-laranja no-print" title="Salvar em PDF">BAIXAR PDF</button>
+        <button id="btnPdf" class="btn btn-laranja no-print">BAIXAR PDF</button>
       </div>
     </div>
 
@@ -120,7 +119,6 @@
   <div class="painel">
     <h2>LANÇAMENTOS</h2>
 
-    <!-- SEM HORA -->
     <div class="row no-print" style="margin-bottom:10px;gap:8px;">
       <input id="inData" type="date" />
       <select id="inTipo">
@@ -133,7 +131,7 @@
       <button id="btnAdd" class="btn btn-azul">SALVAR</button>
     </div>
 
-    <div class="table-wrap" id="wrapTabela">
+    <div class="table-wrap">
       <table>
         <thead>
           <tr>
@@ -156,14 +154,20 @@
 
 <script src="app/core/config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  // ===== SUPABASE =====
-  const CFG = window.TESOURA_CONFIG || {};
-  const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
-  const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-  const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-  // ===== UI =====
+<script>
+(function(){
+  // ========= SAFE START =========
+  const statusEl = document.getElementById("status");
+  const status2  = document.getElementById("status2");
+
+  function failUI(msg, err){
+    statusEl.textContent = msg;
+    status2.textContent = msg;
+    if (err) console.error(err);
+  }
+
+  // DOM refs
   const selAno = document.getElementById("selAno");
   const selMes = document.getElementById("selMes");
   const selPeriodo = document.getElementById("selPeriodo");
@@ -172,10 +176,7 @@
   const btnConsultar = document.getElementById("btnConsultar");
   const btnPdf = document.getElementById("btnPdf");
 
-  const statusEl = document.getElementById("status");
-  const status2 = document.getElementById("status2");
   const tbody = document.getElementById("tbody");
-
   const saldoAnteriorEl = document.getElementById("saldoAnterior");
   const saldoPeriodoEl  = document.getElementById("saldoPeriodo");
   const saldoFinalEl    = document.getElementById("saldoFinal");
@@ -187,120 +188,40 @@
   const inValor= document.getElementById("inValor");
   const btnAdd = document.getElementById("btnAdd");
 
-  // ===== HELPERS =====
+  // helpers
   const pad2 = n => String(n).padStart(2,"0");
   const money = (v) => Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-  const toBR = (iso) => {
+
+  function toBR(iso){
     if (!iso) return "";
     const s = String(iso).slice(0,10);
     const y=s.slice(0,4), m=s.slice(5,7), d=s.slice(8,10);
-    if (y && m && d) return `${d}/${m}/${y}`;
-    return s;
-  };
-  const escapeHtml = (str) => String(str ?? "")
-    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    return (y && m && d) ? `${d}/${m}/${y}` : s;
+  }
 
   function startOfWeekMonday(dateObj){
     const d = new Date(dateObj.getTime());
     d.setHours(0,0,0,0);
-    const day = d.getDay(); // 0 dom
+    const day = d.getDay();
     const diff = (day === 0) ? -6 : (1 - day);
     d.setDate(d.getDate() + diff);
     return d;
   }
   function addDays(d, n){ const x = new Date(d.getTime()); x.setDate(x.getDate()+n); return x; }
-  function lastDayOfMonth(y,m){ return new Date(y, m, 0).getDate(); } // m = 1..12
+  function lastDayOfMonth(y,m){ return new Date(y, m, 0).getDate(); }
 
-  // Mensalidade (R$ 70) NÃO EXISTE: ocultar tudo que for mensalidade
+  // regra: ocultar “mensalidade / R$70”
   function isMensalidadeRow(r){
     const desc = String(r?.descricao || "").toUpperCase();
     const obs  = String(r?.obs || "").toUpperCase();
-    const tipo = String(r?.tipo || "").toUpperCase();
-    const valor = Number(r?.valor || 0);
-
-    // regra: remove receitas de 70 e textos de mensalidade
-    if (Math.abs(valor) === 70) return true;
+    const v = Number(r?.valor || 0);
+    if (Math.abs(v) === 70) return true;
     if (desc.includes("MENSALIDADE")) return true;
     if (obs.includes("MENSALIDADE")) return true;
-    // (segurança extra)
-    if (tipo.includes("MENSALIDADE")) return true;
-
     return false;
   }
 
-  function buildPrintHTML(){
-    const ano = Number(selAno.value);
-    const mes = Number(selMes.value);
-    const periodo = String(selPeriodo.value);
-    const faixa = (periodo==="SEMANAL") ? (selSemana.options[selSemana.selectedIndex]?.textContent || "") :
-                 (periodo==="MENSAL") ? `${pad2(mes)}/${ano}` : `${ano}`;
-
-    const rows = window.__printRows || [];
-    const saldoAnteriorTxt = saldoAnteriorEl.textContent || "R$ 0,00";
-    const saldoPeriodoTxt  = saldoPeriodoEl.textContent || "R$ 0,00";
-    const saldoFinalTxt    = saldoFinalEl.textContent || "R$ 0,00";
-
-    const trs = rows.map(r => `
-      <tr>
-        <td>${escapeHtml(r.data)}</td>
-        <td style="text-align:left;">${escapeHtml(r.descricao)}</td>
-        <td style="text-align:left;">${escapeHtml(r.obs)}</td>
-        <td style="text-align:right;">${escapeHtml(r.receita)}</td>
-        <td style="text-align:right;">${escapeHtml(r.despesa)}</td>
-        <td style="text-align:right;">${escapeHtml(r.saldo)}</td>
-      </tr>
-    `).join("");
-
-    return `<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8" />
-<title>TESOURA - CAIXA</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>
-  @page{ size:A4 landscape; margin:10mm; }
-  body{font-family:Arial,sans-serif;color:#000;margin:0}
-  h1{font-size:14px;margin:0 0 6px 0}
-  .meta{font-size:11px;margin-bottom:8px}
-  table{width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed}
-  th,td{border:1px solid #000;padding:4px;vertical-align:top;word-wrap:break-word}
-  th{background:#f2f2f2}
-</style>
-</head>
-<body>
-  <h1>TESOURA - CAIXA</h1>
-  <div class="meta"><b>Filtro:</b> ${escapeHtml(faixa)} &nbsp;&nbsp; <b>Saldo anterior:</b> ${escapeHtml(saldoAnteriorTxt)} &nbsp;&nbsp; <b>Saldo no período:</b> ${escapeHtml(saldoPeriodoTxt)} &nbsp;&nbsp; <b>Saldo final:</b> ${escapeHtml(saldoFinalTxt)}</div>
-  <table>
-    <thead>
-      <tr>
-        <th style="width:80px;">DATA</th>
-        <th style="width:300px;">DESCRIÇÃO</th>
-        <th style="width:200px;">OBS</th>
-        <th style="width:90px;">RECEITA (R$)</th>
-        <th style="width:90px;">DESPESA (R$)</th>
-        <th style="width:90px;">SALDO (R$)</th>
-      </tr>
-    </thead>
-    <tbody>${trs}</tbody>
-  </table>
-<script>
-window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
-<\/script>
-</body>
-</html>`;
-  }
-
-  function baixarPDF(){
-    const html = buildPrintHTML();
-    const w = window.open("", "_blank");
-    if (!w){ alert("Seu navegador bloqueou o pop-up do PDF."); return; }
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-  }
-
-  // ===== filtros =====
+  // filtros
   function buildAnoOptions(){
     const now = new Date();
     const y = now.getFullYear();
@@ -313,7 +234,6 @@ window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
       selAno.appendChild(opt);
     }
   }
-
   function buildMesOptions(){
     const meses = ["01 - JAN","02 - FEV","03 - MAR","04 - ABR","05 - MAI","06 - JUN","07 - JUL","08 - AGO","09 - SET","10 - OUT","11 - NOV","12 - DEZ"];
     selMes.innerHTML = "";
@@ -324,7 +244,6 @@ window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
       selMes.appendChild(opt);
     });
   }
-
   function buildSemanaOptions(){
     selSemana.innerHTML = "";
     const ano = Number(selAno.value) || (new Date()).getFullYear();
@@ -342,19 +261,16 @@ window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
       cur = fim;
     }
   }
-
   function updateUIByPeriodo(){
     wrapSemana.style.display = (String(selPeriodo.value)==="SEMANAL") ? "" : "none";
   }
-
   function getRange(){
     const ano = Number(selAno.value);
     const mes = Number(selMes.value);
     const p = String(selPeriodo.value);
 
-    if (p === "ANUAL"){
-      return { ini: `${ano}-01-01`, fim: `${ano+1}-01-01` };
-    }
+    if (p === "ANUAL") return { ini: `${ano}-01-01`, fim: `${ano+1}-01-01` };
+
     if (p === "MENSAL"){
       const ini = `${ano}-${pad2(mes)}-01`;
       const ld = lastDayOfMonth(ano, mes);
@@ -362,6 +278,7 @@ window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
       const fimPlus = addDays(new Date(fim+"T00:00:00"), 1).toISOString().slice(0,10);
       return { ini, fim: fimPlus };
     }
+
     const v = String(selSemana.value || "");
     const parts = v.split("|");
     const ini = parts[0] || `${ano}-${pad2(mes)}-01`;
@@ -369,27 +286,32 @@ window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
     return { ini, fim };
   }
 
-  // ===== CRUD (schema correto: data, tipo, descricao, valor, obs) =====
+  // PDF (simples: imprime tela)
+  function baixarPDF(){ window.print(); }
+
+  // ===== Supabase client (com proteção) =====
+  const SUPABASE_URL = (window.TESOURA_CONFIG && TESOURA_CONFIG.SUPABASE_URL) ? TESOURA_CONFIG.SUPABASE_URL : "https://xuplzpispukvtggjasxx.supabase.co";
+  const SUPABASE_ANON_KEY = (window.TESOURA_CONFIG && TESOURA_CONFIG.SUPABASE_ANON_KEY) ? TESOURA_CONFIG.SUPABASE_ANON_KEY : "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+
+  let supa = null;
+  try{
+    if (!window.supabase || !window.supabase.createClient) throw new Error("Supabase JS não carregou (CDN).");
+    supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }catch(e){
+    supa = null;
+    failUI("ERRO: Supabase não carregou. Atualize (Ctrl+F5).", e);
+  }
+
+  // ===== DB =====
   async function fetchWithin(ini, fim){
-    const { data, error } = await sb
-      .from("caixa")
-      .select("*")
-      .gte("data", ini)
-      .lt("data", fim)
-      .order("data", {ascending:true});
+    const { data, error } = await supa.from("caixa").select("*").gte("data", ini).lt("data", fim).order("data", {ascending:true});
     if (error) throw error;
     return data || [];
   }
-
   async function sumBefore(ini){
     const ano = String(ini).slice(0,4);
     const iniAno = `${ano}-01-01`;
-    const { data, error } = await sb
-      .from("caixa")
-      .select("*")
-      .gte("data", iniAno)
-      .lt("data", ini)
-      .order("data", {ascending:true});
+    const { data, error } = await supa.from("caixa").select("*").gte("data", iniAno).lt("data", ini).order("data", {ascending:true});
     if (error) throw error;
 
     let total = 0;
@@ -406,8 +328,6 @@ window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
     let saldo = window.__saldoAnterior || 0;
     let saldoPeriodo = 0;
 
-    window.__printRows = [];
-
     rows.forEach((r)=>{
       const tr = document.createElement("tr");
 
@@ -421,106 +341,208 @@ window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
       saldo += signed;
       saldoPeriodo += signed;
 
-      // DATA
       const tdData = document.createElement("td");
       tdData.className = "col-data";
       tdData.textContent = toBR(r.data);
-      tr.appendChild(tdData);
 
-      // DESCRIÇÃO (editável)
       const tdDesc = document.createElement("td");
       tdDesc.className = "left col-desc";
       const inD = document.createElement("input");
       inD.type = "text";
       inD.value = String(r.descricao || "");
       tdDesc.appendChild(inD);
-      tr.appendChild(tdDesc);
 
-      // OBS (editável)
       const tdObs = document.createElement("td");
       tdObs.className = "left col-obs";
       const inO = document.createElement("input");
       inO.type = "text";
       inO.value = String(r.obs || "");
       tdObs.appendChild(inO);
-      tr.appendChild(tdObs);
 
-      // RECEITA
       const tdR = document.createElement("td");
       tdR.className = "col-rec";
       tdR.innerHTML = receita ? `<span class="money pos">${money(receita)}</span>` : "";
-      tr.appendChild(tdR);
 
-      // DESPESA
       const tdE = document.createElement("td");
       tdE.className = "col-desp";
       tdE.innerHTML = despesa ? `<span class="money neg">${money(despesa)}</span>` : "";
-      tr.appendChild(tdE);
 
-      // SALDO
       const tdS = document.createElement("td");
       tdS.className = "col-saldo";
       tdS.innerHTML = `<span class="saldo">${money(saldo)}</span>`;
-      tr.appendChild(tdS);
 
-      // AÇÕES
       const tdA = document.createElement("td");
       tdA.className = "no-print col-acoes";
 
-      const btnSalvar = document.createElement("button");
-      btnSalvar.className = "btn btn-azul";
-      btnSalvar.textContent = "EDITAR";
+      const btnEditar = document.createElement("button");
+      btnEditar.className = "btn btn-azul";
+      btnEditar.textContent = "EDITAR";
 
       const btnExcluir = document.createElement("button");
       btnExcluir.className = "btn btn-vermelho";
       btnExcluir.textContent = "EXCLUIR";
       btnExcluir.style.marginLeft = "6px";
 
-      tdA.appendChild(btnSalvar);
-      tdA.appendChild(btnExcluir);
-      tr.appendChild(tdA);
-
-      btnSalvar.addEventListener("click", async ()=>{
+      btnEditar.addEventListener("click", async ()=>{
         try{
-          btnSalvar.disabled = true;
+          btnEditar.disabled = true;
           status2.textContent = "";
 
           const novaDesc = (inD.value || "").toUpperCase();
           const novaObs  = (inO.value || "").toUpperCase();
 
-          const { error } = await sb
-            .from("caixa")
-            .update({ descricao: novaDesc, obs: novaObs })
-            .eq("id", r.id);
+          const { error } = await supa.from("caixa").update({ descricao: novaDesc, obs: novaObs }).eq("id", r.id);
+          if (error) throw error;
 
-          if (error){
-            alert("ERRO ao editar (ver console).");
-            console.error(error);
-            return;
-          }
           status2.textContent = "Editado.";
           setTimeout(()=>{ if(status2.textContent==="Editado.") status2.textContent=""; }, 800);
-        } finally {
-          btnSalvar.disabled = false;
+        }catch(e){
+          failUI("ERRO ao editar (ver console).", e);
+          alert("ERRO ao editar (ver console).");
+        }finally{
+          btnEditar.disabled = false;
         }
       });
 
       btnExcluir.addEventListener("click", async ()=>{
         if (!confirm("Excluir este lançamento?")) return;
-        const { error } = await sb
-          .from("caixa")
-          .delete()
-          .eq("id", r.id);
-
-        if (error){
+        try{
+          const { error } = await supa.from("caixa").delete().eq("id", r.id);
+          if (error) throw error;
+          carregar();
+        }catch(e){
+          failUI("ERRO ao excluir (ver console).", e);
           alert("ERRO ao excluir (ver console).");
-          console.error(error);
-          return;
         }
-        carregar();
       });
 
-      window.__printRows.push({
-        data: tdData.textContent,
-        descricao: inD.value || "",
-        obs: inO.value
+      tdA.appendChild(btnEditar);
+      tdA.appendChild(btnExcluir);
+
+      tr.appendChild(tdData);
+      tr.appendChild(tdDesc);
+      tr.appendChild(tdObs);
+      tr.appendChild(tdR);
+      tr.appendChild(tdE);
+      tr.appendChild(tdS);
+      tr.appendChild(tdA);
+
+      tbody.appendChild(tr);
+    });
+
+    saldoPeriodoEl.textContent = money(saldoPeriodo);
+    saldoFinalEl.textContent = money(saldo);
+  }
+
+  async function addLancamento(){
+    if (!supa){
+      alert("Supabase não carregou. Faça Ctrl+F5.");
+      return;
+    }
+    try{
+      btnAdd.disabled = true;
+      status2.textContent = "";
+
+      const data = inData.value;
+      const tipo = String(inTipo.value || "RECEITA").toUpperCase();
+      const desc = String(inDesc.value || "").trim();
+      const obs  = String(inObs.value || "").trim();
+      const valor = Number(inValor.value || 0);
+
+      if (!data || !desc || !valor){
+        alert("Preencha: DATA, DESCRIÇÃO e VALOR.");
+        return;
+      }
+
+      // bloqueio mensalidade/70 (não existe)
+      const descUp = desc.toUpperCase();
+      if (descUp.includes("MENSALIDADE") || Math.abs(valor) === 70){
+        alert("Mensalidade / R$ 70 não existe aqui. Lançamento bloqueado.");
+        return;
+      }
+
+      const payload = {
+        data,
+        tipo,
+        descricao: desc.toUpperCase(),
+        valor: Math.abs(valor),
+        obs: obs.toUpperCase()
+      };
+
+      const { error } = await supa.from("caixa").insert(payload);
+      if (error) throw error;
+
+      inDesc.value = "";
+      inObs.value = "";
+      inValor.value = "";
+      carregar();
+    }catch(e){
+      failUI("ERRO ao criar (ver console).", e);
+      alert("ERRO ao criar (ver console).");
+    }finally{
+      btnAdd.disabled = false;
+    }
+  }
+
+  async function carregar(){
+    if (!supa){
+      statusEl.textContent = "ERRO: Supabase não carregou. Ctrl+F5.";
+      return;
+    }
+    try{
+      statusEl.textContent = "Carregando...";
+      status2.textContent = "";
+      tbody.innerHTML = "";
+
+      updateUIByPeriodo();
+      const {ini, fim} = getRange();
+
+      let saldoAnt = 0;
+      try{ saldoAnt = await sumBefore(ini); }catch(e){ saldoAnt = 0; console.warn(e); }
+      window.__saldoAnterior = saldoAnt;
+      saldoAnteriorEl.textContent = money(saldoAnt);
+
+      let rows = await fetchWithin(ini, fim);
+      rows = rows.filter(r => !isMensalidadeRow(r)); // remove “mensalidade/70”
+
+      render(rows);
+
+      statusEl.textContent = `LISTA CARREGADA. Registros: ${rows.length}` + (rows.length===0 ? " (painel vazio)" : "");
+    }catch(e){
+      failUI("ERRO ao buscar CAIXA (ver console).", e);
+      alert("ERRO ao buscar CAIXA (ver console).");
+    }
+  }
+
+  // ===== INIT (garantido) =====
+  function init(){
+    try{
+      buildAnoOptions();
+      buildMesOptions();
+      buildSemanaOptions();
+      updateUIByPeriodo();
+
+      const now = new Date();
+      inData.value = now.toISOString().slice(0,10);
+      selMes.value = String(now.getMonth()+1);
+
+      btnPdf.addEventListener("click", baixarPDF);
+      btnConsultar.addEventListener("click", carregar);
+      btnAdd.addEventListener("click", addLancamento);
+
+      selPeriodo.addEventListener("change", ()=>{ updateUIByPeriodo(); });
+      selAno.addEventListener("change", ()=>{ buildSemanaOptions(); });
+
+      statusEl.textContent = "Pronto.";
+      carregar();
+    }catch(e){
+      failUI("ERRO no painel (ver console).", e);
+      alert("ERRO no painel (ver console).");
+    }
+  }
+
+  window.addEventListener("load", init);
+})();
+</script>
+</body>
+</html>
