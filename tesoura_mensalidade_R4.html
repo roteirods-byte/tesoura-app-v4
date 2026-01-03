@@ -57,7 +57,26 @@
     }
     .wrap-table { overflow:auto; max-height: 70vh; border-radius:10px; }
     .chk { width:18px; height:18px; cursor:pointer; }
-  </style>
+  
+/* PRINT FULL (REV_PDF_MENS_2026_01_03) */
+@page { size: A4 portrait; margin: 10mm; }
+@media print{
+  /* não cortar tabela/lista por causa de scroll */
+  .wrap, .painel, .panel, .table-wrap, #wrapTabela, #wrapLista, #lista, #listaJogadores{
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* garante quebra de página normal */
+  table{ width: 100% !important; }
+  tr{ page-break-inside: avoid; }
+
+  /* esconde botões no print */
+  .no-print, button{ display:none !important; }
+}
+
+</style>
 </head>
 <body>
 
