@@ -92,7 +92,7 @@
 
     <p style="margin:10px 0 0;font-size:12px;color:#cbd5e1;">
       OBS: C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
-      <span class="pverde">P (verde)</span> pagou |
+      P (branco) pendente | <span class="pverde">P (verde)</span> pagou |
       <span class="pvermelho">P (vermelho)</span> não pagou.
     </p>
     <div class="status" id="status">A lista carrega automaticamente.</div>
@@ -206,19 +206,40 @@
     return meses;
   }
 
-  function isPagoGreen(ano, mes, pagoBool){
-    // até segunda após 2º domingo: todo mundo "verde"
-    const segDom = getSegundoDomingo(ano, mes);
-    if (!segDom) return true;
-    const viraVermelho = addDias(segDom, 1); // segunda-feira
+  // INICIO OFICIAL DO APP (não mostrar P em meses anteriores)
+  const APP_START_ANO = 2026;
+  const APP_START_MES = 1;
+
+  function getPStatus(ano, mes, pagoBool){
+    // meses antes do início do app: vazio
+    if (ano < APP_START_ANO or (ano == APP_START_ANO and mes < APP_START_MES)):
+      return {"text":"", "className":""}
+
+    // mês futuro: vazio
     const hoje0 = new Date();
     hoje0.setHours(0,0,0,0);
-    const lim = new Date(viraVermelho.getTime());
-    lim.setHours(0,0,0,0);
+    const mesIni = new Date(ano, mes-1, 1);
+    mesIni.setHours(0,0,0,0);
+    if (hoje0 < mesIni):
+      return {"text":"", "className":""}
 
-    if (hoje0 < lim) return true;      // ainda não venceu
-    return !!pagoBool;                 // venceu: verde só se pagou
+    // pagou: P verde
+    if (pagoBool):
+      return {"text":"P", "className":"pverde"}
+
+    // não pagou: antes do vencimento = P branco; depois = P vermelho
+    const segDom = getSegundoDomingo(ano, mes);
+    if (!segDom):
+      return {"text":"P", "className":""}
+
+    const viraVermelho = addDias(segDom, 1); // segunda-feira após 2º domingo
+    viraVermelho.setHours(0,0,0,0);
+
+    if (hoje0 >= viraVermelho):
+      return {"text":"P", "className":"pvermelho"}
+    return {"text":"P", "className":""}
   }
+
 
   function normIsoDate(v){
     if (!v) return "";
@@ -389,9 +410,9 @@
           const menKey = `${apelido}::${mm.ano}-${pad2(mm.mes)}`;
           const menRow = mapaMen[menKey];
           const pago = menRow ? !!menRow.pago : false;
-          const green = isPagoGreen(mm.ano, mm.mes, pago);
-          tdP.textContent = "P";
-          tdP.className = green ? "pverde" : "pvermelho";
+          const st = getPStatus(mm.ano, mm.mes, pago);
+          tdP.textContent = st.text;
+          tdP.className = st.className;
           tr.appendChild(tdP);
 
           // domingos do mês
