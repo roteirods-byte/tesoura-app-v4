@@ -206,38 +206,42 @@
     return meses;
   }
 
-  // INICIO OFICIAL DO APP (não mostrar P em meses anteriores)
+  // INÍCIO OFICIAL DO APP (não mostrar P em meses anteriores)
   const APP_START_ANO = 2026;
   const APP_START_MES = 1;
 
   function getPStatus(ano, mes, pagoBool){
     // meses antes do início do app: vazio
-    if (ano < APP_START_ANO or (ano == APP_START_ANO and mes < APP_START_MES)):
-      return {"text":"", "className":""}
+    if (ano < APP_START_ANO || (ano === APP_START_ANO && mes < APP_START_MES)) {
+      return { text: "", className: "" };
+    }
 
     // mês futuro: vazio
     const hoje0 = new Date();
     hoje0.setHours(0,0,0,0);
-    const mesIni = new Date(ano, mes-1, 1);
+    const mesIni = new Date(ano, mes - 1, 1);
     mesIni.setHours(0,0,0,0);
-    if (hoje0 < mesIni):
-      return {"text":"", "className":""}
+    if (hoje0 < mesIni) {
+      return { text: "", className: "" };
+    }
 
     // pagou: P verde
-    if (pagoBool):
-      return {"text":"P", "className":"pverde"}
+    if (pagoBool) {
+      return { text: "P", className: "pverde" };
+    }
 
     // não pagou: antes do vencimento = P branco; depois = P vermelho
     const segDom = getSegundoDomingo(ano, mes);
-    if (!segDom):
-      return {"text":"P", "className":""}
-
-    const viraVermelho = addDias(segDom, 1); // segunda-feira após 2º domingo
+    if (!segDom) {
+      return { text: "P", className: "" };
+    }
+    const viraVermelho = addDias(segDom, 1); // segunda após 2º domingo
     viraVermelho.setHours(0,0,0,0);
 
-    if (hoje0 >= viraVermelho):
-      return {"text":"P", "className":"pvermelho"}
-    return {"text":"P", "className":""}
+    if (hoje0 >= viraVermelho) {
+      return { text: "P", className: "pvermelho" };
+    }
+    return { text: "P", className: "" }; // branco (pendente)
   }
 
 
