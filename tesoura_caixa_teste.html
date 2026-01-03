@@ -23,7 +23,7 @@
     .btn:disabled{opacity:.45;cursor:not-allowed}
     .status{margin-top:8px;font-size:12px;color:#9ca3af}
 
-    /* SEM BARRA DE ROLAGEM INTERNA */
+    /* (5) SEM barra de rolagem interna */
     .table-wrap{overflow:visible;max-height:none;border-radius:12px;border:1px solid #0f172a}
 
     table{border-collapse:collapse;font-size:12px;width:100%;table-layout:fixed}
@@ -43,14 +43,14 @@
     .neg{color:#ef4444}
     .saldo{font-weight:900}
 
-    /* Larguras (sem coluna TIPO) */
-    th.col-data, td.col-data{width:110px}
-    th.col-desc, td.col-desc{width:420px}
-    th.col-obs,  td.col-obs{width:170px}
-    th.col-rec,  td.col-rec{width:130px}
-    th.col-desp, td.col-desp{width:130px}
-    th.col-saldo,td.col-saldo{width:140px}
-    th.col-acoes,td.col-acoes{width:120px}
+    /* (1)(2) Ajuste de larguras: DESCRIÇÃO menor, AÇÕES maior */
+    th.col-data,  td.col-data{width:110px}
+    th.col-desc,  td.col-desc{width:320px}  /* menor */
+    th.col-obs,   td.col-obs{width:160px}
+    th.col-rec,   td.col-rec{width:130px}
+    th.col-desp,  td.col-desp{width:130px}
+    th.col-saldo, td.col-saldo{width:140px}
+    th.col-acoes, td.col-acoes{width:190px} /* maior */
 
     td.col-desc, td.col-obs{white-space:normal}
     td.col-desc input, td.col-obs input{width:100% !important; box-sizing:border-box}
@@ -119,6 +119,7 @@
   <div class="painel">
     <h2>LANÇAMENTOS</h2>
 
+    <!-- Form de lançar/editar -->
     <div class="row no-print" style="margin-bottom:10px;gap:8px;">
       <input id="inData" type="date" />
       <select id="inTipo">
@@ -126,9 +127,10 @@
         <option value="DESPESA">DESPESA</option>
       </select>
       <input id="inDesc" type="text" placeholder="DESCRIÇÃO" style="width:320px;" />
-      <input id="inObs" type="text" placeholder="OBS" style="width:170px;" />
+      <input id="inObs" type="text" placeholder="OBS" style="width:160px;" />
       <input id="inValor" type="number" step="0.01" placeholder="VALOR (R$)" />
-      <button id="btnAdd" class="btn btn-azul">SALVAR</button>
+      <button id="btnSalvar" class="btn btn-azul">SALVAR</button>
+      <button id="btnCancelar" class="btn btn-vermelho" style="display:none;">CANCELAR</button>
     </div>
 
     <div class="table-wrap">
@@ -157,17 +159,13 @@
 
 <script>
 (function(){
-  // ========= SAFE START =========
   const statusEl = document.getElementById("status");
   const status2  = document.getElementById("status2");
 
-  function failUI(msg, err){
-    statusEl.textContent = msg;
-    status2.textContent = msg;
-    if (err) console.error(err);
-  }
+  function setMsg(msg){ status2.textContent = msg || ""; }
+  function fail(msg, err){ statusEl.textContent = msg; setMsg(msg); if(err) console.error(err); }
 
-  // DOM refs
+  // UI
   const selAno = document.getElementById("selAno");
   const selMes = document.getElementById("selMes");
   const selPeriodo = document.getElementById("selPeriodo");
@@ -186,19 +184,23 @@
   const inDesc = document.getElementById("inDesc");
   const inObs  = document.getElementById("inObs");
   const inValor= document.getElementById("inValor");
-  const btnAdd = document.getElementById("btnAdd");
+  const btnSalvar = document.getElementById("btnSalvar");
+  const btnCancelar = document.getElementById("btnCancelar");
 
   // helpers
   const pad2 = n => String(n).padStart(2,"0");
   const money = (v) => Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-
   function toBR(iso){
-    if (!iso) return "";
+    if(!iso) return "";
     const s = String(iso).slice(0,10);
     const y=s.slice(0,4), m=s.slice(5,7), d=s.slice(8,10);
     return (y && m && d) ? `${d}/${m}/${y}` : s;
   }
-
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
   function startOfWeekMonday(dateObj){
     const d = new Date(dateObj.getTime());
     d.setHours(0,0,0,0);
@@ -210,7 +212,7 @@
   function addDays(d, n){ const x = new Date(d.getTime()); x.setDate(x.getDate()+n); return x; }
   function lastDayOfMonth(y,m){ return new Date(y, m, 0).getDate(); }
 
-  // regra: ocultar “mensalidade / R$70”
+  // regra: remover mensalidade / R$70
   function isMensalidadeRow(r){
     const desc = String(r?.descricao || "").toUpperCase();
     const obs  = String(r?.obs || "").toUpperCase();
@@ -226,11 +228,11 @@
     const now = new Date();
     const y = now.getFullYear();
     selAno.innerHTML = "";
-    for (let a = y-1; a <= y+1; a++){
+    for(let a=y-1; a<=y+1; a++){
       const opt = document.createElement("option");
       opt.value = a;
       opt.textContent = a;
-      if (a === y) opt.selected = true;
+      if(a===y) opt.selected = true;
       selAno.appendChild(opt);
     }
   }
@@ -250,7 +252,7 @@
     const start = startOfWeekMonday(new Date(ano,0,1));
     const end = new Date(ano,11,31);
     let cur = new Date(start.getTime());
-    while (cur <= end){
+    while(cur <= end){
       const ini = new Date(cur.getTime());
       const fim = addDays(ini, 7);
       const label = `${ini.toLocaleDateString("pt-BR")} → ${addDays(fim,-1).toLocaleDateString("pt-BR")}`;
@@ -269,14 +271,14 @@
     const mes = Number(selMes.value);
     const p = String(selPeriodo.value);
 
-    if (p === "ANUAL") return { ini: `${ano}-01-01`, fim: `${ano+1}-01-01` };
+    if(p === "ANUAL") return { ini:`${ano}-01-01`, fim:`${ano+1}-01-01` };
 
-    if (p === "MENSAL"){
+    if(p === "MENSAL"){
       const ini = `${ano}-${pad2(mes)}-01`;
       const ld = lastDayOfMonth(ano, mes);
       const fim = `${ano}-${pad2(mes)}-${pad2(ld)}`;
       const fimPlus = addDays(new Date(fim+"T00:00:00"), 1).toISOString().slice(0,10);
-      return { ini, fim: fimPlus };
+      return { ini, fim:fimPlus };
     }
 
     const v = String(selSemana.value || "");
@@ -286,57 +288,168 @@
     return { ini, fim };
   }
 
-  // PDF (simples: imprime tela)
-  function baixarPDF(){ window.print(); }
-
-  // ===== Supabase client (com proteção) =====
+  // Supabase
   const SUPABASE_URL = (window.TESOURA_CONFIG && TESOURA_CONFIG.SUPABASE_URL) ? TESOURA_CONFIG.SUPABASE_URL : "https://xuplzpispukvtggjasxx.supabase.co";
   const SUPABASE_ANON_KEY = (window.TESOURA_CONFIG && TESOURA_CONFIG.SUPABASE_ANON_KEY) ? TESOURA_CONFIG.SUPABASE_ANON_KEY : "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-
   let supa = null;
+
   try{
-    if (!window.supabase || !window.supabase.createClient) throw new Error("Supabase JS não carregou (CDN).");
+    if(!window.supabase?.createClient) throw new Error("Supabase JS não carregou.");
     supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }catch(e){
     supa = null;
-    failUI("ERRO: Supabase não carregou. Atualize (Ctrl+F5).", e);
+    fail("ERRO: Supabase não carregou. Ctrl+F5.", e);
   }
 
-  // ===== DB =====
   async function fetchWithin(ini, fim){
-    const { data, error } = await supa.from("caixa").select("*").gte("data", ini).lt("data", fim).order("data", {ascending:true});
-    if (error) throw error;
+    const { data, error } = await supa.from("caixa").select("*").gte("data", ini).lt("data", fim).order("data",{ascending:true});
+    if(error) throw error;
     return data || [];
   }
   async function sumBefore(ini){
     const ano = String(ini).slice(0,4);
     const iniAno = `${ano}-01-01`;
-    const { data, error } = await supa.from("caixa").select("*").gte("data", iniAno).lt("data", ini).order("data", {ascending:true});
-    if (error) throw error;
+    const { data, error } = await supa.from("caixa").select("*").gte("data", iniAno).lt("data", ini).order("data",{ascending:true});
+    if(error) throw error;
 
     let total = 0;
-    (data || []).forEach(r=>{
-      const tipo = String(r.tipo || "").toUpperCase();
-      const v = Number(r.valor || 0);
-      total += (tipo === "DESPESA") ? -Math.abs(v) : Math.abs(v);
+    (data||[]).forEach(r=>{
+      const tipo = String(r.tipo||"").toUpperCase();
+      const v = Number(r.valor||0);
+      total += (tipo==="DESPESA") ? -Math.abs(v) : Math.abs(v);
     });
     return total;
   }
 
+  // estado de edição (4)
+  let editId = null;
+
+  function resetForm(){
+    editId = null;
+    btnSalvar.textContent = "SALVAR";
+    btnCancelar.style.display = "none";
+    const now = new Date();
+    inData.value = now.toISOString().slice(0,10);
+    inTipo.value = "RECEITA";
+    inDesc.value = "";
+    inObs.value = "";
+    inValor.value = "";
+    setMsg("");
+  }
+
+  function fillFormFromRow(r){
+    editId = r.id;
+    btnSalvar.textContent = "ATUALIZAR";
+    btnCancelar.style.display = "";
+    inData.value = String(r.data||"").slice(0,10);
+    inTipo.value = String(r.tipo||"RECEITA").toUpperCase()==="DESPESA" ? "DESPESA" : "RECEITA";
+    inDesc.value = String(r.descricao||"");
+    inObs.value  = String(r.obs||"");
+    inValor.value= Number(r.valor||0);
+    setMsg("Editando: ajuste acima e clique ATUALIZAR.");
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  // PDF completo (3) — abre nova janela e imprime em A4 deitado
+  function buildPrintHTML(rows, saldoAnteriorTxt, saldoPeriodoTxt, saldoFinalTxt, filtroTxt){
+    let saldo = Number(window.__saldoAnterior || 0);
+
+    const trs = rows.map(r=>{
+      const tipo = String(r.tipo||"").toUpperCase();
+      const v = Number(r.valor||0);
+      const signed = (tipo==="DESPESA") ? -Math.abs(v) : Math.abs(v);
+      const receita = (tipo==="RECEITA") ? Math.abs(v) : 0;
+      const despesa = (tipo==="DESPESA") ? Math.abs(v) : 0;
+      saldo += signed;
+
+      return `<tr>
+        <td>${esc(toBR(r.data))}</td>
+        <td style="text-align:left;">${esc(r.descricao||"")}</td>
+        <td style="text-align:left;">${esc(r.obs||"")}</td>
+        <td style="text-align:right;">${receita?esc(money(receita)):""}</td>
+        <td style="text-align:right;">${despesa?esc(money(despesa)):""}</td>
+        <td style="text-align:right;">${esc(money(saldo))}</td>
+      </tr>`;
+    }).join("");
+
+    return `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<title>TESOURA - CAIXA (PDF)</title>
+<style>
+  @page{ size:A4 landscape; margin:10mm; }
+  body{font-family:Arial,sans-serif;color:#000;margin:0}
+  h1{font-size:14px;margin:0 0 6px 0}
+  .meta{font-size:11px;margin-bottom:8px}
+  table{width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed}
+  th,td{border:1px solid #000;padding:4px;vertical-align:top;word-wrap:break-word}
+  th{background:#f2f2f2}
+</style>
+</head>
+<body>
+  <h1>TESOURA - CAIXA</h1>
+  <div class="meta"><b>Filtro:</b> ${esc(filtroTxt)} &nbsp;&nbsp; <b>Saldo anterior:</b> ${esc(saldoAnteriorTxt)} &nbsp;&nbsp; <b>Saldo no período:</b> ${esc(saldoPeriodoTxt)} &nbsp;&nbsp; <b>Saldo final:</b> ${esc(saldoFinalTxt)}</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:80px;">DATA</th>
+        <th style="width:320px;">DESCRIÇÃO</th>
+        <th style="width:220px;">OBS</th>
+        <th style="width:90px;">RECEITA</th>
+        <th style="width:90px;">DESPESA</th>
+        <th style="width:90px;">SALDO</th>
+      </tr>
+    </thead>
+    <tbody>${trs}</tbody>
+  </table>
+<script>
+window.onload=()=>{ window.print(); setTimeout(()=>window.close(), 350); };
+<\/script>
+</body>
+</html>`;
+  }
+
+  function baixarPDF(){
+    const rows = window.__rowsForPrint || [];
+    const ano = selAno.value || "";
+    const mes = selMes.options[selMes.selectedIndex]?.textContent || "";
+    const periodo = selPeriodo.value || "";
+    const semana = (periodo==="SEMANAL") ? (selSemana.options[selSemana.selectedIndex]?.textContent || "") : "";
+    const filtroTxt = periodo==="SEMANAL" ? `${ano} | ${mes} | SEMANAL | ${semana}` : `${ano} | ${mes} | ${periodo}`;
+
+    const html = buildPrintHTML(
+      rows,
+      saldoAnteriorEl.textContent || "R$ 0,00",
+      saldoPeriodoEl.textContent || "R$ 0,00",
+      saldoFinalEl.textContent || "R$ 0,00",
+      filtroTxt
+    );
+
+    const w = window.open("", "_blank");
+    if(!w){ alert("Pop-up bloqueado. Permita pop-up para baixar PDF."); return; }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+
   function render(rows){
     tbody.innerHTML = "";
-    let saldo = window.__saldoAnterior || 0;
+
+    let saldo = Number(window.__saldoAnterior || 0);
     let saldoPeriodo = 0;
 
-    rows.forEach((r)=>{
+    // guarda para PDF (3)
+    window.__rowsForPrint = rows.slice();
+
+    rows.forEach(r=>{
       const tr = document.createElement("tr");
 
-      const tipo = String(r.tipo || "").toUpperCase();
-      const v = Number(r.valor || 0);
-      const signed = (tipo === "DESPESA") ? -Math.abs(v) : Math.abs(v);
-
-      const receita = (tipo === "RECEITA") ? Math.abs(v) : 0;
-      const despesa = (tipo === "DESPESA") ? Math.abs(v) : 0;
+      const tipo = String(r.tipo||"").toUpperCase();
+      const v = Number(r.valor||0);
+      const signed = (tipo==="DESPESA") ? -Math.abs(v) : Math.abs(v);
+      const receita = (tipo==="RECEITA") ? Math.abs(v) : 0;
+      const despesa = (tipo==="DESPESA") ? Math.abs(v) : 0;
 
       saldo += signed;
       saldoPeriodo += signed;
@@ -347,17 +460,11 @@
 
       const tdDesc = document.createElement("td");
       tdDesc.className = "left col-desc";
-      const inD = document.createElement("input");
-      inD.type = "text";
-      inD.value = String(r.descricao || "");
-      tdDesc.appendChild(inD);
+      tdDesc.textContent = String(r.descricao||"");
 
       const tdObs = document.createElement("td");
       tdObs.className = "left col-obs";
-      const inO = document.createElement("input");
-      inO.type = "text";
-      inO.value = String(r.obs || "");
-      tdObs.appendChild(inO);
+      tdObs.textContent = String(r.obs||"");
 
       const tdR = document.createElement("td");
       tdR.className = "col-rec";
@@ -374,50 +481,34 @@
       const tdA = document.createElement("td");
       tdA.className = "no-print col-acoes";
 
-      const btnEditar = document.createElement("button");
-      btnEditar.className = "btn btn-azul";
-      btnEditar.textContent = "EDITAR";
+      const bEdit = document.createElement("button");
+      bEdit.className = "btn btn-azul";
+      bEdit.textContent = "EDITAR";
 
-      const btnExcluir = document.createElement("button");
-      btnExcluir.className = "btn btn-vermelho";
-      btnExcluir.textContent = "EXCLUIR";
-      btnExcluir.style.marginLeft = "6px";
+      const bDel = document.createElement("button");
+      bDel.className = "btn btn-vermelho";
+      bDel.textContent = "EXCLUIR";
+      bDel.style.marginLeft = "6px";
 
-      btnEditar.addEventListener("click", async ()=>{
-        try{
-          btnEditar.disabled = true;
-          status2.textContent = "";
-
-          const novaDesc = (inD.value || "").toUpperCase();
-          const novaObs  = (inO.value || "").toUpperCase();
-
-          const { error } = await supa.from("caixa").update({ descricao: novaDesc, obs: novaObs }).eq("id", r.id);
-          if (error) throw error;
-
-          status2.textContent = "Editado.";
-          setTimeout(()=>{ if(status2.textContent==="Editado.") status2.textContent=""; }, 800);
-        }catch(e){
-          failUI("ERRO ao editar (ver console).", e);
-          alert("ERRO ao editar (ver console).");
-        }finally{
-          btnEditar.disabled = false;
-        }
+      bEdit.addEventListener("click", ()=>{
+        fillFormFromRow(r); // (4) manda para as caixas de cima
       });
 
-      btnExcluir.addEventListener("click", async ()=>{
-        if (!confirm("Excluir este lançamento?")) return;
+      bDel.addEventListener("click", async ()=>{
+        if(!confirm("Excluir este lançamento?")) return;
         try{
           const { error } = await supa.from("caixa").delete().eq("id", r.id);
-          if (error) throw error;
+          if(error) throw error;
+          resetForm();
           carregar();
         }catch(e){
-          failUI("ERRO ao excluir (ver console).", e);
+          fail("ERRO ao excluir (ver console).", e);
           alert("ERRO ao excluir (ver console).");
         }
       });
 
-      tdA.appendChild(btnEditar);
-      tdA.appendChild(btnExcluir);
+      tdA.appendChild(bEdit);
+      tdA.appendChild(bDel);
 
       tr.appendChild(tdData);
       tr.appendChild(tdDesc);
@@ -434,64 +525,77 @@
     saldoFinalEl.textContent = money(saldo);
   }
 
-  async function addLancamento(){
-    if (!supa){
-      alert("Supabase não carregou. Faça Ctrl+F5.");
+  async function salvarOuAtualizar(){
+    if(!supa){ alert("Supabase não carregou. Ctrl+F5."); return; }
+
+    const data = inData.value;
+    const tipo = String(inTipo.value||"RECEITA").toUpperCase();
+    const descricao = String(inDesc.value||"").trim();
+    const obs = String(inObs.value||"").trim();
+    const valor = Number(inValor.value||0);
+
+    if(!data || !descricao || !valor){
+      alert("Preencha: DATA, DESCRIÇÃO e VALOR.");
       return;
     }
+
+    // bloqueio mensalidade/R$70
+    const descUp = descricao.toUpperCase();
+    if(descUp.includes("MENSALIDADE") || Math.abs(valor)===70){
+      alert("Mensalidade / R$ 70 não existe aqui. Bloqueado.");
+      return;
+    }
+
     try{
-      btnAdd.disabled = true;
-      status2.textContent = "";
+      btnSalvar.disabled = true;
+      setMsg("");
 
-      const data = inData.value;
-      const tipo = String(inTipo.value || "RECEITA").toUpperCase();
-      const desc = String(inDesc.value || "").trim();
-      const obs  = String(inObs.value || "").trim();
-      const valor = Number(inValor.value || 0);
+      if(editId){ // ATUALIZAR
+        const { error } = await supa.from("caixa").update({
+          data,
+          tipo,
+          descricao: descricao.toUpperCase(),
+          obs: obs.toUpperCase(),
+          valor: Math.abs(valor)
+        }).eq("id", editId);
 
-      if (!data || !desc || !valor){
-        alert("Preencha: DATA, DESCRIÇÃO e VALOR.");
+        if(error) throw error;
+
+        setMsg("Atualizado.");
+        resetForm();
+        carregar();
         return;
       }
 
-      // bloqueio mensalidade/70 (não existe)
-      const descUp = desc.toUpperCase();
-      if (descUp.includes("MENSALIDADE") || Math.abs(valor) === 70){
-        alert("Mensalidade / R$ 70 não existe aqui. Lançamento bloqueado.");
-        return;
-      }
-
-      const payload = {
+      // SALVAR novo
+      const { error } = await supa.from("caixa").insert({
         data,
         tipo,
-        descricao: desc.toUpperCase(),
-        valor: Math.abs(valor),
-        obs: obs.toUpperCase()
-      };
+        descricao: descricao.toUpperCase(),
+        obs: obs.toUpperCase(),
+        valor: Math.abs(valor)
+      });
+      if(error) throw error;
 
-      const { error } = await supa.from("caixa").insert(payload);
-      if (error) throw error;
-
-      inDesc.value = "";
-      inObs.value = "";
-      inValor.value = "";
+      setMsg("Salvo.");
+      resetForm();
       carregar();
     }catch(e){
-      failUI("ERRO ao criar (ver console).", e);
-      alert("ERRO ao criar (ver console).");
+      fail("ERRO ao salvar (ver console).", e);
+      alert("ERRO ao salvar (ver console).");
     }finally{
-      btnAdd.disabled = false;
+      btnSalvar.disabled = false;
     }
   }
 
   async function carregar(){
-    if (!supa){
+    if(!supa){
       statusEl.textContent = "ERRO: Supabase não carregou. Ctrl+F5.";
       return;
     }
     try{
       statusEl.textContent = "Carregando...";
-      status2.textContent = "";
+      setMsg("");
       tbody.innerHTML = "";
 
       updateUIByPeriodo();
@@ -503,18 +607,19 @@
       saldoAnteriorEl.textContent = money(saldoAnt);
 
       let rows = await fetchWithin(ini, fim);
-      rows = rows.filter(r => !isMensalidadeRow(r)); // remove “mensalidade/70”
+
+      // remove “mensalidade/70”
+      rows = rows.filter(r => !isMensalidadeRow(r));
 
       render(rows);
-
-      statusEl.textContent = `LISTA CARREGADA. Registros: ${rows.length}` + (rows.length===0 ? " (painel vazio)" : "");
+      statusEl.textContent = `LISTA CARREGADA. Registros: ${rows.length}`;
     }catch(e){
-      failUI("ERRO ao buscar CAIXA (ver console).", e);
+      fail("ERRO ao buscar CAIXA (ver console).", e);
       alert("ERRO ao buscar CAIXA (ver console).");
     }
   }
 
-  // ===== INIT (garantido) =====
+  // init
   function init(){
     try{
       buildAnoOptions();
@@ -526,9 +631,10 @@
       inData.value = now.toISOString().slice(0,10);
       selMes.value = String(now.getMonth()+1);
 
-      btnPdf.addEventListener("click", baixarPDF);
       btnConsultar.addEventListener("click", carregar);
-      btnAdd.addEventListener("click", addLancamento);
+      btnPdf.addEventListener("click", baixarPDF);
+      btnSalvar.addEventListener("click", salvarOuAtualizar);
+      btnCancelar.addEventListener("click", ()=>{ resetForm(); });
 
       selPeriodo.addEventListener("change", ()=>{ updateUIByPeriodo(); });
       selAno.addEventListener("change", ()=>{ buildSemanaOptions(); });
@@ -536,7 +642,7 @@
       statusEl.textContent = "Pronto.";
       carregar();
     }catch(e){
-      failUI("ERRO no painel (ver console).", e);
+      fail("ERRO no painel (ver console).", e);
       alert("ERRO no painel (ver console).");
     }
   }
