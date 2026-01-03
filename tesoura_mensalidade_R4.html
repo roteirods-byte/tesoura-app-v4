@@ -391,20 +391,6 @@
         const btnEdt = document.createElement("button");
         btnEdt.className = "btn btn-edt";
         btnEdt.textContent = "EDITAR";
-        btnEdt.addEventListener("click", async () => {
-          // Permite ajustar o VALOR manualmente (mantém a regra padrão 70/80 como sugestão)
-          const atual = Number(valorExibido) || 0;
-          const sugest = Number(suggestedValueNow(vencIso2)) || 0;
-          const initial = (atual > 0 ? atual : sugest) || "";
-          const txt = prompt("Digite o valor (R$) da mensalidade:", String(initial).replace(".", ","));
-          if (txt === null) return;
-          const num = Number(String(txt).replace(",", ".").trim());
-          if (!Number.isFinite(num) || num <= 0) { alert("Valor inválido."); return; }
-
-          const ok = await salvarRegistro(apelido, year, month, chk.checked, inpDate.value || null, num, vencIso2);
-          if (ok) await carregar();
-        });
-
         tdE.appendChild(btnEdt);
         tr.appendChild(tdE);
 
@@ -459,7 +445,34 @@
 
         chk.addEventListener("change", salvarAgora);
         inpDate.addEventListener("change", salvarAgora);
-        btnEdt.addEventListener("click", salvarAgora);
+        btnEdt.addEventListener("click", async ()=>{
+          // Permitir ajustar o VALOR manualmente (ex.: outro valor diferente de 70/80).
+          // Se deixar em branco, volta para o valor automático.
+          const sugestao = valueByPaymentDate(inpDate.value || todayISO(), vencIso2);
+          const atual = (r && r.valor != null) ? r.valor : sugestao;
+          const resp = prompt("Digite o VALOR (R$).\n\n- Deixe em branco para voltar ao valor automático.\n- Use vírgula ou ponto (ex: 70, 75, 80.50).", String(atual ?? "").replace(".", ","));
+          if(resp === null) return; // cancelou
+
+          const s = String(resp).trim();
+          let novoValor = null;
+          if(s !== ""){
+            const parsed = Number(s.replace(/\./g,"").replace(",",".").replace(/[^0-9.]/g,""));
+            if(!isFinite(parsed) || parsed <= 0){
+              alert("Valor inválido.");
+              return;
+            }
+            novoValor = parsed;
+          }
+
+          // Mantém as mesmas regras de salvar
+          const pagoAgora = chk.checked;
+          if(pagoAgora && !inpDate.value){ inpDate.value = todayISO(); }
+          if(!pagoAgora){ inpDate.value = ""; }
+
+          const ok = await saveRegistro(apelido, year, month, pagoAgora, (pagoAgora ? inpDate.value : null), novoValor, vencIso2);
+          if(!ok) return;
+          await carregarLista();
+        });
 
         btnDel.addEventListener("click", async ()=>{
           const year2 = Number(selAno.value);
