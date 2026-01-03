@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>TESOURA - BANCO DE DADOS</title>
+  <title>TESOURA - BANCO DE DADOS (GUARDIÃO)</title>
 
-  <!-- libs -->
+  <!-- BD_REV_OK_20260103 -->
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
@@ -26,6 +27,7 @@
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--txt);font-family:Arial,Helvetica,sans-serif}
     .wrap{max-width:1100px;margin:24px auto;padding:0 14px}
+    h1{margin:0 0 12px 0;color:var(--orange);font-size:18px;letter-spacing:.5px}
     .card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:12px;padding:14px}
     .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
     .field{display:flex;flex-direction:column;gap:6px}
@@ -52,30 +54,33 @@
     .tdBtn{white-space:nowrap}
   </style>
 </head>
+
 <body>
   <div class="wrap">
+    <h1>TESOURA - BANCO DE DADOS (GUARDIÃO)</h1>
+
     <div class="card">
       <div class="row">
         <div class="field">
           <label>PAINEL / ARQUIVO</label>
           <select id="fPainel">
-            <option value="escalacao">escalacao</option>
+            <option value="jogadores">jogadores</option>
             <option value="presenca">presenca</option>
+            <option value="escalacao">escalacao</option>
             <option value="controle geral">controle geral</option>
             <option value="mensalidade">mensalidade</option>
             <option value="caixa">caixa</option>
             <option value="gols">gols</option>
-            <option value="jogadores">jogadores</option>
           </select>
         </div>
 
         <div class="field">
           <label>PERÍODO</label>
           <select id="fPeriodo">
+            <option value="unico">unico</option>
             <option value="semanal">semanal</option>
             <option value="mensal">mensal</option>
             <option value="anual">anual</option>
-            <option value="unico">unico</option>
           </select>
         </div>
 
@@ -93,7 +98,7 @@
         Aqui você vê o histórico de arquivos salvos e pode baixar. Visualização/edição é feita no próprio painel.
       </div>
 
-      <table id="tbl">
+      <table>
         <thead>
           <tr>
             <th>criado em</th>
@@ -111,41 +116,19 @@
       </div>
 
       <div class="hint">
-        Banco de Dados: consulta e armazenamento (com excluir).
+        Banco de Dados: consulta e armazenamento. Exclusão disponível.
       </div>
     </div>
   </div>
 
 <script>
-/* =========================================================
-   TOP BAR (index.html): quando estiver logado, esconder LOGIN
-   ========================================================= */
-function syncTopButtons(){
-  try{
-    const p = window.parent;
-    if (!p || !p.document) return;
-    const logged = !!p.TESOURA_ROLE; // "jogador" ou "diretoria"
-    const btnLogin = p.document.getElementById("btnLogin");
-    const btnSair  = p.document.getElementById("btnSair");
-    if (btnLogin) btnLogin.style.display = logged ? "none" : "inline-flex";
-    if (btnSair)  btnSair.style.display  = logged ? "inline-flex" : "none";
-  }catch(e){}
-}
-syncTopButtons();
-setInterval(syncTopButtons, 800);
-
-/* =========================================================
-   SUPABASE (mesmo padrão dos outros painéis)
-   ========================================================= */
+/* ====== SUPABASE (fixo) prevente "não inicializado" ====== */
 const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
 
 let supabaseClient = null;
-try{
-  supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}catch(e){
-  supabaseClient = null;
-}
+try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+catch(e){ supabaseClient = null; }
 
 function showMsg(text, isErr=false){
   const el = document.getElementById("msg");
@@ -159,9 +142,7 @@ function clearMsg(){
   el.textContent = "";
 }
 
-/* =========================================================
-   PDF (somente)
-   ========================================================= */
+/* ====== PDF ====== */
 function safeFilename(s){
   return (s || "arquivo")
     .toString()
@@ -170,18 +151,14 @@ function safeFilename(s){
     .replace(/_+/g,"_")
     .replace(/^_+|_+$/g,"");
 }
-
 function normalizeConteudo(conteudo){
   let c = conteudo;
   try{
     if(typeof c === "string"){
       const s = c.trim();
-      if((s.startsWith("{") && s.endsWith("}")) || (s.startsWith("[") && s.endsWith("]"))){
-        c = JSON.parse(s);
-      }
+      if((s.startsWith("{") && s.endsWith("}")) || (s.startsWith("[") && s.endsWith("]"))) c = JSON.parse(s);
     }
   }catch(e){}
-
   if(Array.isArray(c)){
     const first = c[0] || {};
     const columns = Object.keys(first);
@@ -195,36 +172,28 @@ function normalizeConteudo(conteudo){
   }
   return { columns: ["conteúdo"], rows: [[String(c ?? "")]] };
 }
-
 function downloadPDF(filename, title, columns, rows){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-
   doc.setFont("helvetica","bold");
   doc.setFontSize(12);
   doc.text(title, 40, 40);
-
   doc.autoTable({
     startY: 60,
     head: [columns],
     body: rows,
     theme: "grid",
     styles: { fontSize: 8, cellPadding: 3, lineWidth: 0.4, lineColor: [220,220,220] },
-    headStyles: { fillColor: [255, 127, 39], textColor: [255,255,255], fontStyle: "bold" }
+    headStyles: { fillColor: [255,127,39], textColor: [255,255,255], fontStyle: "bold" }
   });
-
   doc.save(filename);
 }
 
-/* =========================================================
-   LISTA / BUSCA
-   ========================================================= */
+/* ====== LISTA ====== */
 let itens = [];
 let selecionado = null;
 
-function setDownloadEnabled(v){
-  document.getElementById("btnPDF").disabled = !v;
-}
+function setDownloadEnabled(v){ document.getElementById("btnPDF").disabled = !v; }
 
 function render(){
   const tb = document.getElementById("tb");
@@ -276,18 +245,16 @@ async function buscar(){
     showMsg("Supabase não inicializado.", true);
     return;
   }
-
   const painel = document.getElementById("fPainel").value;
   const periodo = document.getElementById("fPeriodo").value;
 
-  let q = supabaseClient
+  const { data, error } = await supabaseClient
     .from("arquivos_app")
     .select("*")
     .eq("painel", painel)
     .eq("periodo", periodo)
     .order("criado_em", { ascending: false });
 
-  const { data, error } = await q;
   if(error){
     showMsg("Erro ao buscar: " + error.message, true);
     return;
@@ -309,20 +276,11 @@ async function buscar(){
 
 async function excluirArquivo(id){
   clearMsg();
-  if(!supabaseClient){
-    showMsg("Supabase não inicializado.", true);
-    return;
-  }
-  const { error } = await supabaseClient
-    .from("arquivos_app")
-    .delete()
-    .eq("id", id);
-
+  const { error } = await supabaseClient.from("arquivos_app").delete().eq("id", id);
   if(error){
     showMsg("Erro ao excluir: " + error.message, true);
     return;
   }
-
   showMsg("Arquivo excluído.");
   await buscar();
 }
@@ -334,9 +292,6 @@ function limpar(){
   render();
 }
 
-/* =========================================================
-   BAIXAR PDF
-   ========================================================= */
 function baixarPDF(){
   if(!selecionado){
     showMsg("Selecione um arquivo salvo na lista.", true);
@@ -349,17 +304,13 @@ function baixarPDF(){
 
   const stamp = new Date().toISOString().replace(/[:\-]/g,"").slice(0,15);
   const base = `${safeFilename(item.painel)}_${safeFilename(item.periodo)}_${stamp}`;
-  const title = item.titulo || "Arquivo salvo";
-  downloadPDF(`${base}.pdf`, title, columns, rows);
+  downloadPDF(`${base}.pdf`, item.titulo || "Arquivo salvo", columns, rows);
 }
 
-/* =========================================================
-   INIT
-   ========================================================= */
+/* INIT */
 document.getElementById("btnBuscar").addEventListener("click", buscar);
 document.getElementById("btnLimpar").addEventListener("click", limpar);
 document.getElementById("btnPDF").addEventListener("click", baixarPDF);
-
 render();
 </script>
 </body>
