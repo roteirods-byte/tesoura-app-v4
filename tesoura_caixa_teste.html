@@ -8,7 +8,7 @@
     body{margin:0;font-family:Arial,sans-serif;background:#0b1220;color:#fff}
     header{padding:14px 18px;border-bottom:2px solid #f97316;display:flex;align-items:center;justify-content:space-between;background:#07101f}
     header h1{margin:0;font-size:16px;letter-spacing:.5px;color:#f97316;text-transform:uppercase;font-weight:900}
-    .wrap{max-width:1100px;margin:18px auto;padding:0 12px}
+    .wrap{max-width:1400px;margin:18px auto;padding:0 12px}
     .painel{background:#020617;border:1px solid #0f172a;border-radius:12px;padding:12px;margin-bottom:14px;box-shadow:0 6px 16px rgba(0,0,0,.35)}
     .painel h2{margin:0 0 10px;color:#f97316;font-size:14px;letter-spacing:.5px;text-transform:uppercase;font-weight:900}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
@@ -23,8 +23,8 @@
     .btn:disabled{opacity:.45;cursor:not-allowed}
     .status{margin-top:8px;font-size:12px;color:#9ca3af}
 
-    .table-wrap{overflow:auto;border-radius:12px;border:1px solid #0f172a}
-    table{border-collapse:collapse;font-size:12px;width:max-content;min-width:1100px}
+    .table-wrap{overflow:visible;max-height:none;border-radius:12px;border:1px solid #0f172a}
+    table{border-collapse:collapse;font-size:12px;width:100%;table-layout:fixed}
     thead th{
       position:sticky;top:0;background:#f97316;color:#fff;z-index:2;
       border:1px solid rgba(255,255,255,.45);padding:8px 8px;text-align:center;white-space:nowrap;
@@ -44,6 +44,19 @@
     .pill-rec{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.35)}
     .pill-desp{background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.35)}
     .readonly{opacity:.65}
+
+    /* larguras (sem rolagem) */
+    th.col-data, td.col-data{width:110px}
+    th.col-tipo, td.col-tipo{width:120px}
+    th.col-desc, td.col-desc{width:360px}
+    th.col-obs,  td.col-obs{width:180px}
+    th.col-rec,  td.col-rec{width:130px}
+    th.col-desp, td.col-desp{width:130px}
+    th.col-saldo,td.col-saldo{width:140px}
+    th.col-acoes,td.col-acoes{width:120px}
+
+    td.col-desc, td.col-obs{white-space:normal}
+    td.col-desc input, td.col-obs input{width:100% !important; box-sizing:border-box}
 
     /* impressão/PDF */
     @media print{
@@ -119,7 +132,7 @@
         <option value="DESPESA">DESPESA</option>
       </select>
       <input id="inDesc" type="text" placeholder="DESCRIÇÃO" style="width:260px;" />
-      <input id="inObs" type="text" placeholder="OBS" style="width:260px;" />
+      <input id="inObs" type="text" placeholder="OBS" style="width:180px;" />
       <input id="inValor" type="number" step="0.01" placeholder="VALOR (R$)" />
       <button id="btnAdd" class="btn btn-azul">SALVAR</button>
     </div>
@@ -128,15 +141,14 @@
       <table>
         <thead>
           <tr>
-            <th>DATA</th>
-            <th>HORA</th>
-            <th>TIPO</th>
-            <th>DESCRIÇÃO</th>
-            <th>OBS</th>
-            <th>RECEITA (R$)</th>
-            <th>DESPESA (R$)</th>
-            <th>SALDO (R$)</th>
-            <th class="no-print">AÇÕES</th>
+            <th class="col-data">DATA</th>
+            <th class="col-tipo">TIPO</th>
+            <th class="col-desc">DESCRIÇÃO</th>
+            <th class="col-obs">OBS</th>
+            <th class="col-rec">RECEITA (R$)</th>
+            <th class="col-desp">DESPESA (R$)</th>
+            <th class="col-saldo">SALDO (R$)</th>
+            <th class="no-print col-acoes">AÇÕES</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -231,76 +243,188 @@
   }
 
   function isMensalidade(row){
-    const d = String(row?.descricao || "").toUpperCase();
-    const o = String(row?.origem || "").toUpperCase();
-    return d.startsWith("MENSALIDADE -") || o === "MENSALIDADE";
+    const origem = String(row?.origem || row?.source || "").toUpperCase();
+    const desc = String(row?.descricao || row?.descrição || row?.desc || "").toUpperCase();
+    return origem.includes("MENSAL") || desc.startsWith("MENSALIDADE -");
   }
 
-  // ===== PERÍODOS =====
-  function buildMesOptions(){
-    const meses = [
-      "01 - JAN","02 - FEV","03 - MAR","04 - ABR","05 - MAI","06 - JUN",
-      "07 - JUL","08 - AGO","09 - SET","10 - OUT","11 - NOV","12 - DEZ"
-    ];
-    selMes.innerHTML = "";
-    meses.forEach((t,i)=>{
-      const opt = document.createElement("option");
-      opt.value = String(i+1);
-      opt.textContent = t;
-      selMes.appendChild(opt);
-    });
+  function escapeHtml(str){
+    return String(str ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
   }
 
+  async function getMensalidadePagoCount(ano, mes){
+    // retorna quantidade de pagamentos "pago=true" no mês (ou null se não conseguir consultar)
+    try{
+      const { count, error } = await sb
+        .from("mensalidades")
+        .select("apelido", { count:"exact", head:true })
+        .eq("ano", ano)
+        .eq("mes", mes)
+        .eq("pago", true);
+      if (error) return null;
+      return Number(count || 0);
+    }catch(e){
+      return null;
+    }
+  }
+
+  function rowYearMonth(row, cols){
+    const dataCol = cols?.dateCol || pickCol(row, ["data","data_lancamento","data_mov","dia"]);
+    const createdCol = cols?.createdCol || pickCol(row, ["created_at","criado_em","createdAt"]);
+    const dt = dataCol ? row?.[dataCol] : (createdCol ? row?.[createdCol] : null);
+    const iso = isoDate(dt);
+    if (!iso) return { y:null, m:null };
+    return { y:Number(iso.slice(0,4)), m:Number(iso.slice(5,7)) };
+  }
+
+  function buildPrintHTML(){
+    const ano = Number(selAno.value);
+    const mes = Number(selMes.value);
+    const periodo = String(selPeriodo.value);
+    const faixa = (periodo==="SEMANAL") ? (selSemana.options[selSemana.selectedIndex]?.textContent || "") :
+                 (periodo==="MENSAL") ? `${pad2(mes)}/${ano}` : `${ano}`;
+
+    const rows = window.__printRows || [];
+    const saldoAnteriorTxt = saldoAnteriorEl.textContent || "R$ 0,00";
+    const saldoPeriodoTxt  = saldoPeriodoEl.textContent || "R$ 0,00";
+    const saldoFinalTxt    = saldoFinalEl.textContent || "R$ 0,00";
+
+    const trs = rows.map(r => `
+      <tr>
+        <td>${escapeHtml(r.data)}</td>
+        <td>${escapeHtml(r.tipo)}</td>
+        <td style="text-align:left;">${escapeHtml(r.descricao)}</td>
+        <td style="text-align:left;">${escapeHtml(r.obs)}</td>
+        <td style="text-align:right;">${escapeHtml(r.receita)}</td>
+        <td style="text-align:right;">${escapeHtml(r.despesa)}</td>
+        <td style="text-align:right;">${escapeHtml(r.saldo)}</td>
+      </tr>
+    `).join("");
+
+    return `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>TESOURA - CAIXA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  @page{ size:A4 landscape; margin:10mm; }
+  body{font-family:Arial,sans-serif;color:#000;margin:0}
+  h1{font-size:14px;margin:0 0 6px 0}
+  .meta{font-size:11px;margin-bottom:8px}
+  table{width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed}
+  th,td{border:1px solid #000;padding:4px;vertical-align:top;word-wrap:break-word}
+  th{background:#f2f2f2}
+</style>
+</head>
+<body>
+  <h1>TESOURA - CAIXA</h1>
+  <div class="meta"><b>Filtro:</b> ${escapeHtml(faixa)} &nbsp;&nbsp; <b>Saldo anterior:</b> ${escapeHtml(saldoAnteriorTxt)} &nbsp;&nbsp; <b>Saldo no período:</b> ${escapeHtml(saldoPeriodoTxt)} &nbsp;&nbsp; <b>Saldo final:</b> ${escapeHtml(saldoFinalTxt)}</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:80px;">DATA</th>
+        <th style="width:70px;">TIPO</th>
+        <th style="width:260px;">DESCRIÇÃO</th>
+        <th style="width:160px;">OBS</th>
+        <th style="width:90px;">RECEITA (R$)</th>
+        <th style="width:90px;">DESPESA (R$)</th>
+        <th style="width:90px;">SALDO (R$)</th>
+      </tr>
+    </thead>
+    <tbody>${trs}</tbody>
+  </table>
+<script>
+window.onload=()=>{window.print(); setTimeout(()=>window.close(), 350);};
+<\/script>
+</body>
+</html>`;
+  }
+
+  function baixarPDF(){
+    const html = buildPrintHTML();
+    const w = window.open("", "_blank");
+    if (!w){ alert("Seu navegador bloqueou o pop-up do PDF."); return; }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+
+  // ===== filtros =====
   function buildAnoOptions(){
-    const hoje = new Date();
-    const a = hoje.getFullYear();
+    const now = new Date();
+    const y = now.getFullYear();
     selAno.innerHTML = "";
-    for (let y=a-1;y<=a+1;y++){
-      const opt=document.createElement("option");
-      opt.value=String(y);
-      opt.textContent=String(y);
-      if (y===a) opt.selected=true;
+    for (let a = y-1; a <= y+1; a++){
+      const opt = document.createElement("option");
+      opt.value = a;
+      opt.textContent = a;
+      if (a === y) opt.selected = true;
       selAno.appendChild(opt);
     }
   }
 
-  function buildSemanaOptions(){
-    // últimas 10 semanas (segunda a segunda)
-    selSemana.innerHTML = "";
-    const hoje = new Date();
-    const base = startOfWeekMonday(hoje);
-    for (let i=0;i<10;i++){
-      const ini = addDays(base, -7*i);
-      const fim = addDays(ini, 7);
+  function buildMesOptions(){
+    const meses = ["01 - JAN","02 - FEV","03 - MAR","04 - ABR","05 - MAI","06 - JUN","07 - JUL","08 - AGO","09 - SET","10 - OUT","11 - NOV","12 - DEZ"];
+    selMes.innerHTML = "";
+    meses.forEach((m, idx)=>{
       const opt = document.createElement("option");
-      opt.value = `${isoDate(ini)}|${isoDate(fim)}`;
-      opt.textContent = `${ini.toLocaleDateString("pt-BR")} → ${fim.toLocaleDateString("pt-BR")}`;
-      if (i===0) opt.selected = true;
-      selSemana.appendChild(opt);
-    }
+      opt.value = idx+1;
+      opt.textContent = m;
+      selMes.appendChild(opt);
+    });
   }
 
-  function getRange(){
-    const ano = Number(selAno.value);
-    const mes = Number(selMes.value);
-    const periodo = String(selPeriodo.value);
-
-    if (periodo === "ANUAL"){
-      return {ini:`${ano}-01-01`, fim:`${ano}-12-31`};
+  function buildSemanaOptions(){
+    selSemana.innerHTML = "";
+    // semanas do ano selecionado (segunda->segunda)
+    const ano = Number(selAno.value) || (new Date()).getFullYear();
+    const start = startOfWeekMonday(new Date(ano,0,1));
+    const end = new Date(ano,11,31);
+    let cur = new Date(start.getTime());
+    while (cur <= end){
+      const ini = new Date(cur.getTime());
+      const fim = addDays(ini, 7);
+      const label = `${ini.toLocaleDateString("pt-BR")} → ${addDays(fim,-1).toLocaleDateString("pt-BR")}`;
+      const opt = document.createElement("option");
+      opt.value = `${isoDate(ini)}|${isoDate(fim)}`;
+      opt.textContent = label;
+      selSemana.appendChild(opt);
+      cur = fim;
     }
-    if (periodo === "MENSAL"){
-      const last = lastDayOfMonth(ano, mes);
-      return {ini:`${ano}-${pad2(mes)}-01`, fim:`${ano}-${pad2(mes)}-${pad2(last)}`};
-    }
-    // SEMANAL
-    const v = String(selSemana.value || "");
-    const [ini,fim] = v.split("|");
-    return {ini, fim}; // fim é segunda da próxima semana
   }
 
   function updateUIByPeriodo(){
     const p = String(selPeriodo.value);
     wrapSemana.style.display = (p==="SEMANAL") ? "" : "none";
+  }
+
+  function getRange(){
+    const ano = Number(selAno.value);
+    const mes = Number(selMes.value);
+    const p = String(selPeriodo.value);
+
+    if (p === "ANUAL"){
+      return { ini: `${ano}-01-01`, fim: `${ano+1}-01-01` };
+    }
+    if (p === "MENSAL"){
+      const ini = `${ano}-${pad2(mes)}-01`;
+      const ld = lastDayOfMonth(ano, mes);
+      const fim = `${ano}-${pad2(mes)}-${pad2(ld)}`;
+      const fimPlus = isoDate(addDays(new Date(fim+"T00:00:00"), 1));
+      return { ini, fim: fimPlus };
+    }
+    // semanal
+    const v = String(selSemana.value || "");
+    const parts = v.split("|");
+    const ini = parts[0] || `${ano}-${pad2(mes)}-01`;
+    const fim = parts[1] || isoDate(addDays(new Date(ini+"T00:00:00"),7));
+    return { ini, fim };
   }
 
   // ===== CRUD =====
@@ -369,9 +493,14 @@
     const descCol = pickCol(rows?.[0], ["descricao","descrição","descricao_texto","desc"]);
     const obsCol  = pickCol(rows?.[0], ["obs","observacao","observação","nota","notas"]);
     const origemCol = pickCol(rows?.[0], ["origem","source"]);
+    const valorCol = pickCol(rows?.[0], ["valor","value","signed","valor_mov"]);
+    const receitaCol = pickCol(rows?.[0], ["receita","entrada"]);
+    const despesaCol = pickCol(rows?.[0], ["despesa","saida"]);
 
     let saldo = window.__saldoAnterior || 0;
     let saldoPeriodo = 0;
+
+    window.__printRows = [];
 
     rows.forEach((r) => {
       const tr = document.createElement("tr");
@@ -394,16 +523,13 @@
 
       // DATA
       const tdData = document.createElement("td");
+      tdData.className = "col-data";
       tdData.textContent = isoDate(dt) ? new Date(isoDate(dt)+"T00:00:00").toLocaleDateString("pt-BR") : "";
       tr.appendChild(tdData);
 
-      // HORA
-      const tdHora = document.createElement("td");
-      tdHora.textContent = isoTime(hr);
-      tr.appendChild(tdHora);
-
       // TIPO (editável)
       const tdTipo = document.createElement("td");
+      tdTipo.className = "col-tipo";
       const sel = document.createElement("select");
       sel.innerHTML = `<option value="RECEITA">RECEITA</option><option value="DESPESA">DESPESA</option>`;
       sel.value = (tipo === "DESPESA") ? "DESPESA" : "RECEITA";
@@ -413,44 +539,47 @@
 
       // DESCRIÇÃO (editável)
       const tdDesc = document.createElement("td");
-      tdDesc.className = "left";
+      tdDesc.className = "left col-desc";
       const inD = document.createElement("input");
       inD.type = "text";
       inD.value = String((descCol ? r[descCol] : "") || "");
-      inD.style.width = "260px";
+      inD.style.width = "100%";
       if (mensal) { inD.disabled = true; inD.classList.add("readonly"); }
       tdDesc.appendChild(inD);
       tr.appendChild(tdDesc);
 
       // OBS (editável)
       const tdObs = document.createElement("td");
-      tdObs.className = "left";
+      tdObs.className = "left col-obs";
       const inO = document.createElement("input");
       inO.type = "text";
       inO.value = String((obsCol ? r[obsCol] : "") || "");
-      inO.style.width = "260px";
+      inO.style.width = "100%";
       if (mensal) { inO.disabled = true; inO.classList.add("readonly"); }
       tdObs.appendChild(inO);
       tr.appendChild(tdObs);
 
       // RECEITA
       const tdR = document.createElement("td");
+      tdR.className = "col-rec";
       tdR.innerHTML = receita ? `<span class="money pos">${money(receita)}</span>` : "";
       tr.appendChild(tdR);
 
       // DESPESA
       const tdE = document.createElement("td");
+      tdE.className = "col-desp";
       tdE.innerHTML = despesa ? `<span class="money neg">${money(despesa)}</span>` : "";
       tr.appendChild(tdE);
 
       // SALDO
       const tdS = document.createElement("td");
+      tdS.className = "col-saldo";
       tdS.innerHTML = `<span class="saldo">${money(saldo)}</span>`;
       tr.appendChild(tdS);
 
       // AÇÕES
       const tdA = document.createElement("td");
-      tdA.className = "no-print";
+      tdA.className = "no-print col-acoes";
       const btnDel = document.createElement("button");
       btnDel.className = "btn btn-vermelho";
       btnDel.textContent = "EXCLUIR";
@@ -471,23 +600,45 @@
         const mag = Math.abs(getSignedValue(r) || 0);
         const novoSigned = (novoTipo === "DESPESA") ? -mag : mag;
 
-        // tenta atualizar de forma flexível
-        const payloads = [];
+        // atualiza usando os nomes reais das colunas (evita erro 400)
+        const payload = {};
+        payload[(tipoCol || "tipo")] = novoTipo;
+        payload[(descCol || "descricao")] = novoDesc;
+        payload[(obsCol  || "obs")] = novoObs;
 
-        // payload A: valor assinado
-        payloads.push({ tipo: novoTipo, descricao: novoDesc, obs: novoObs, valor: novoSigned });
+        if (valorCol) {
+          payload[valorCol] = novoSigned;
+        } else {
+          // tenta padrão
+          payload["valor"] = novoSigned;
+        }
 
-        // payload B: receita/despesa separados (se existir no banco)
-        payloads.push({ tipo: novoTipo, descricao: novoDesc, obs: novoObs,
-          receita: (novoTipo==="RECEITA") ? mag : 0,
-          despesa: (novoTipo==="DESPESA") ? mag : 0
-        });
+        // se existir colunas separadas, preenche também
+        if (receitaCol) payload[receitaCol] = (novoTipo==="RECEITA") ? mag : 0;
+        if (despesaCol) payload[despesaCol] = (novoTipo==="DESPESA") ? mag : 0;
 
+        // tenta salvar; se falhar, cai no modo "tentativas" (compatibilidade)
         let ok = false, lastErr = null;
-        for (const p of payloads){
-          const { error } = await sb.from("caixa").update(p).eq(idCol, id);
-          if (!error){ ok=true; break; }
-          lastErr = error;
+
+        {
+          const { error } = await sb.from("caixa").update(payload).eq(idCol, id);
+          if (!error) ok = true;
+          else lastErr = error;
+        }
+
+        if (!ok){
+          const payloads = [
+            { tipo: novoTipo, descricao: novoDesc, obs: novoObs, valor: novoSigned },
+            { tipo: novoTipo, descricao: novoDesc, obs: novoObs,
+              receita: (novoTipo==="RECEITA") ? mag : 0,
+              despesa: (novoTipo==="DESPESA") ? mag : 0
+            }
+          ];
+          for (const p of payloads){
+            const { error } = await sb.from("caixa").update(p).eq(idCol, id);
+            if (!error){ ok=true; break; }
+            lastErr = error;
+          }
         }
         if (!ok){
           console.warn("Autosave falhou:", lastErr);
@@ -515,6 +666,17 @@
         carregar();
       });
 
+      // linha para PDF (sem inputs)
+      window.__printRows.push({
+        data: tdData.textContent,
+        tipo: sel.value,
+        descricao: inD.value,
+        obs: inO.value,
+        receita: receita ? money(receita) : "",
+        despesa: despesa ? money(despesa) : "",
+        saldo: money(saldo)
+      });
+
       tbody.appendChild(tr);
     });
 
@@ -533,6 +695,18 @@
       const desc = String(inDesc.value || "").trim();
       const obs  = String(inObs.value || "").trim();
       const val  = Number(inValor.value || 0);
+
+      // BLOQUEIO: se Mensalidade do mês estiver zerada, não permitir lançar "MENSALIDADE" no Caixa
+      const anoSel = Number(selAno.value);
+      const mesSel = Number(selMes.value);
+      const descUp = String(desc || "").toUpperCase();
+      if (descUp.includes("MENSALIDADE")){
+        const pagoCount = (window.__mensalidadePagoCount != null) ? Number(window.__mensalidadePagoCount) : await getMensalidadePagoCount(anoSel, mesSel);
+        if (pagoCount === 0){
+          alert("Mensalidade do mês está zerada. Não é permitido lançar MENSALIDADE no Caixa.");
+          return;
+        }
+      }
 
       if (!data || !hora || !desc || !val){
         alert("Preencha: DATA, HORA, DESCRIÇÃO e VALOR.");
@@ -595,10 +769,21 @@
       saldoAnteriorEl.textContent = money(saldoAnt);
 
       const data = await fetchAllWithin(ini, fim);
-      const rows = data.rows || [];
+      let rows = data.rows || [];
+
+      // REGRA: se Mensalidade do mês está zerada, não mostrar lançamentos automáticos "MENSALIDADE" no Caixa
+      const ano = Number(selAno.value);
+      const mes = Number(selMes.value);
+      const pagoCount = await getMensalidadePagoCount(ano, mes);
+      window.__mensalidadePagoCount = pagoCount;
+
+      if (pagoCount === 0){
+        rows = rows.filter(r => !isMensalidade(r));
+      }
+
       render(rows, data);
 
-      statusEl.textContent = `LISTA CARREGADA. Registros: ${rows.length}`;
+      statusEl.textContent = `LISTA CARREGADA. Registros: ${rows.length}` + (pagoCount === 0 ? " (Mensalidade do mês zerada: lançamentos MENSALIDADE ocultos)" : "");
     }catch(e){
       console.error(e);
       statusEl.textContent = "ERRO ao buscar CAIXA (ver console).";
@@ -607,7 +792,7 @@
   }
 
   // ===== eventos =====
-  btnPdf.addEventListener("click", ()=>window.print());
+  btnPdf.addEventListener("click", baixarPDF);
   btnConsultar.addEventListener("click", carregar);
   btnAdd.addEventListener("click", addLancamento);
 
