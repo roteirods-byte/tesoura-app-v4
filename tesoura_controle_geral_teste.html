@@ -68,7 +68,27 @@
       thead th { position:static !important; }
       .sticky-atleta, .sticky-faltas { position:static !important; }
     }
-  </style>
+  
+/* PRINT FULL (REV_PDF_2026_01_03) */
+@page { size: A4 landscape; margin: 8mm; }
+@media print{
+  /* não cortar em container com scroll */
+  #wrapTabela{ overflow: visible !important; }
+  .painel{ overflow: visible !important; }
+
+  /* pegar a largura toda (chrome) */
+  body{ zoom: 0.72; }
+
+  /* ajuda a não “prender” larguras */
+  table{ width: 100% !important; min-width: 0 !important; }
+  thead th, tbody td{ font-size: 10px !important; padding: 4px 5px !important; }
+
+  /* desligar sticky no print */
+  thead th{ position: static !important; }
+  .sticky-atleta, .sticky-faltas{ position: static !important; }
+}
+
+</style>
 </head>
 <body>
 
