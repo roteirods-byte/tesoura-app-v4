@@ -391,6 +391,20 @@
         const btnEdt = document.createElement("button");
         btnEdt.className = "btn btn-edt";
         btnEdt.textContent = "EDITAR";
+        btnEdt.addEventListener("click", async () => {
+          // Permite ajustar o VALOR manualmente (mantém a regra padrão 70/80 como sugestão)
+          const atual = Number(valorExibido) || 0;
+          const sugest = Number(suggestedValueNow(vencIso2)) || 0;
+          const initial = (atual > 0 ? atual : sugest) || "";
+          const txt = prompt("Digite o valor (R$) da mensalidade:", String(initial).replace(".", ","));
+          if (txt === null) return;
+          const num = Number(String(txt).replace(",", ".").trim());
+          if (!Number.isFinite(num) || num <= 0) { alert("Valor inválido."); return; }
+
+          const ok = await salvarRegistro(apelido, year, month, chk.checked, inpDate.value || null, num, vencIso2);
+          if (ok) await carregar();
+        });
+
         tdE.appendChild(btnEdt);
         tr.appendChild(tdE);
 
