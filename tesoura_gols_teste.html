@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"/>
-<title>TESOURA - CONTROLE DE GOLS</title>
-<!-- MESMA BIBLIOTECA DO ARQUIVO JOGADORES -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
+  <meta charset="UTF-8" />
+  <title>TESOURA - CONTROLE DE GOLS</title>
+
+  <!-- MESMA BIBLIOTECA DO ARQUIVO JOGADORES -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
@@ -139,142 +140,77 @@
       font-size: 12px;
       color: #ffcc66;
     }
-  
-
-    #gols-pdf-btn {
-      background-color: #ff7f27;
-      color: #000000;
-    }
-    #gols-ano { min-width: 78px; }
-</style>
+  </style>
 </head>
 <body>
-<h1>TESOURA - CONTROLE DE GOLS</h1>
-<div class="painel-central">
-<!-- Registrar gol -->
-<div class="bloco">
-<h3>Registrar gol</h3>
-<div class="linha-form"><label>ANO:</label><select id="gols-ano"><option value="">--</option></select>
-<label>DATA:</label>
-<input id="gols-data" type="date"/>
-<label>APELIDO:</label>
-<select id="gols-apelido">
-<option value="">-- selecione --</option>
-</select>
-<label>GOLS:</label>
-<input id="gols-quantidade" min="1" type="number" value="1"/>
-<button id="gols-salvar-btn">SALVAR GOL</button>
-<button id="gols-pdf-btn">BAIXAR PDF</button></div>
-<div id="status-gols"></div>
-</div>
-<!-- Tabelas -->
-<div class="linha-tabelas">
-<!-- Gols registrados -->
-<div class="tabela-card">
-<h3>Gols registrados</h3>
-<table id="tabela-gols-registrados">
-<thead>
-<tr>
-<th>EXCLUIR</th>
-<th>DATA</th>
-<th>APELIDO</th>
-<th>GOLS</th>
-</tr>
-</thead>
-<tbody>
-<!-- preenchido pelo JS -->
-</tbody>
-</table>
-</div>
-<!-- Artilharia -->
-<div class="tabela-card">
-<h3>Artilharia</h3>
-<table id="tabela-artilharia">
-<thead>
-<tr>
-<th>EXCLUIR</th>
-<th>#</th>
-<th>APELIDO</th>
-<th>TOTAL GOLS</th>
-</tr>
-</thead>
-<tbody>
-<!-- preenchido pelo JS -->
-</tbody>
-</table>
-</div>
-</div>
-</div>
-<script>
+  <h1>TESOURA - CONTROLE DE GOLS</h1>
+
+  <div class="painel-central">
+    <!-- Registrar gol -->
+    <div class="bloco">
+      <h3>Registrar gol</h3>
+      <div class="linha-form">
+        <label>DATA:</label>
+        <input type="date" id="gols-data" />
+        <label>APELIDO:</label>
+        <select id="gols-apelido">
+          <option value="">-- selecione --</option>
+        </select>
+        <label>GOLS:</label>
+        <input type="number" id="gols-quantidade" min="1" value="1" />
+        <button id="gols-salvar-btn">SALVAR GOL</button>
+      </div>
+      <div id="status-gols"></div>
+    </div>
+
+    <!-- Tabelas -->
+    <div class="linha-tabelas">
+      <!-- Gols registrados -->
+      <div class="tabela-card">
+        <h3>Gols registrados</h3>
+        <table id="tabela-gols-registrados">
+          <thead>
+            <tr>
+              <th>EXCLUIR</th>
+              <th>DATA</th>
+              <th>APELIDO</th>
+              <th>GOLS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- preenchido pelo JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Artilharia -->
+      <div class="tabela-card">
+        <h3>Artilharia</h3>
+        <table id="tabela-artilharia">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>APELIDO</th>
+              <th>TOTAL GOLS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- preenchido pelo JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
     // ===================== SUPABASE (MESMA CONFIG DO JOGADORES) =====================
     const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
     const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-    window.__TESOURA_SUPABASE__ =
-      window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var supabase = window.__TESOURA_SUPABASE__;
-
-    // ===================== STATUS =====================
     function setStatus(msg) {
       const div = document.getElementById("status-gols");
       if (div) div.textContent = msg || "";
-    }
-
-    // ===================== ANO (ARQUIVO ANUAL) =====================
-    const LS_ANO_KEY = "TESOURA_GOLS_ANO";
-
-    function anoAtual() {
-      return new Date().getFullYear();
-    }
-
-    function getAnoSelecionado() {
-      const sel = document.getElementById("gols-ano");
-      const v = (sel && sel.value) ? parseInt(sel.value, 10) : anoAtual();
-      return Number.isFinite(v) ? v : anoAtual();
-    }
-
-    function setAnoSelecionado(ano) {
-      const sel = document.getElementById("gols-ano");
-      if (sel) sel.value = String(ano);
-      try { localStorage.setItem(LS_ANO_KEY, String(ano)); } catch (_) {}
-    }
-
-    function initAnoOptions() {
-      const sel = document.getElementById("gols-ano");
-      if (!sel) return;
-
-      const now = anoAtual();
-      const start = now - 5;     // últimos 5 anos
-      const end = now + 1;       // +1 ano
-      sel.innerHTML = "";
-
-      for (let y = end; y >= start; y--) {
-        const opt = document.createElement("option");
-        opt.value = String(y);
-        opt.textContent = String(y);
-        sel.appendChild(opt);
-      }
-
-      let saved = null;
-      try { saved = localStorage.getItem(LS_ANO_KEY); } catch (_) {}
-      const chosen = saved ? parseInt(saved, 10) : now;
-      setAnoSelecionado(Number.isFinite(chosen) ? chosen : now);
-    }
-
-    function garantirDataNoAno() {
-      const ano = getAnoSelecionado();
-      const campoData = document.getElementById("gols-data");
-      if (!campoData) return;
-
-      if (!campoData.value) {
-        campoData.value = `${ano}-01-01`;
-        return;
-      }
-
-      const anoDaData = campoData.value.substring(0, 4);
-      if (anoDaData !== String(ano)) {
-        // ao trocar o ano, começa "novo arquivo" naquele ano
-        campoData.value = `${ano}-01-01`;
-      }
     }
 
     // ===================== CARREGAR JOGADORES (APELIDO) =====================
@@ -292,40 +228,48 @@
         return;
       }
 
+      if (!data || data.length === 0) {
+        setStatus('Nenhum jogador encontrado na tabela "jogadores".');
+      } else {
+        setStatus("");
+      }
+
       const select = document.getElementById("gols-apelido");
       select.innerHTML = '<option value="">-- selecione --</option>';
 
-      (data || []).forEach((j) => {
+      data.forEach((j) => {
         const opt = document.createElement("option");
         opt.value = j.apelido;
         opt.textContent = j.apelido;
         select.appendChild(opt);
       });
-
-      setStatus("");
     }
 
     // ===================== SALVAR GOL =====================
     async function salvarGol() {
-      const ano = getAnoSelecionado();
       const dataCampo = document.getElementById("gols-data").value;
+      const anoSel = Number(document.getElementById("gols-ano").value);
+      if (dataCampo && anoSel) {
+        const anoData = Number(String(dataCampo).slice(0,4));
+        if (anoData !== anoSel) {
+          alert("A DATA deve estar no mesmo ANO selecionado.");
+          return;
+        }
+      }
       const apelido = document.getElementById("gols-apelido").value;
-      const qtd = parseInt(document.getElementById("gols-quantidade").value, 10);
+      const qtd = parseInt(
+        document.getElementById("gols-quantidade").value || "0",
+        10
+      );
 
-      if (!dataCampo || !apelido || !qtd || qtd < 1) {
-        alert("Preencha DATA, APELIDO e GOLS.");
+      if (!dataCampo || !apelido || qtd <= 0) {
+        alert("Preencha DATA, APELIDO e GOLS (>=1).");
         return;
       }
 
-      // Regra: arquivo é anual (DATA deve estar no ANO selecionado)
-      if (dataCampo.substring(0, 4) !== String(ano)) {
-        alert(`A DATA precisa estar no ano ${ano}. Troque a DATA ou o ANO.`);
-        return;
-      }
-
-      const { error } = await supabase.from("gols").insert([
-        { data: dataCampo, apelido: apelido, gols: qtd }
-      ]);
+      const { error } = await supabase
+        .from("gols")
+        .insert([{ data: dataCampo, apelido, gols: qtd }]);
 
       if (error) {
         console.error("Erro ao salvar gol:", error);
@@ -333,57 +277,41 @@
         return;
       }
 
-      await atualizarTela();
+      await carregarGolsDoAno();
     }
 
     // ===================== BUSCAR GOLS DO DIA =====================
-    async function carregarGolsDoDia() {
-      const dataCampo = document.getElementById("gols-data").value;
-      if (!dataCampo) return;
+    // ===================== BUSCAR GOLS DO ANO (arquivo anual) =====================
+    async function carregarGolsDoAno() {
+      const ano = Number(document.getElementById("gols-ano").value);
+      if (!ano) return;
+
+      // intervalo [ano-01-01, (ano+1)-01-01)
+      const ini = `${ano}-01-01`;
+      const fim = `${ano + 1}-01-01`;
 
       const { data, error } = await supabase
         .from("gols")
         .select("id, data, apelido, gols")
-        .eq("data", dataCampo)
+        .gte("data", ini)
+        .lt("data", fim)
+        .order("data", { ascending: true })
         .order("id", { ascending: true });
 
       if (error) {
-        console.error("Erro ao buscar gols do dia:", error);
+        console.error("Erro ao buscar gols (ano):", error);
         setStatus("Erro ao buscar gols: " + (error.message || ""));
         return;
       }
 
-      renderizarGolsRegistrados(data || []);
-    }
-
-    // ===================== BUSCAR ARTILHARIA DO ANO =====================
-    async function carregarArtilhariaDoAno() {
-      const ano = getAnoSelecionado();
-      const ini = `${ano}-01-01`;
-      const fim = `${ano}-12-31`;
-
-      const { data, error } = await supabase
-        .from("gols")
-        .select("apelido, gols")
-        .gte("data", ini)
-        .lte("data", fim);
-
-      if (error) {
-        console.error("Erro ao buscar artilharia do ano:", error);
-        setStatus("Erro ao buscar artilharia: " + (error.message || ""));
-        return;
-      }
-
-      renderizarArtilharia(data || []);
       setStatus(`Arquivo anual: ${ano}`);
+
+      renderizarGolsRegistrados(data || []);
+      renderizarArtilharia(data || []);
     }
 
-    async function atualizarTela() {
-      await carregarGolsDoDia();
-      await carregarArtilhariaDoAno();
-    }
 
-    // ===================== TABELA GOLS REGISTRADOS (do dia) =====================
+    // ===================== TABELA GOLS REGISTRADOS =====================
     function renderizarGolsRegistrados(lista) {
       const tbody = document.querySelector("#tabela-gols-registrados tbody");
       tbody.innerHTML = "";
@@ -399,7 +327,7 @@
         tdExcluir.appendChild(btn);
 
         const tdData = document.createElement("td");
-        tdData.textContent = reg.data;
+        tdData.textContent = new Date(reg.data).toLocaleDateString("pt-BR");
 
         const tdApelido = document.createElement("td");
         tdApelido.textContent = reg.apelido;
@@ -416,20 +344,23 @@
       });
     }
 
-    // ===================== TABELA ARTILHARIA (do ano) =====================
+    // ===================== TABELA ARTILHARIA =====================
+    // ===================== TABELA ARTILHARIA (ANO SELECIONADO) =====================
     function renderizarArtilharia(lista) {
       const tbody = document.querySelector("#tabela-artilharia tbody");
       tbody.innerHTML = "";
 
       const mapa = {};
       lista.forEach((reg) => {
+        if (!reg || !reg.apelido) return;
+        const n = Number(reg.gols || 0);
         if (!mapa[reg.apelido]) mapa[reg.apelido] = 0;
-        mapa[reg.apelido] += reg.gols;
+        mapa[reg.apelido] += n;
       });
 
-      let artilharia = Object.entries(mapa).map(([apelido, total]) => ({
+      const artilharia = Object.keys(mapa).map((apelido) => ({
         apelido,
-        total,
+        total: mapa[apelido],
       }));
 
       artilharia.sort((a, b) => {
@@ -440,25 +371,16 @@
       artilharia.forEach((item, idx) => {
         const tr = document.createElement("tr");
 
-        const tdExcluir = document.createElement("td");
-        const btn = document.createElement("button");
-        btn.textContent = "X";
-        btn.className = "btn-excluir";
-        // regra: excluir aqui remove gols SOMENTE da DATA selecionada (não do ano)
-        btn.onclick = () => excluirGolsJogadorNoDia(item.apelido);
-        tdExcluir.appendChild(btn);
-
-        const tdRank = document.createElement("td");
-        tdRank.textContent = idx + 1;
+        const tdPos = document.createElement("td");
+        tdPos.textContent = String(idx + 1);
 
         const tdApelido = document.createElement("td");
         tdApelido.textContent = item.apelido;
 
         const tdTotal = document.createElement("td");
-        tdTotal.textContent = item.total;
+        tdTotal.textContent = String(item.total);
 
-        tr.appendChild(tdExcluir);
-        tr.appendChild(tdRank);
+        tr.appendChild(tdPos);
         tr.appendChild(tdApelido);
         tr.appendChild(tdTotal);
 
@@ -466,7 +388,8 @@
       });
     }
 
-    // ===================== EXCLUIR 1 REGISTRO DE GOL (do dia) =====================
+
+    // ===================== EXCLUIR UM REGISTRO =====================
     async function excluirGol(id) {
       if (!confirm("Excluir este registro de gol?")) return;
 
@@ -478,154 +401,36 @@
         return;
       }
 
-      await atualizarTela();
+      await carregarGolsDoAno();
     }
 
-    // ===================== EXCLUIR TODOS GOLS DO JOGADOR NA DATA =====================
-    async function excluirGolsJogadorNoDia(apelido) {
-      const dataCampo = document.getElementById("gols-data").value;
-      if (!dataCampo) {
-        alert("Selecione a DATA antes de excluir.");
-        return;
-      }
-
-      if (!confirm(`Excluir todos os gols de ${apelido} nesta data?`)) return;
-
-      const { error } = await supabase
-        .from("gols")
-        .delete()
-        .eq("data", dataCampo)
-        .eq("apelido", apelido);
-
-      if (error) {
-        console.error("Erro ao excluir gols do jogador:", error);
-        alert("Erro ao excluir gols.");
-        return;
-      }
-
-      await atualizarTela();
-    }
-
-    // ===================== PDF (BAIXA O QUE ESTÁ SENDO VISTO) =====================
-    function buildPdfHTML() {
-      const ano = getAnoSelecionado();
-      const dataCampo = document.getElementById("gols-data").value || "";
-
-      const linhasDia = Array.from(document.querySelectorAll("#tabela-gols-registrados tbody tr")).map(tr => {
-        const tds = tr.querySelectorAll("td");
-        // [0]=excluir, 1=data, 2=apelido, 3=gols
-        return {
-          data: (tds[1] ? tds[1].textContent.trim() : ""),
-          apelido: (tds[2] ? tds[2].textContent.trim() : ""),
-          gols: (tds[3] ? tds[3].textContent.trim() : "")
-        };
-      });
-
-      const linhasRank = Array.from(document.querySelectorAll("#tabela-artilharia tbody tr")).map(tr => {
-        const tds = tr.querySelectorAll("td");
-        // [0]=excluir, 1=rank, 2=apelido, 3=total
-        return {
-          rank: (tds[1] ? tds[1].textContent.trim() : ""),
-          apelido: (tds[2] ? tds[2].textContent.trim() : ""),
-          total: (tds[3] ? tds[3].textContent.trim() : "")
-        };
-      });
-
-      const esc = (s) => String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-
-      const rowsDia = linhasDia.length
-        ? linhasDia.map(x => `<tr><td>${esc(x.data)}</td><td>${esc(x.apelido)}</td><td style="text-align:center">${esc(x.gols)}</td></tr>`).join("")
-        : `<tr><td colspan="3" style="text-align:center">Sem registros nesta data</td></tr>`;
-
-      const rowsRank = linhasRank.length
-        ? linhasRank.map(x => `<tr><td style="text-align:center">${esc(x.rank)}</td><td>${esc(x.apelido)}</td><td style="text-align:center">${esc(x.total)}</td></tr>`).join("")
-        : `<tr><td colspan="3" style="text-align:center">Sem dados no ano</td></tr>`;
-
-      return `
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8"/>
-  <title>TESOURA - GOLS (${ano})</title>
-  <style>
-    @page { size: A4 landscape; margin: 10mm; }
-    body { font-family: Arial, sans-serif; color: #000; }
-    h2 { margin: 0 0 6px 0; }
-    .meta { margin: 0 0 12px 0; font-size: 12px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th, td { border: 1px solid #333; padding: 6px; }
-    th { background: #ff7f27; color: #000; }
-  </style>
-</head>
-<body>
-  <h2>TESOURA - CONTROLE DE GOLS</h2>
-  <p class="meta"><b>ANO:</b> ${esc(ano)} &nbsp; | &nbsp; <b>DATA (vista):</b> ${esc(dataCampo)}</p>
-
-  <div class="grid">
-    <div>
-      <h3>Gols registrados (data vista)</h3>
-      <table>
-        <thead><tr><th>DATA</th><th>APELIDO</th><th>GOLS</th></tr></thead>
-        <tbody>${rowsDia}</tbody>
-      </table>
-    </div>
-
-    <div>
-      <h3>Artilharia (ano visto)</h3>
-      <table>
-        <thead><tr><th>#</th><th>APELIDO</th><th>TOTAL GOLS</th></tr></thead>
-        <tbody>${rowsRank}</tbody>
-      </table>
-    </div>
-  </div>
-</body>
-</html>`;
-    }
-
-    function baixarPdfGols() {
-      const w = window.open("", "_blank");
-      if (!w) { alert("Não foi possível abrir o PDF (bloqueio de pop-up)."); return; }
-      w.document.open();
-      w.document.write(buildPdfHTML());
-      w.document.close();
-      w.focus();
-      setTimeout(() => {
-        w.print();
-        w.close();
-      }, 300);
-    }
+    // ===================== EXCLUIR TODOS GOLS DO JOGADOR =====================
+    
 
     // ===================== INICIALIZAÇÃO =====================
     document.addEventListener("DOMContentLoaded", () => {
-      initAnoOptions();
-
       const campoData = document.getElementById("gols-data");
-      const selAno = document.getElementById("gols-ano");
-
-      // data padrão
       const hoje = new Date().toISOString().substring(0, 10);
       campoData.value = hoje;
 
-      // garante que a data esteja dentro do ano selecionado (arquivo anual)
-      garantirDataNoAno();
+      document
+        .getElementById("gols-ano")
+        .addEventListener("change", () => {
+          const ano = Number(document.getElementById("gols-ano").value);
+          const cur = document.getElementById("gols-data").value || new Date().toISOString().substring(0,10);
+          const mmdd = cur.substring(5);
+          document.getElementById("gols-data").value = `${ano}-${mmdd}`;
+          carregarGolsDoAno();
+        });
 
-      document.getElementById("gols-salvar-btn").addEventListener("click", salvarGol);
-      document.getElementById("gols-pdf-btn").addEventListener("click", baixarPdfGols);
+      document
+        .getElementById("gols-salvar-btn")
+        .addEventListener("click", salvarGol);
+      // data é usada só para registrar; não recarrega a lista anual
 
-      campoData.addEventListener("change", () => {
-        garantirDataNoAno();
-        atualizarTela();
-      });
 
-      selAno.addEventListener("change", () => {
-        setAnoSelecionado(getAnoSelecionado());
-        garantirDataNoAno();
-        atualizarTela();
-      });
-
-      carregarJogadoresGols().then(atualizarTela);
+      carregarJogadoresGols().then(carregarGolsDoAno);
     });
-</script>
+  </script>
 </body>
 </html>
