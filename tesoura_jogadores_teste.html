@@ -109,43 +109,27 @@
 
     .page-header{display:flex; align-items:center; justify-content:space-between; gap:12px;}
   
-
-  /* ===== IMPRESSAO / PDF (NAO ABRE NOVA PAGINA) ===== */
-  @media print{
-    body *{ visibility:hidden !important; }
-    #printArea, #printArea *{ visibility:visible !important; }
-    #printArea{
-      position:fixed; left:0; top:0; width:100%;
-      padding:14px;
-      background:#ffffff !important;
-      color:#000000 !important;
-      font-family: Arial, Helvetica, sans-serif;
-    }
+/* ===== HISTÓRICO (JOGADORES) ===== */
+.histBox{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,var(--card),var(--card2));}
+.histTitle{color:var(--orange);font-weight:800;margin-bottom:6px;letter-spacing:.5px}
+@media print{
+  body{background:#fff !important;}
+  body *{visibility:hidden !important;}
+  #printArea, #printArea *{visibility:visible !important;}
+  #printArea{
+    display:block !important;
+    position:fixed;left:0;top:0;width:100%;
+    background:#fff;color:#000;padding:18px;
   }
-
-  #printArea{ display:none; }
-  #printArea .print-title{ font-size:14px; font-weight:800; margin:0 0 8px 0; }
-  #printArea .print-meta{ font-size:11px; margin:0 0 10px 0; }
-
-  #printArea table{ width:100%; border-collapse:collapse; }
-  #printArea th, #printArea td{
-    border:1px solid #222;
-    padding:6px 6px;
-    font-size:11px;
-    text-align:left;
-    vertical-align:top;
-  }
-
-  /* esconde colunas EDITAR/EXCLUIR no PDF */
-  #printArea th:nth-last-child(-n+2),
-  #printArea td:nth-last-child(-n+2){
-    display:none;
-  }
+  #printArea table{width:100%;border-collapse:collapse;font-size:12px}
+  #printArea th,#printArea td{border:1px solid #ccc;padding:6px;text-align:left}
+  #printArea h1{margin:0 0 10px 0;font-size:16px}
+  #printArea .printMeta{margin:0 0 12px 0;font-size:11px;color:#333}
+}
 
 </style>
 </head>
 <body>
-  <div id="printArea"></div>
   <header class="page-header">
         <h1>TESOURA - JOGADORES</h1>
 </header>
@@ -210,7 +194,6 @@
   ZAGUEIRO = Z &nbsp;&nbsp; LATERAL = L &nbsp;&nbsp; MEIO = M &nbsp;&nbsp; ATAQUE = A
 </div>
       <button class="btn-recarregar" id="btn-recarregar">RECARREGAR LISTA</button>
-        <button class="btn-recarregar" id="btn-pdf-atual">BAIXAR PDF (ATUAL)</button>
       <p style="font-size:12px;">ORDEM ALFABÉTICA POR APELIDO. COLUNA IDADE É CALCULADA AUTOMÁTICA.</p>
 
       <table>
@@ -234,7 +217,28 @@
           </tr>
         </thead>
         <tbody id="tbody-jogadores"></tbody>
-      </table>
+      
+          </table>
+
+          <div class="histBox">
+            <div class="histTitle">HISTÓRICO (ANO / MÊS)</div>
+            <div class="row">
+              <div class="field">
+                <label>ANO</label>
+                <select id="histAno"></select>
+              </div>
+              <div class="field">
+                <label>MÊS</label>
+                <select id="histMes"></select>
+              </div>
+              <div class="actions right">
+                <button id="btnHistBuscar" class="btn btnGreen">BUSCAR</button>
+                <button id="btnHistLimpar" class="btn btnOrange">LIMPAR</button>
+              </div>
+            </div>
+            <div class="small" id="histMsg">Selecione ANO e MÊS e clique em BUSCAR para baixar o PDF do mês.</div>
+          </div>
+
     </div>
   </div>
 
@@ -264,7 +268,8 @@
 
     let editId = null;
 
-    function el(id){ return document.getElementById(id); }
+    let JOGADORES_CACHE = [];
+function el(id){ return document.getElementById(id); }
 
     function calcularIdade(dataISO) {
       if (!dataISO) return "";
@@ -479,59 +484,242 @@
     }
 
     function init() {
-      carregarJogadores();
+      
+/* =========================
+   PDF (ATUAL) - SEM NOVA PÁGINA (usa Impressão do navegador)
+   ========================= */
+function formatBRDateTime(d){
+  const pad=(n)=>String(n).padStart(2,"0");
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function pontosFrom(h,v,m){
+  const a = Number(h||0), b = Number(v||0), c = Number(m||0);
+  return (a+b+c);
+}
+function idadeFromISO(iso){
+  if(!iso) return "";
+  const d = new Date(String(iso).slice(0,10));
+  if(isNaN(d.getTime())) return "";
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age;
+}
+function jogadoresToTable(players){
+  const cols = ["ORDEM","ID","CAMISA","APELIDO","NOME","DATA NASC.","IDADE","CELULAR","POSIÇÃO","HAB","VEL","MOV","PONTOS"];
+  let html = `<table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join("")}</tr></thead><tbody>`;
+  html += players.map((p,i)=>{
+    const nasc = p.data_nascimento ? String(p.data_nascimento).slice(0,10) : "";
+    const idade = idadeFromISO(p.data_nascimento);
+    const pontos = pontosFrom(p.habilidade, p.velocidade, p.movimentacao);
+    const row = [
+      i+1,
+      p.id ?? "",
+      p.numero_camisa ?? "",
+      (p.apelido||"").toUpperCase(),
+      (p.nome_completo||"").toUpperCase(),
+      nasc,
+      idade,
+      p.celular || "",
+      p.posicao || "",
+      p.habilidade ?? "",
+      p.velocidade ?? "",
+      p.movimentacao ?? "",
+      pontos
+    ];
+    return `<tr>${row.map(v=>`<td>${String(v ?? "")}</td>`).join("")}</tr>`;
+  }).join("");
+  html += `</tbody></table>`;
+  return html;
+}
+function printJogadores(players, titulo){
+  const pa = document.getElementById("printArea");
+  if(!pa) return;
+  const now = new Date();
+  pa.innerHTML = `
+    <h1>${titulo}</h1>
+    <div class="printMeta">${formatBRDateTime(now)} &nbsp;|&nbsp; Total de jogadores: ${players.length}</div>
+    ${jogadoresToTable(players)}
+  `;
+  pa.style.display = "block";
+  window.print();
+  setTimeout(()=>{ pa.innerHTML=""; pa.style.display="none"; }, 200);
+}
+
+document.getElementById("btnPdfAtual")?.addEventListener("click", async ()=>{
+  try{
+    if(!Array.isArray(JOGADORES_CACHE) || JOGADORES_CACHE.length===0){
+      await carregarJogadores();
+    }
+    if(!Array.isArray(JOGADORES_CACHE) || JOGADORES_CACHE.length===0){
+      alert("Lista vazia. Clique em RECARREGAR LISTA e tente novamente.");
+      return;
+    }
+    printJogadores(JOGADORES_CACHE, "JOGADORES - LISTA ATUAL");
+  }catch(e){
+    console.error(e);
+    alert("Não foi possível gerar o PDF agora. Recarregue a lista e tente novamente.");
+  }
+});
+
+/* =========================
+   HISTÓRICO (ANO/MÊS) - SUPABASE (arquivos_app)
+   ========================= */
+const TABLE_ARQUIVOS = "arquivos_app";
+
+function ymRef(y,m){ return `${y}-${String(m).padStart(2,"0")}`; }
+function ymTitulo(y,m){ return `JOGADORES - LISTA (${String(m).padStart(2,"0")}/${y})`; }
+
+function fillHistSelectors(){
+  const selY = document.getElementById("histAno");
+  const selM = document.getElementById("histMes");
+  if(!selY || !selM) return;
+
+  const now = new Date();
+  const thisY = now.getFullYear();
+  const minY = thisY - 1;
+
+  selY.innerHTML = "";
+  for(let y=thisY; y>=minY; y--){
+    const o=document.createElement("option");
+    o.value=String(y); o.textContent=String(y);
+    selY.appendChild(o);
+  }
+
+  const meses = [
+    ["01","JAN"],["02","FEV"],["03","MAR"],["04","ABR"],["05","MAI"],["06","JUN"],
+    ["07","JUL"],["08","AGO"],["09","SET"],["10","OUT"],["11","NOV"],["12","DEZ"]
+  ];
+  selM.innerHTML="";
+  meses.forEach(([v,t])=>{
+    const o=document.createElement("option");
+    o.value=v; o.textContent=`${v} - ${t}`;
+    selM.appendChild(o);
+  });
+
+  selY.value = String(thisY);
+  selM.value = String(now.getMonth()+1).padStart(2,"0");
+}
+
+function shouldAutoSnapshotNearDay1(){
+  const d=new Date().getDate();
+  return d>=1 && d<=3;
+}
+
+async function salvarSnapshotJogadores(motivo){
+  try{
+    if(!sb || !sb.from) return;
+    if(!Array.isArray(JOGADORES_CACHE) || JOGADORES_CACHE.length===0) return;
+
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth()+1;
+    const ref = ymRef(y,m);
+
+    const payload = {
+      painel: "jogadores",
+      periodo: "mensal",
+      referencia: ref,
+      titulo: ymTitulo(y,m),
+      tipo: "json",
+      criado_em: now.toISOString(),
+      conteudo: JSON.stringify(JOGADORES_CACHE),
+      motivo: motivo || "auto"
+    };
+
+    await sb.from(TABLE_ARQUIVOS).insert([payload]);
+    localStorage.setItem(`TESOURA_JOGADORES_SNAPSHOT_${ref}`, "1");
+  }catch(e){
+    console.warn("Snapshot jogadores falhou:", e);
+  }
+}
+
+// salva snapshot quando salva/edita/exclui (sem quebrar o fluxo)
+const __origSalvarJogador = salvarJogador;
+salvarJogador = async function(){
+  const wasEditing = (editId !== null);
+  await __origSalvarJogador();
+  try{ await salvarSnapshotJogadores(wasEditing ? "editar" : "cadastrar"); }catch(e){}
+};
+
+const __origExcluirJogador = excluirJogador;
+excluirJogador = async function(id){
+  await __origExcluirJogador(id);
+  try{ await salvarSnapshotJogadores("excluir"); }catch(e){}
+};
+
+document.getElementById("btnHistBuscar")?.addEventListener("click", async ()=>{
+  const msg = document.getElementById("histMsg");
+  try{
+    if(!sb || !sb.from){
+      if(msg) msg.textContent = "Supabase não inicializado (volte para o login).";
+      return;
+    }
+    const y = document.getElementById("histAno")?.value;
+    const m = document.getElementById("histMes")?.value;
+    if(!y || !m) return;
+
+    const ref = `${y}-${m}`;
+    if(msg) msg.textContent = "Buscando histórico...";
+
+    const { data, error } = await sb
+      .from(TABLE_ARQUIVOS)
+      .select("*")
+      .eq("painel","jogadores")
+      .eq("periodo","mensal")
+      .eq("referencia", ref)
+      .order("criado_em", { ascending: false })
+      .limit(1);
+
+    if(error) throw error;
+    const item = (data && data[0]) ? data[0] : null;
+    if(!item){
+      if(msg) msg.textContent = "Nenhum arquivo encontrado para este mês.";
+      return;
+    }
+    let arr = [];
+    try{ arr = JSON.parse(item.conteudo || "[]"); }catch(e){ arr=[]; }
+    if(!Array.isArray(arr) || arr.length===0){
+      if(msg) msg.textContent = "Arquivo encontrado, mas vazio.";
+      return;
+    }
+    if(msg) msg.textContent = `Arquivo: ${item.titulo || ""} (${item.criado_em || ""})`;
+    printJogadores(arr, item.titulo || "JOGADORES - HISTÓRICO");
+  }catch(e){
+    console.error(e);
+    if(msg) msg.textContent = "Erro ao buscar histórico.";
+  }
+});
+
+document.getElementById("btnHistLimpar")?.addEventListener("click", ()=>{
+  fillHistSelectors();
+  const msg = document.getElementById("histMsg");
+  if(msg) msg.textContent = "Selecione ANO e MÊS e clique em BUSCAR para baixar.";
+});
+
+// inicializa seletores e snapshot automático perto do dia 1º
+fillHistSelectors();
+(async ()=>{
+  try{
+    if(shouldAutoSnapshotNearDay1()){
+      const now=new Date();
+      const ref=ymRef(now.getFullYear(), now.getMonth()+1);
+      const key=`TESOURA_JOGADORES_SNAPSHOT_${ref}`;
+      if(!localStorage.getItem(key)){
+        await salvarSnapshotJogadores("auto_dia1");
+      }
+    }
+  }catch(e){}
+})();
+
+
+carregarJogadores();
     }
 
     btnSalvar.addEventListener("click", salvarJogador);
     btnCancelar.addEventListener("click", limparFormulario);
     btnRecarregar.addEventListener("click", carregarJogadores);
-
-    const btnPdfAtual = document.getElementById("btn-pdf-atual");
-    if (btnPdfAtual) btnPdfAtual.addEventListener("click", baixarPdfAtual);
-
-
-    // ===== PDF (ATUAL) via PRINT (sem abrir nova aba) =====
-    function baixarPdfAtual() {
-      try {
-        const now = new Date();
-        const data = now.toLocaleDateString("pt-BR");
-        const hora = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-
-        const table = document.querySelector("table");
-        const thead = table ? table.querySelector("thead") : null;
-        const tbody = document.getElementById("tbody");
-
-        const printArea = document.getElementById("printArea");
-        if (!table || !thead || !tbody) {
-          alert("Não foi possível gerar o PDF agora. Recarregue a lista e tente novamente.");
-          return;
-        }
-
-        printArea.innerHTML = `
-          <div class="print-title">JOGADORES - LISTA ATUAL</div>
-          <div class="print-meta">${data} ${hora}</div>
-          <table>
-            ${thead.outerHTML}
-            <tbody>${tbody.innerHTML}</tbody>
-          </table>
-        `;
-
-        printArea.style.display = "block";
-        window.print();
-      } catch (e) {
-        console.error(e);
-        alert("Erro ao gerar o PDF. Abra o Console (F12) e me mande o erro.");
-      } finally {
-        setTimeout(() => {
-          const printArea = document.getElementById("printArea");
-          if (printArea) {
-            printArea.style.display = "none";
-            printArea.innerHTML = "";
-          }
-        }, 800);
-      }
-    }
-
 
     init();
   </script>
