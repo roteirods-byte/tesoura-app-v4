@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>TESOURA - CONTROLE DE GOLS</title>
+  <link rel="icon" href="data:,">
 
   <!-- MESMA BIBLIOTECA DO ARQUIVO JOGADORES -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -151,6 +152,32 @@
   font-size: 12px;
 }
 
+/* ===== IMPRESSÃO / PDF (mostra só o print-root) ===== */
+#print-root { display: none; }
+@media print {
+  body { background: #ffffff !important; }
+  body * { visibility: hidden !important; }
+  #print-root, #print-root * { visibility: visible !important; }
+  #print-root { 
+    display: block !important;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 12px;
+    color: #000;
+  }
+  .print-page { width: 100%; }
+  .print-header { margin-bottom: 10px; }
+  .print-title { font-size: 18px; font-weight: 700; }
+  .print-subtitle { font-size: 12px; margin-top: 2px; }
+  .print-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .print-card { border: 1px solid #ddd; border-radius: 8px; padding: 10px; }
+  .print-card-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .print-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .print-table th, .print-table td { border: 1px solid #e5e5e5; padding: 6px; }
+  .print-table th { background: #f2f2f2; text-align: left; }
+}
 </style>
 </head>
 <body>
@@ -487,96 +514,113 @@ async function excluirRegistro(id){
   }
 }
 
-function baixarPDF(){
-  const ano = Number($("#gols-ano").value);
+function baixarPDF() {
+  try {
+    const ano = (document.getElementById("gols-ano")?.value || new Date().getFullYear().toString()).trim();
 
-  const painel = document.querySelector(".container");
-  if(!painel) return;
+    // Copia ordenada (para imprimir igual ao que está sendo visto)
+    const rows = (Array.isArray(golsAno) ? golsAno.slice() : []).slice();
 
-  // monta um HTML simples só com o conteúdo visível
-  const html = `
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <title>TESOURA - GOLS - ${ano}</title>
-  <style>
-    @page { size: landscape; margin: 10mm; }
-    body { font-family: Arial, sans-serif; color: #000; }
-    h1 { font-size: 18px; margin: 0 0 8px 0; }
-    .sub { font-size: 12px; margin: 0 0 12px 0; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th, td { border: 1px solid #333; padding: 6px; text-align: center; }
-    th { background: #ff7a00; color: #000; }
-    .wrap { display: flex; gap: 12px; }
-    .card { width: 50%; }
-  </style>
-</head>
-<body>
-  <h1>TESOURA - CONTROLE DE GOLS</h1>
-  <div class="sub">Arquivo anual: ${ano}</div>
-
-  <div class="wrap">
-    <div class="card">
-      <h3>Gols registrados</h3>
-      <table>
-        <thead><tr><th>DATA</th><th>APELIDO</th><th>GOLS</th></tr></thead>
-        <tbody>
-          ${golsAno.map(r => `<tr><td>${formatBR(r.data)}</td><td>${(r.apelido||"")}</td><td>${(r.gols??"")}</td></tr>`).join("")}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="card">
-      <h3>Artilharia</h3>
-      <table>
-        <thead><tr><th>#</th><th>APELIDO</th><th>TOTAL GOLS</th></tr></thead>
-        <tbody>
-          ${(() => {
-            const mapa = {};
-            for(const row of golsAno){
-              const a = (row.apelido || "").trim();
-              if(!a) continue;
-              const g = Number(row.gols || 0);
-              mapa[a] = (mapa[a] || 0) + g;
-            }
-            const ranking = Object.entries(mapa)
-              .map(([apelido, total]) => ({ apelido, total }))
-              .sort((a,b) => b.total - a.total || a.apelido.localeCompare(b.apelido));
-            let pos=1;
-            return ranking.map(r => `<tr><td>${pos++}</td><td>${r.apelido}</td><td>${r.total}</td></tr>`).join("");
-          })()}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</body>
-</html>`;
-
-    // imprime sem pop-up (mais compatível no celular)
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  iframe.srcdoc = html;
-  document.body.appendChild(iframe);
-
-  iframe.onload = () => {
-    try{
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-    }catch(e){
-      console.error("Erro ao imprimir PDF:", e);
-      alert("Não foi possível abrir o PDF. Tente novamente em outro navegador.");
+    // Totais (artilharia)
+    const totals = {};
+    for (const r of rows) {
+      const apelido = (r?.apelido || "").toString().trim();
+      if (!apelido) continue;
+      const g = Number(r?.gols || 0) || 0;
+      totals[apelido] = (totals[apelido] || 0) + g;
     }
-    // remove depois (não atrapalha o uso)
-    setTimeout(() => {
-      try{ document.body.removeChild(iframe); }catch(e){}
-    }, 2000);
-  };
+
+    const ranking = Object.entries(totals)
+      .map(([apelido, total]) => ({ apelido, total }))
+      .sort((a, b) => (b.total - a.total) || a.apelido.localeCompare(b.apelido))
+      .map((x, i) => ({ pos: i + 1, ...x }));
+
+    const fmtData = (d) => {
+      const s = (d || "").toString().trim();
+      return s;
+    };
+
+    const esc = (s) => (s ?? "").toString()
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+
+    const printRoot = document.getElementById("print-root");
+    if (!printRoot) {
+      alert("Erro: área de impressão não encontrada.");
+      return;
+    }
+
+    // Monta o conteúdo que será impresso (e baixado como PDF pelo navegador)
+    printRoot.innerHTML = `
+      <div class="print-page">
+        <div class="print-header">
+          <div class="print-title">TESOURA - CONTROLE DE GOLS</div>
+          <div class="print-subtitle">Arquivo anual: ${esc(ano)}</div>
+        </div>
+
+        <div class="print-grid">
+          <div class="print-card">
+            <div class="print-card-title">Gols registrados</div>
+            <table class="print-table">
+              <thead>
+                <tr>
+                  <th>DATA</th>
+                  <th>APELIDO</th>
+                  <th>GOLS</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.length ? rows.map(r => `
+                  <tr>
+                    <td>${esc(fmtData(r.data))}</td>
+                    <td>${esc(r.apelido)}</td>
+                    <td style="text-align:right">${esc(r.gols)}</td>
+                  </tr>
+                `).join("") : `<tr><td colspan="3" style="text-align:center">SEM REGISTROS</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="print-card">
+            <div class="print-card-title">Artilharia</div>
+            <table class="print-table">
+              <thead>
+                <tr>
+                  <th style="width:40px">#</th>
+                  <th>APELIDO</th>
+                  <th style="width:90px">TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${ranking.length ? ranking.map(r => `
+                  <tr>
+                    <td style="text-align:center">${r.pos}</td>
+                    <td>${esc(r.apelido)}</td>
+                    <td style="text-align:right">${esc(r.total)}</td>
+                  </tr>
+                `).join("") : `<tr><td colspan="3" style="text-align:center">SEM REGISTROS</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Chama impressão (no celular/PC isso abre a opção "Salvar em PDF")
+    // (síncrono com o clique, mais estável que iframe)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.print();
+        setTimeout(() => { printRoot.innerHTML = ""; }, 800);
+      });
+    });
+  } catch (e) {
+    console.error(e);
+    alert("Erro ao baixar PDF (ver console).");
+  }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -610,5 +654,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 </script>
+  <div id="print-root" class="print-root"></div>
 </body>
 </html>
