@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Tesoura - Jogadores</title>
-  <!-- JOGADORES_REV_FILTRO_PDF_20260104 -->
   <style>
     :root{
       --bg:#020617;
@@ -109,60 +108,44 @@
     }
 
     .page-header{display:flex; align-items:center; justify-content:space-between; gap:12px;}
-
-    /* ===== HISTÓRICO (ANO/MÊS) ===== */
-    .hist-card{margin-top:12px; padding:12px; border:1px solid var(--line); border-radius:12px; background: linear-gradient(180deg, var(--panel), var(--panel2));}
-    .hist-title{color:var(--orange); font-weight:900; letter-spacing:.5px; text-transform:uppercase; font-size:13px; margin:0 0 8px;}
-    .hist-row{display:flex; flex-wrap:wrap; gap:10px 12px; align-items:flex-end;}
-    .hist-field{display:flex; flex-direction:column; gap:6px; min-width:160px;}
-    .hist-field label{font-size:12px; color:var(--muted);}
-    .hist-field select{height:36px; border-radius:10px; border:1px solid var(--line); background:#071225; color:var(--txt); padding:0 10px;}
-    .hist-actions{display:flex; gap:8px; margin-left:auto; flex-wrap:wrap;}
-    .hist-table{width:100%; border-collapse:collapse; margin-top:10px;}
-    .hist-table th,.hist-table td{border-bottom:1px solid var(--line); padding:10px 8px; font-size:13px; text-align:left;}
-    .hist-table th{color:var(--orange); font-weight:900;}
-    .hist-empty{color:var(--muted); font-size:13px; padding:10px 0;}
-
-    /* ===== IMPRESSÃO ===== */
-    @media print {
-      body { background: #fff !important; color:#000 !important; }
-      .container { max-width: none !important; padding: 0 !important; }
-      .painel, .card { box-shadow:none !important; border:none !important; background:#fff !important; }
-      .page-header, .controls, .hist-card, #status, .btn-recarregar { display:none !important; }
-      table { border:1px solid #111 !important; }
-      th, td { border-bottom:1px solid #333 !important; color:#000 !important; }
-      th { color:#000 !important; }
-    }
   
-    /* ===== PRINT/PDF (sem nova aba) ===== */
-    #printArea{ display:none; }
-    body.printMode #printArea{ display:block; }
 
-    @media print{
-      /* imprime apenas o conteúdo do printArea */
-      body.printMode *{ visibility:hidden !important; }
-      body.printMode #printArea, body.printMode #printArea *{ visibility:visible !important; }
-
-      body.printMode #printArea{
-        position: fixed;
-        left: 0; top: 0; right: 0; bottom: 0;
-        padding: 18px;
-        background: #ffffff !important;
-        color: #000000 !important;
-      }
-
-      body.printMode .printMeta{ font-size: 11px; margin-bottom: 6px; color:#111; }
-      body.printMode .printTitle{ font-size: 16px; font-weight: 800; margin: 0 0 6px 0; }
-      body.printMode .printSub{ font-size: 12px; margin: 0 0 12px 0; color:#222; }
-
-      body.printMode table{ width:100%; border-collapse: collapse; }
-      body.printMode th, body.printMode td{ border: 1px solid #111; padding: 6px 8px; font-size: 12px; text-align: left; }
-      body.printMode th{ background:#f2f2f2; }
+  /* ===== IMPRESSAO / PDF (NAO ABRE NOVA PAGINA) ===== */
+  @media print{
+    body *{ visibility:hidden !important; }
+    #printArea, #printArea *{ visibility:visible !important; }
+    #printArea{
+      position:fixed; left:0; top:0; width:100%;
+      padding:14px;
+      background:#ffffff !important;
+      color:#000000 !important;
+      font-family: Arial, Helvetica, sans-serif;
     }
+  }
+
+  #printArea{ display:none; }
+  #printArea .print-title{ font-size:14px; font-weight:800; margin:0 0 8px 0; }
+  #printArea .print-meta{ font-size:11px; margin:0 0 10px 0; }
+
+  #printArea table{ width:100%; border-collapse:collapse; }
+  #printArea th, #printArea td{
+    border:1px solid #222;
+    padding:6px 6px;
+    font-size:11px;
+    text-align:left;
+    vertical-align:top;
+  }
+
+  /* esconde colunas EDITAR/EXCLUIR no PDF */
+  #printArea th:nth-last-child(-n+2),
+  #printArea td:nth-last-child(-n+2){
+    display:none;
+  }
 
 </style>
 </head>
 <body>
+  <div id="printArea"></div>
   <header class="page-header">
         <h1>TESOURA - JOGADORES</h1>
 </header>
@@ -226,13 +209,11 @@
       <div style="color:#cfd6ff;font-weight:800;margin:6px 0 10px">
   ZAGUEIRO = Z &nbsp;&nbsp; LATERAL = L &nbsp;&nbsp; MEIO = M &nbsp;&nbsp; ATAQUE = A
 </div>
-      <div class="row" style="margin:8px 0 10px;">
-        <button class="btn-recarregar" id="btn-recarregar">RECARREGAR LISTA</button>
-        <button class="btn btn-blue" id="btn-baixar-pdf">BAIXAR PDF (ATUAL)</button>
-      </div>
+      <button class="btn-recarregar" id="btn-recarregar">RECARREGAR LISTA</button>
+        <button class="btn-recarregar" id="btn-pdf-atual">BAIXAR PDF (ATUAL)</button>
       <p style="font-size:12px;">ORDEM ALFABÉTICA POR APELIDO. COLUNA IDADE É CALCULADA AUTOMÁTICA.</p>
 
-      <table id="tblJogadores">
+      <table>
         <thead>
           <tr>
             <th>ORDEM</th>
@@ -254,36 +235,13 @@
         </thead>
         <tbody id="tbody-jogadores"></tbody>
       </table>
-
-      <!-- HISTÓRICO (ANO/MÊS) - não precisa visualizar, apenas escolher e baixar -->
-      <div class="hist-card" id="histCard">
-        <div class="hist-title">HISTÓRICO (ANO / MÊS)</div>
-        <div class="hist-row">
-          <div class="hist-field">
-            <label>ANO</label>
-            <select id="histAno"></select>
-          </div>
-          <div class="hist-field">
-            <label>MÊS</label>
-            <select id="histMes"></select>
-          </div>
-          <div class="hist-actions">
-            <button class="btn btn-green" id="btnHistBuscar">BUSCAR</button>
-            <button class="btn btn-orange" id="btnHistLimpar">LIMPAR</button>
-          </div>
-        </div>
-        <div id="histResultado"></div>
-        <div class="hint" style="margin-top:8px;">Obs: o histórico é salvo automaticamente quando você salva/edita/exclui jogadores. E também quando abrir o painel perto do dia 1º.</div>
-      </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    /* ===== SUPABASE (mesmo padrão do CAIXA) ===== */
-    const CFG = window.TESOURA_CONFIG || window.parent?.TESOURA_CONFIG || {};
-    const SUPABASE_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
-    const SUPABASE_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || CFG.SUPABASE_ANON || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
     window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var supabase = window.__TESOURA_SUPABASE__;
     const camisaInput = document.getElementById("camisa");
@@ -300,14 +258,6 @@
     const btnSalvar = document.getElementById("btn-salvar");
     const btnCancelar = document.getElementById("btn-cancelar");
     const btnRecarregar = document.getElementById("btn-recarregar");
-    const btnBaixarPdfAtual = document.getElementById("btn-baixar-pdf");
-
-    /* histórico */
-    const selAnoHist = document.getElementById("selAnoHist");
-    const selMesHist = document.getElementById("selMesHist");
-    const btnHistBuscar = document.getElementById("btnHistBuscar");
-    const btnHistLimpar = document.getElementById("btnHistLimpar");
-    const tbodyHist = document.getElementById("tbody-historico");
 
     const tbody = document.getElementById("tbody-jogadores");
     const statusEl = document.getElementById("status");
@@ -315,179 +265,6 @@
     let editId = null;
 
     function el(id){ return document.getElementById(id); }
-
-    function pad2(n){ return String(n).padStart(2,'0'); }
-
-    function getMesAtualRef(){
-      const d = new Date();
-      const ano = d.getFullYear();
-      const mes = d.getMonth()+1;
-      return { ano, mes, mes2: pad2(mes), dataRef: `${ano}-${pad2(mes)}-01`, ref: `${pad2(mes)}/${ano}` };
-    }
-
-    function formatAgora(){
-      try{
-        const d = new Date();
-        const dd = String(d.getDate()).padStart(2,'0');
-        const mm = String(d.getMonth()+1).padStart(2,'0');
-        const yy = d.getFullYear();
-        const hh = String(d.getHours()).padStart(2,'0');
-        const mi = String(d.getMinutes()).padStart(2,'0');
-        return `${dd}/${mm}/${yy} ${hh}:${mi}`;
-      }catch(e){
-        return '';
-      }
-    }
-
-    function sanitizeTableHtml(html){
-      try{
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        const table = doc.querySelector('table');
-        if(!table) return html;
-
-        // remove coluna AÇÕES (se existir)
-        const ths = Array.from(table.querySelectorAll('thead th'));
-        const idxs = [];
-        ths.forEach((th, i) => {
-          const t = (th.textContent || '').trim().toUpperCase();
-          if (t.includes('AÇÕES') || t.includes('ACOES') || (th.className||'').includes('col-actions')) idxs.push(i);
-        });
-
-        const removeAt = (idx) => {
-          const headRow = table.querySelector('thead tr');
-          if (headRow && headRow.children[idx]) headRow.children[idx].remove();
-          table.querySelectorAll('tbody tr').forEach(tr => { if (tr.children[idx]) tr.children[idx].remove(); });
-        };
-
-        idxs.sort((a,b)=>b-a).forEach(removeAt);
-
-        // remove botões remanescentes
-        table.querySelectorAll('button').forEach(b=>b.remove());
-
-        return table.outerHTML;
-      }catch(e){
-        return html;
-      }
-    }
-
-    function imprimirNoPainel({ titulo, subtitulo, tableHtml }){
-      const area = document.getElementById('printArea');
-      if (!area) { alert('Erro: printArea não encontrado.'); return; }
-
-      const safeTable = sanitizeTableHtml(tableHtml || '');
-      area.innerHTML = `
-        <div class="printMeta">${formatAgora()}</div>
-        <div class="printTitle">${titulo || ''}</div>
-        ${subtitulo ? `<div class="printSub">${subtitulo}</div>` : ``}
-        ${safeTable}
-      `;
-
-      // modo impressão (sem abrir nova aba)
-      document.body.classList.add('printMode');
-
-      // dispara impressão/PDF
-      setTimeout(()=>window.print(), 50);
-    }
-
-    // limpa após imprimir
-    window.addEventListener('afterprint', () => {
-      document.body.classList.remove('printMode');
-      const area = document.getElementById('printArea');
-      if (area) area.innerHTML = '';
-    });
-
-
-    async function arquivarJogadoresMesAtual({motivo}){
-      try {
-        const { ano, mes, mes2, dataRef, ref } = getMesAtualRef();
-        // monta conteúdo do painel (exatamente como seria baixado)
-        const titulo = `JOGADORES (${mes2}/${ano})`;
-        const gerado = new Date();
-        const tableHtml = document.getElementById('tblJogadores')?.outerHTML || '';
-
-        // remove snapshot do mesmo mês (evita duplicidade)
-        await supabase
-          .from('arquivos_app')
-          .delete()
-          .eq('painel','jogadores')
-          .eq('periodo','mensal')
-          .eq('ano_ref', ano)
-          .eq('mes_ref', mes)
-          .eq('data_ref', dataRef);
-
-        const payload = {
-          painel: 'jogadores',
-          periodo: 'mensal',
-          data_ref: dataRef,
-          mes_ref: mes,
-          ano_ref: ano,
-          referencia: ref,
-          titulo,
-          conteudo: {
-            titulo,
-            referencia: ref,
-            motivo: motivo || 'auto',
-            gerado_em: gerado.toISOString(),
-            total: (window.__jogadoresCache__ || []).length,
-            jogadores: window.__jogadoresCache__ || [],
-            table_html: tableHtml,
-          }
-        };
-
-        const { error } = await supabase.from('arquivos_app').insert(payload);
-        if (error) console.warn('Aviso: não conseguiu arquivar jogadores.', error);
-      } catch (e) {
-        console.warn('Aviso: erro ao arquivar jogadores.', e);
-      }
-    }
-
-    async function carregarHistoricoJogadores(){
-      tbodyHist.innerHTML = '';
-      const ano = parseInt(selAnoHist.value,10);
-      const mes = parseInt(selMesHist.value,10);
-      if (!ano || !mes) return;
-
-      const { data, error } = await supabase
-        .from('arquivos_app')
-        .select('id, created_at, titulo, referencia, conteudo')
-        .eq('painel','jogadores')
-        .eq('periodo','mensal')
-        .eq('ano_ref', ano)
-        .eq('mes_ref', mes)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.warn('Aviso: não conseguiu ler histórico de jogadores.', error);
-        tbodyHist.innerHTML = `<tr><td colspan="3" style="color:#ff6b6b;">Erro ao carregar histórico.</td></tr>`;
-        return;
-      }
-
-      const rows = (data || []);
-      if (rows.length === 0) {
-        tbodyHist.innerHTML = `<tr><td colspan="3">Nenhum arquivo salvo para este mês.</td></tr>`;
-        return;
-      }
-
-      for (const r of rows) {
-        const dt = r.created_at ? new Date(r.created_at) : null;
-        const quando = dt ? `${pad2(dt.getDate())}/${pad2(dt.getMonth()+1)}/${dt.getFullYear()} ${pad2(dt.getHours())}:${pad2(dt.getMinutes())}` : '-';
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${quando}</td>
-          <td>${r.titulo || 'JOGADORES'}</td>
-          <td><button class="btn btn-blue" data-id="${r.id}">BAIXAR PDF</button></td>
-        `;
-        const btn = tr.querySelector('button');
-        btn.addEventListener('click', async ()=>{
-          const conteudo = r.conteudo || {};
-          const tableHtml = conteudo.table_html || '';
-          const titulo = conteudo.titulo || r.titulo || 'JOGADORES';
-          const subtitulo = conteudo.referencia ? `Referência: ${conteudo.referencia}` : '';
-          imprimirNoPainel({ titulo, subtitulo, tableHtml });
-        });
-        tbodyHist.appendChild(tr);
-      }
-    }
 
     function calcularIdade(dataISO) {
       if (!dataISO) return "";
@@ -630,8 +407,7 @@
       }
 
       statusEl.textContent = "JOGADOR EXCLUÍDO COM SUCESSO.";
-      await carregarJogadores();
-      await arquivarJogadoresMesAtual("edit/delete");
+      carregarJogadores();
     }
 
     async function salvarJogador() {
@@ -699,39 +475,65 @@
 
       statusEl.textContent = "JOGADOR SALVO COM SUCESSO.";
       limparFormulario();
-      await carregarJogadores();
-      await arquivarJogadoresMesAtual("edit/delete");
+      carregarJogadores();
     }
 
-    async function init() {
-      await carregarJogadores();
-      preencherFiltrosHistorico();
-      await carregarHistorico();
-
-      /* auto-snapshot perto do dia 01 (se abrir) */
-      const hoje = new Date();
-      if (hoje.getDate() <= 3) {
-        await arquivarJogadoresMesAtual("auto-dia01");
-      }
+    function init() {
+      carregarJogadores();
     }
 
     btnSalvar.addEventListener("click", salvarJogador);
     btnCancelar.addEventListener("click", limparFormulario);
     btnRecarregar.addEventListener("click", carregarJogadores);
-    btnBaixarPdfAtual.addEventListener("click", () => {
-      const html = document.getElementById("tblJogadores")?.outerHTML || "";
-      imprimirNoPainel({ titulo: \"JOGADORES - LISTA ATUAL\", tableHtml: html });
-    });
 
-    btnHistBuscar.addEventListener("click", carregarHistorico);
-    btnHistLimpar.addEventListener("click", () => {
-      preencherFiltrosHistorico();
-      carregarHistorico();
-    });
+    const btnPdfAtual = document.getElementById("btn-pdf-atual");
+    if (btnPdfAtual) btnPdfAtual.addEventListener("click", baixarPdfAtual);
+
+
+    // ===== PDF (ATUAL) via PRINT (sem abrir nova aba) =====
+    function baixarPdfAtual() {
+      try {
+        const now = new Date();
+        const data = now.toLocaleDateString("pt-BR");
+        const hora = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+        const table = document.querySelector("table");
+        const thead = table ? table.querySelector("thead") : null;
+        const tbody = document.getElementById("tbody");
+
+        const printArea = document.getElementById("printArea");
+        if (!table || !thead || !tbody) {
+          alert("Não foi possível gerar o PDF agora. Recarregue a lista e tente novamente.");
+          return;
+        }
+
+        printArea.innerHTML = `
+          <div class="print-title">JOGADORES - LISTA ATUAL</div>
+          <div class="print-meta">${data} ${hora}</div>
+          <table>
+            ${thead.outerHTML}
+            <tbody>${tbody.innerHTML}</tbody>
+          </table>
+        `;
+
+        printArea.style.display = "block";
+        window.print();
+      } catch (e) {
+        console.error(e);
+        alert("Erro ao gerar o PDF. Abra o Console (F12) e me mande o erro.");
+      } finally {
+        setTimeout(() => {
+          const printArea = document.getElementById("printArea");
+          if (printArea) {
+            printArea.style.display = "none";
+            printArea.innerHTML = "";
+          }
+        }, 800);
+      }
+    }
+
 
     init();
   </script>
-
-  <div id="printArea" aria-hidden="true"></div>
 </body>
 </html>
