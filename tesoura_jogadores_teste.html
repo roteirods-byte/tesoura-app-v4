@@ -557,36 +557,34 @@ function jogadoresToTable(players){
   html += `</tbody></table>`;
   return html;
 }
-function printJogadores(players, titulo){
+
+  function printJogadores(){
   const pa = document.getElementById("printArea");
-  if(!pa) return;
-  const now = new Date();
   pa.innerHTML = `
-    <h1>${titulo}</h1>
-    <div class="printMeta">${formatBRDateTime(now)} &nbsp;|&nbsp; Total de jogadores: ${players.length}</div>
-    ${jogadoresToTable(players)}
+    <h1>JOGADORES - LISTA ATUAL</h1>
+    <div class="printMeta">${new Date().toLocaleString("pt-BR")}</div>
+    ${jogadoresToTable(true)}
   `;
   pa.style.display = "block";
-  window.print();
-  setTimeout(()=>{ pa.innerHTML=""; pa.style.display="none"; }, 200);
+
+  const cleanup = () => {
+    pa.innerHTML = "";
+    pa.style.display = "none";
+  };
+
+  // Limpa depois do print (sem timeout que pode apagar antes)
+  window.addEventListener("afterprint", cleanup, { once: true });
+
+  // Espera 2 frames para o Chrome renderizar o printArea antes do print
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      try { window.print(); } catch(e){ console.warn(e); cleanup(); }
+      // fallback: se o afterprint não disparar por algum motivo
+      setTimeout(() => cleanup(), 4000);
+    });
+  });
 }
-
-document.getElementById("btnPdfAtual")?.addEventListener("click", async ()=>{
-  try{
-    if(!Array.isArray(JOGADORES_CACHE) || JOGADORES_CACHE.length===0){
-      await carregarJogadores();
-    }
-    if(!Array.isArray(JOGADORES_CACHE) || JOGADORES_CACHE.length===0){
-      alert("Lista vazia. Clique em RECARREGAR LISTA e tente novamente.");
-      return;
-    }
-    printJogadores(JOGADORES_CACHE, "JOGADORES - LISTA ATUAL");
-  }catch(e){
-    console.error(e);
-    alert("Não foi possível gerar o PDF agora. Recarregue a lista e tente novamente.");
-  }
-});
-
+    
 /* =========================
    HISTÓRICO (ANO/MÊS) - SUPABASE (arquivos_app)
    ========================= */
