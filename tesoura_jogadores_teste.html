@@ -133,7 +133,34 @@
       th, td { border-bottom:1px solid #333 !important; color:#000 !important; }
       th { color:#000 !important; }
     }
-  </style>
+  
+    /* ===== PRINT/PDF (sem nova aba) ===== */
+    #printArea{ display:none; }
+    body.printMode #printArea{ display:block; }
+
+    @media print{
+      /* imprime apenas o conteúdo do printArea */
+      body.printMode *{ visibility:hidden !important; }
+      body.printMode #printArea, body.printMode #printArea *{ visibility:visible !important; }
+
+      body.printMode #printArea{
+        position: fixed;
+        left: 0; top: 0; right: 0; bottom: 0;
+        padding: 18px;
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+
+      body.printMode .printMeta{ font-size: 11px; margin-bottom: 6px; color:#111; }
+      body.printMode .printTitle{ font-size: 16px; font-weight: 800; margin: 0 0 6px 0; }
+      body.printMode .printSub{ font-size: 12px; margin: 0 0 12px 0; color:#222; }
+
+      body.printMode table{ width:100%; border-collapse: collapse; }
+      body.printMode th, body.printMode td{ border: 1px solid #111; padding: 6px 8px; font-size: 12px; text-align: left; }
+      body.printMode th{ background:#f2f2f2; }
+    }
+
+</style>
 </head>
 <body>
   <header class="page-header">
@@ -298,27 +325,77 @@
       return { ano, mes, mes2: pad2(mes), dataRef: `${ano}-${pad2(mes)}-01`, ref: `${pad2(mes)}/${ano}` };
     }
 
-    function abrirJanelaParaImprimir({titulo, tableHtml, subtitulo}){
-      const w = window.open('', '_blank');
-      if (!w) { alert('Bloqueio de pop-up: permita abrir janela para imprimir.'); return; }
-      const css = `
-        <style>
-          :root{--bg:#07111f;--txt:#e9f2ff;--line:rgba(255,255,255,.14);--orange:#ff8a1f}
-          *{box-sizing:border-box}
-          body{margin:0;background:var(--bg);color:var(--txt);font-family:Arial,Helvetica,sans-serif;padding:18px}
-          h1{margin:0 0 6px;color:var(--orange);font-size:18px;letter-spacing:.5px}
-          .sub{margin:0 0 14px;opacity:.85;font-size:12px}
-          table{width:100%;border-collapse:collapse;margin-top:10px}
-          th,td{border-bottom:1px solid var(--line);padding:8px 6px;font-size:12px;text-align:left}
-          th{color:var(--orange);font-weight:800}
-          @media print{body{background:#fff;color:#000} h1{color:#000} th{color:#000}}
-        </style>`;
-      w.document.open();
-      w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>${css}<title>${titulo||'TESOURA'}</title></head><body><h1>${titulo||''}</h1>${subtitulo?`<div class="sub">${subtitulo}</div>`:''}${tableHtml||''}</body></html>`);
-      w.document.close();
-      w.focus();
-      setTimeout(()=>{ w.print(); }, 350);
+    function formatAgora(){
+      try{
+        const d = new Date();
+        const dd = String(d.getDate()).padStart(2,'0');
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const yy = d.getFullYear();
+        const hh = String(d.getHours()).padStart(2,'0');
+        const mi = String(d.getMinutes()).padStart(2,'0');
+        return `${dd}/${mm}/${yy} ${hh}:${mi}`;
+      }catch(e){
+        return '';
+      }
     }
+
+    function sanitizeTableHtml(html){
+      try{
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const table = doc.querySelector('table');
+        if(!table) return html;
+
+        // remove coluna AÇÕES (se existir)
+        const ths = Array.from(table.querySelectorAll('thead th'));
+        const idxs = [];
+        ths.forEach((th, i) => {
+          const t = (th.textContent || '').trim().toUpperCase();
+          if (t.includes('AÇÕES') || t.includes('ACOES') || (th.className||'').includes('col-actions')) idxs.push(i);
+        });
+
+        const removeAt = (idx) => {
+          const headRow = table.querySelector('thead tr');
+          if (headRow && headRow.children[idx]) headRow.children[idx].remove();
+          table.querySelectorAll('tbody tr').forEach(tr => { if (tr.children[idx]) tr.children[idx].remove(); });
+        };
+
+        idxs.sort((a,b)=>b-a).forEach(removeAt);
+
+        // remove botões remanescentes
+        table.querySelectorAll('button').forEach(b=>b.remove());
+
+        return table.outerHTML;
+      }catch(e){
+        return html;
+      }
+    }
+
+    function imprimirNoPainel({ titulo, subtitulo, tableHtml }){
+      const area = document.getElementById('printArea');
+      if (!area) { alert('Erro: printArea não encontrado.'); return; }
+
+      const safeTable = sanitizeTableHtml(tableHtml || '');
+      area.innerHTML = `
+        <div class="printMeta">${formatAgora()}</div>
+        <div class="printTitle">${titulo || ''}</div>
+        ${subtitulo ? `<div class="printSub">${subtitulo}</div>` : ``}
+        ${safeTable}
+      `;
+
+      // modo impressão (sem abrir nova aba)
+      document.body.classList.add('printMode');
+
+      // dispara impressão/PDF
+      setTimeout(()=>window.print(), 50);
+    }
+
+    // limpa após imprimir
+    window.addEventListener('afterprint', () => {
+      document.body.classList.remove('printMode');
+      const area = document.getElementById('printArea');
+      if (area) area.innerHTML = '';
+    });
+
 
     async function arquivarJogadoresMesAtual({motivo}){
       try {
@@ -406,7 +483,7 @@
           const tableHtml = conteudo.table_html || '';
           const titulo = conteudo.titulo || r.titulo || 'JOGADORES';
           const subtitulo = conteudo.referencia ? `Referência: ${conteudo.referencia}` : '';
-          abrirJanelaParaImprimir({ titulo, subtitulo, tableHtml });
+          imprimirNoPainel({ titulo, subtitulo, tableHtml });
         });
         tbodyHist.appendChild(tr);
       }
@@ -643,7 +720,7 @@
     btnRecarregar.addEventListener("click", carregarJogadores);
     btnBaixarPdfAtual.addEventListener("click", () => {
       const html = document.getElementById("tblJogadores")?.outerHTML || "";
-      abrirJanelaParaImprimir({ html, titulo: "JOGADORES - LISTA ATUAL" });
+      imprimirNoPainel({ titulo: \"JOGADORES - LISTA ATUAL\", tableHtml: html });
     });
 
     btnHistBuscar.addEventListener("click", carregarHistorico);
@@ -654,5 +731,7 @@
 
     init();
   </script>
+
+  <div id="printArea" aria-hidden="true"></div>
 </body>
 </html>
