@@ -140,7 +140,18 @@
       font-size: 12px;
       color: #ffcc66;
     }
-  </style>
+  
+.btn-pdf{
+  background: #ff7a00 !important;
+  color: #000 !important;
+}
+.subtexto{
+  margin-top: 6px;
+  color: #cfcfcf;
+  font-size: 12px;
+}
+
+</style>
 </head>
 <body>
   <h1>TESOURA - CONTROLE DE GOLS</h1>
@@ -150,16 +161,24 @@
     <div class="bloco">
       <h3>Registrar gol</h3>
       <div class="linha-form">
+        <label>ANO:</label>
+        <select id="gols-ano"></select>
+
         <label>DATA:</label>
         <input type="date" id="gols-data" />
+
         <label>APELIDO:</label>
         <select id="gols-apelido">
           <option value="">-- selecione --</option>
         </select>
+
         <label>GOLS:</label>
         <input type="number" id="gols-quantidade" min="1" value="1" />
+
         <button id="gols-salvar-btn">SALVAR GOL</button>
+        <button id="gols-pdf-btn" class="btn-pdf">BAIXAR PDF</button>
       </div>
+      <div class="subtexto">Arquivo anual: <span id="gols-ano-label"></span></div>
       <div id="status-gols"></div>
     </div>
 
@@ -203,234 +222,377 @@
   </div>
 
   <script>
-    // ===================== SUPABASE (MESMA CONFIG DO JOGADORES) =====================
-    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-    window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    var supabase = window.__TESOURA_SUPABASE__;
-    function setStatus(msg) {
-      const div = document.getElementById("status-gols");
-      if (div) div.textContent = msg || "";
+// ================================
+// TESOURA - GOLS (ARQUIVO ANUAL)
+// Regras:
+// - Tudo é filtrado por ANO
+// - "Gols registrados": lista de lançamentos do ano (pode EXCLUIR por linha)
+// - "Artilharia": soma anual por jogador (somente visual)
+// - "Baixar PDF": baixa exatamente o que está sendo visto no painel
+// ================================
+
+function $(sel){ return document.querySelector(sel); }
+
+function getSupabaseClient(){
+  const CFG = window.TESOURA_CONFIG || {};
+  const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
+  const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+  if (!window.supabase || !window.supabase.createClient){
+    throw new Error("Supabase não carregou (cdn).");
+  }
+  return window.supabase.createClient(SB_URL, SB_KEY);
+}
+
+let sb;
+let golsAno = [];
+
+function setStatus(msg, isErr=false){
+  const el = $("#status-gols");
+  if(!el) return;
+  el.textContent = msg || "";
+  el.style.color = isErr ? "#ff5a5a" : "#5cff9a";
+}
+
+function hojeISO(){
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function popularAnos(){
+  const sel = $("#gols-ano");
+  if(!sel) return;
+  const now = new Date().getFullYear();
+  const start = 2024;
+  const end = now + 5;
+
+  sel.innerHTML = "";
+  for(let y=end; y>=start; y--){
+    const opt = document.createElement("option");
+    opt.value = String(y);
+    opt.textContent = String(y);
+    sel.appendChild(opt);
+  }
+  sel.value = String(now);
+  $("#gols-ano-label").textContent = String(now);
+}
+
+function ajustarDataParaAno(){
+  const ano = Number($("#gols-ano").value);
+  const dataEl = $("#gols-data");
+  if(!dataEl.value){
+    dataEl.value = hojeISO();
+  }
+  // se a data estiver em outro ano, joga para 01/01 do ano selecionado
+  const cur = dataEl.value;
+  if(cur && Number(cur.slice(0,4)) !== ano){
+    dataEl.value = `${ano}-01-01`;
+  }
+}
+
+async function carregarJogadores(){
+  const sel = $("#gols-apelido");
+  if(!sel) return;
+
+  sel.innerHTML = '<option value="">-- selecione --</option>';
+
+  const { data, error } = await sb
+    .from("jogadores")
+    .select("apelido")
+    .order("apelido", { ascending: true });
+
+  if(error){
+    console.error("Erro ao carregar jogadores:", error);
+    setStatus("Erro ao carregar jogadores (ver console).", true);
+    return;
+  }
+
+  const apelidos = (data || [])
+    .map(r => (r.apelido || "").trim())
+    .filter(Boolean);
+
+  for(const apelido of apelidos){
+    const opt = document.createElement("option");
+    opt.value = apelido;
+    opt.textContent = apelido;
+    sel.appendChild(opt);
+  }
+}
+
+function intervaloAno(ano){
+  const start = `${ano}-01-01`;
+  const end = `${ano}-12-31`;
+  return { start, end };
+}
+
+async function carregarGolsDoAno(){
+  const ano = Number($("#gols-ano").value);
+  $("#gols-ano-label").textContent = String(ano);
+
+  const { start, end } = intervaloAno(ano);
+
+  const { data, error } = await sb
+    .from("gols")
+    .select("*")
+    .gte("data", start)
+    .lte("data", end)
+    .order("data", { ascending: true })
+    .order("id", { ascending: true });
+
+  if(error){
+    console.error("Erro ao carregar gols:", error);
+    setStatus("Erro ao carregar gols (ver console).", true);
+    golsAno = [];
+  }else{
+    golsAno = data || [];
+    setStatus(`Arquivo anual ${ano} carregado. Registros: ${golsAno.length}`, false);
+  }
+
+  renderGolsRegistrados();
+  renderArtilharia();
+}
+
+function formatBR(iso){
+  if(!iso) return "";
+  // iso: yyyy-mm-dd
+  const [y,m,d] = iso.split("-");
+  if(!y || !m || !d) return iso;
+  return `${d}/${m}/${y}`;
+}
+
+function renderGolsRegistrados(){
+  const tbody = $("#tabela-gols-registrados tbody");
+  if(!tbody) return;
+
+  tbody.innerHTML = "";
+
+  for(const row of golsAno){
+    const tr = document.createElement("tr");
+
+    // EXCLUIR
+    const tdX = document.createElement("td");
+    const btn = document.createElement("button");
+    btn.className = "btn-excluir";
+    btn.textContent = "X";
+    btn.addEventListener("click", () => excluirRegistro(row.id));
+    tdX.appendChild(btn);
+
+    const tdData = document.createElement("td");
+    tdData.textContent = formatBR(row.data);
+
+    const tdApelido = document.createElement("td");
+    tdApelido.textContent = row.apelido || "";
+
+    const tdGols = document.createElement("td");
+    tdGols.textContent = String(row.gols ?? "");
+
+    tr.appendChild(tdX);
+    tr.appendChild(tdData);
+    tr.appendChild(tdApelido);
+    tr.appendChild(tdGols);
+
+    tbody.appendChild(tr);
+  }
+}
+
+function renderArtilharia(){
+  const tbody = $("#tabela-artilharia tbody");
+  if(!tbody) return;
+
+  const mapa = {};
+  for(const row of golsAno){
+    const a = (row.apelido || "").trim();
+    if(!a) continue;
+    const g = Number(row.gols || 0);
+    mapa[a] = (mapa[a] || 0) + g;
+  }
+
+  const ranking = Object.entries(mapa)
+    .map(([apelido, total]) => ({ apelido, total }))
+    .sort((a,b) => b.total - a.total || a.apelido.localeCompare(b.apelido));
+
+  tbody.innerHTML = "";
+
+  let pos = 1;
+  for(const r of ranking){
+    const tr = document.createElement("tr");
+
+    const tdPos = document.createElement("td");
+    tdPos.textContent = String(pos++);
+
+    const tdApelido = document.createElement("td");
+    tdApelido.textContent = r.apelido;
+
+    const tdTotal = document.createElement("td");
+    tdTotal.textContent = String(r.total);
+
+    tr.appendChild(tdPos);
+    tr.appendChild(tdApelido);
+    tr.appendChild(tdTotal);
+
+    tbody.appendChild(tr);
+  }
+}
+
+async function salvarGol(){
+  try{
+    const ano = Number($("#gols-ano").value);
+    const data = $("#gols-data").value;
+    const apelido = $("#gols-apelido").value;
+    const qtd = Number($("#gols-quantidade").value);
+
+    if(!data){ setStatus("Selecione a DATA.", true); return; }
+    if(Number(data.slice(0,4)) !== ano){
+      setStatus("A DATA precisa estar no mesmo ANO selecionado.", true);
+      return;
+    }
+    if(!apelido){ setStatus("Selecione o APELIDO.", true); return; }
+    if(!qtd || qtd < 1){ setStatus("Informe a quantidade de GOLS.", true); return; }
+
+    const { error } = await sb.from("gols").insert([{ data, apelido, gols: qtd }]);
+
+    if(error){
+      console.error("Erro ao salvar gol:", error);
+      setStatus("Erro ao salvar (ver console).", true);
+      return;
     }
 
-    // ===================== CARREGAR JOGADORES (APELIDO) =====================
-    async function carregarJogadoresGols() {
-      setStatus("Carregando jogadores...");
+    setStatus("Gol salvo com sucesso.", false);
+    await carregarGolsDoAno();
+  }catch(e){
+    console.error(e);
+    setStatus("Erro inesperado (ver console).", true);
+  }
+}
 
-      const { data, error } = await supabase
-        .from("jogadores")
-        .select("apelido")
-        .order("apelido", { ascending: true });
+async function excluirRegistro(id){
+  try{
+    if(!id) return;
+    const ok = confirm("Excluir este registro de gol?");
+    if(!ok) return;
 
-      if (error) {
-        console.error("Erro ao carregar jogadores:", error);
-        setStatus("Erro ao carregar jogadores: " + (error.message || ""));
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        setStatus('Nenhum jogador encontrado na tabela "jogadores".');
-      } else {
-        setStatus("");
-      }
-
-      const select = document.getElementById("gols-apelido");
-      select.innerHTML = '<option value="">-- selecione --</option>';
-
-      data.forEach((j) => {
-        const opt = document.createElement("option");
-        opt.value = j.apelido;
-        opt.textContent = j.apelido;
-        select.appendChild(opt);
-      });
+    const { error } = await sb.from("gols").delete().eq("id", id);
+    if(error){
+      console.error("Erro ao excluir:", error);
+      setStatus("Erro ao excluir (ver console).", true);
+      return;
     }
+    setStatus("Registro excluído.", false);
+    await carregarGolsDoAno();
+  }catch(e){
+    console.error(e);
+    setStatus("Erro inesperado ao excluir (ver console).", true);
+  }
+}
 
-    // ===================== SALVAR GOL =====================
-    async function salvarGol() {
-      const dataCampo = document.getElementById("gols-data").value;
-      const anoSel = Number(document.getElementById("gols-ano").value);
-      if (dataCampo && anoSel) {
-        const anoData = Number(String(dataCampo).slice(0,4));
-        if (anoData !== anoSel) {
-          alert("A DATA deve estar no mesmo ANO selecionado.");
-          return;
-        }
-      }
-      const apelido = document.getElementById("gols-apelido").value;
-      const qtd = parseInt(
-        document.getElementById("gols-quantidade").value || "0",
-        10
-      );
+function baixarPDF(){
+  const ano = Number($("#gols-ano").value);
 
-      if (!dataCampo || !apelido || qtd <= 0) {
-        alert("Preencha DATA, APELIDO e GOLS (>=1).");
-        return;
-      }
+  const painel = document.querySelector(".container");
+  if(!painel) return;
 
-      const { error } = await supabase
-        .from("gols")
-        .insert([{ data: dataCampo, apelido, gols: qtd }]);
+  // monta um HTML simples só com o conteúdo visível
+  const html = `
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>TESOURA - GOLS - ${ano}</title>
+  <style>
+    @page { size: landscape; margin: 10mm; }
+    body { font-family: Arial, sans-serif; color: #000; }
+    h1 { font-size: 18px; margin: 0 0 8px 0; }
+    .sub { font-size: 12px; margin: 0 0 12px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { border: 1px solid #333; padding: 6px; text-align: center; }
+    th { background: #ff7a00; color: #000; }
+    .wrap { display: flex; gap: 12px; }
+    .card { width: 50%; }
+  </style>
+</head>
+<body>
+  <h1>TESOURA - CONTROLE DE GOLS</h1>
+  <div class="sub">Arquivo anual: ${ano}</div>
 
-      if (error) {
-        console.error("Erro ao salvar gol:", error);
-        alert("Erro ao salvar gol.");
-        return;
-      }
+  <div class="wrap">
+    <div class="card">
+      <h3>Gols registrados</h3>
+      <table>
+        <thead><tr><th>DATA</th><th>APELIDO</th><th>GOLS</th></tr></thead>
+        <tbody>
+          ${golsAno.map(r => `<tr><td>${formatBR(r.data)}</td><td>${(r.apelido||"")}</td><td>${(r.gols??"")}</td></tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
 
+    <div class="card">
+      <h3>Artilharia</h3>
+      <table>
+        <thead><tr><th>#</th><th>APELIDO</th><th>TOTAL GOLS</th></tr></thead>
+        <tbody>
+          ${(() => {
+            const mapa = {};
+            for(const row of golsAno){
+              const a = (row.apelido || "").trim();
+              if(!a) continue;
+              const g = Number(row.gols || 0);
+              mapa[a] = (mapa[a] || 0) + g;
+            }
+            const ranking = Object.entries(mapa)
+              .map(([apelido, total]) => ({ apelido, total }))
+              .sort((a,b) => b.total - a.total || a.apelido.localeCompare(b.apelido));
+            let pos=1;
+            return ranking.map(r => `<tr><td>${pos++}</td><td>${r.apelido}</td><td>${r.total}</td></tr>`).join("");
+          })()}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const w = window.open("", "_blank");
+  if(!w) return;
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  w.print();
+  w.close();
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  try{
+    sb = getSupabaseClient();
+
+    // UI
+    popularAnos();
+    const dataEl = $("#gols-data");
+    if(dataEl && !dataEl.value) dataEl.value = hojeISO();
+    ajustarDataParaAno();
+
+    // eventos
+    $("#gols-ano").addEventListener("change", async () => {
+      ajustarDataParaAno();
       await carregarGolsDoAno();
-    }
-
-    // ===================== BUSCAR GOLS DO DIA =====================
-    // ===================== BUSCAR GOLS DO ANO (arquivo anual) =====================
-    async function carregarGolsDoAno() {
-      const ano = Number(document.getElementById("gols-ano").value);
-      if (!ano) return;
-
-      // intervalo [ano-01-01, (ano+1)-01-01)
-      const ini = `${ano}-01-01`;
-      const fim = `${ano + 1}-01-01`;
-
-      const { data, error } = await supabase
-        .from("gols")
-        .select("id, data, apelido, gols")
-        .gte("data", ini)
-        .lt("data", fim)
-        .order("data", { ascending: true })
-        .order("id", { ascending: true });
-
-      if (error) {
-        console.error("Erro ao buscar gols (ano):", error);
-        setStatus("Erro ao buscar gols: " + (error.message || ""));
-        return;
-      }
-
-      setStatus(`Arquivo anual: ${ano}`);
-
-      renderizarGolsRegistrados(data || []);
-      renderizarArtilharia(data || []);
-    }
-
-
-    // ===================== TABELA GOLS REGISTRADOS =====================
-    function renderizarGolsRegistrados(lista) {
-      const tbody = document.querySelector("#tabela-gols-registrados tbody");
-      tbody.innerHTML = "";
-
-      lista.forEach((reg) => {
-        const tr = document.createElement("tr");
-
-        const tdExcluir = document.createElement("td");
-        const btn = document.createElement("button");
-        btn.textContent = "X";
-        btn.className = "btn-excluir";
-        btn.onclick = () => excluirGol(reg.id);
-        tdExcluir.appendChild(btn);
-
-        const tdData = document.createElement("td");
-        tdData.textContent = new Date(reg.data).toLocaleDateString("pt-BR");
-
-        const tdApelido = document.createElement("td");
-        tdApelido.textContent = reg.apelido;
-
-        const tdGols = document.createElement("td");
-        tdGols.textContent = reg.gols;
-
-        tr.appendChild(tdExcluir);
-        tr.appendChild(tdData);
-        tr.appendChild(tdApelido);
-        tr.appendChild(tdGols);
-
-        tbody.appendChild(tr);
-      });
-    }
-
-    // ===================== TABELA ARTILHARIA =====================
-    // ===================== TABELA ARTILHARIA (ANO SELECIONADO) =====================
-    function renderizarArtilharia(lista) {
-      const tbody = document.querySelector("#tabela-artilharia tbody");
-      tbody.innerHTML = "";
-
-      const mapa = {};
-      lista.forEach((reg) => {
-        if (!reg || !reg.apelido) return;
-        const n = Number(reg.gols || 0);
-        if (!mapa[reg.apelido]) mapa[reg.apelido] = 0;
-        mapa[reg.apelido] += n;
-      });
-
-      const artilharia = Object.keys(mapa).map((apelido) => ({
-        apelido,
-        total: mapa[apelido],
-      }));
-
-      artilharia.sort((a, b) => {
-        if (b.total !== a.total) return b.total - a.total;
-        return a.apelido.localeCompare(b.apelido);
-      });
-
-      artilharia.forEach((item, idx) => {
-        const tr = document.createElement("tr");
-
-        const tdPos = document.createElement("td");
-        tdPos.textContent = String(idx + 1);
-
-        const tdApelido = document.createElement("td");
-        tdApelido.textContent = item.apelido;
-
-        const tdTotal = document.createElement("td");
-        tdTotal.textContent = String(item.total);
-
-        tr.appendChild(tdPos);
-        tr.appendChild(tdApelido);
-        tr.appendChild(tdTotal);
-
-        tbody.appendChild(tr);
-      });
-    }
-
-
-    // ===================== EXCLUIR UM REGISTRO =====================
-    async function excluirGol(id) {
-      if (!confirm("Excluir este registro de gol?")) return;
-
-      const { error } = await supabase.from("gols").delete().eq("id", id);
-
-      if (error) {
-        console.error("Erro ao excluir gol:", error);
-        alert("Erro ao excluir gol.");
-        return;
-      }
-
-      await carregarGolsDoAno();
-    }
-
-    // ===================== EXCLUIR TODOS GOLS DO JOGADOR =====================
-    
-
-    // ===================== INICIALIZAÇÃO =====================
-    document.addEventListener("DOMContentLoaded", () => {
-      const campoData = document.getElementById("gols-data");
-      const hoje = new Date().toISOString().substring(0, 10);
-      campoData.value = hoje;
-
-      document
-        .getElementById("gols-ano")
-        .addEventListener("change", () => {
-          const ano = Number(document.getElementById("gols-ano").value);
-          const cur = document.getElementById("gols-data").value || new Date().toISOString().substring(0,10);
-          const mmdd = cur.substring(5);
-          document.getElementById("gols-data").value = `${ano}-${mmdd}`;
-          carregarGolsDoAno();
-        });
-
-      document
-        .getElementById("gols-salvar-btn")
-        .addEventListener("click", salvarGol);
-      // data é usada só para registrar; não recarrega a lista anual
-
-
-      carregarJogadoresGols().then(carregarGolsDoAno);
     });
-  </script>
+
+    $("#gols-salvar-btn").addEventListener("click", salvarGol);
+
+    const btnPdf = $("#gols-pdf-btn");
+    if(btnPdf) btnPdf.addEventListener("click", baixarPDF);
+
+    // init
+    await carregarJogadores();
+    await carregarGolsDoAno();
+
+  }catch(e){
+    console.error(e);
+    setStatus("Erro ao iniciar o painel (ver console).", true);
+  }
+});
+</script>
 </body>
 </html>
