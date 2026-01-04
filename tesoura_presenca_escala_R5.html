@@ -266,6 +266,7 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
 
           <div class="no-print" style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
             <button id="btn-limpar-presentes" class="btn-perigo">Limpar hoje</button>
+            <button id="btn-salvar-presenca" class="btn-neutro">Salvar presença</button>
 <button id="btn-escalar-1t" class="btn-primario">Escalar 1º tempo</button>
 <button id="btn-desfazer-1t" class="btn-neutro">Desfazer 1º tempo</button>
 <button id="btn-baixar-presenca" class="btn-neutro">Baixar presença</button>
@@ -391,6 +392,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
     const tbodyPresentesHoje = document.getElementById("tbody-presentes-hoje");
 
     const btnLimparPresentes = document.getElementById("btn-limpar-presentes");
+      const btnSalvarPresenca = document.getElementById("btn-salvar-presenca");
     const btnEscalar1T = document.getElementById("btn-escalar-1t");
     const btnEscalar2T = document.getElementById("btn-escalar-2t");
     const btnSalvarJogo = document.getElementById("btn-salvar-jogo");
@@ -418,6 +420,45 @@ function toast(msg, ok=false){
   } catch(e) {}
   console.log(msg);
 }
+
+    // ======= PRESENÇA: AUTO-SALVAR =======
+    let __autoSavePresencaTimer = null;
+
+    function agendarAutoSavePresenca(ms=800){
+      if(__autoSavePresencaTimer) clearTimeout(__autoSavePresencaTimer);
+      __autoSavePresencaTimer = setTimeout(()=>{ salvarPresencaHoje(true).catch(console.warn); }, ms);
+    }
+
+    async function salvarPresencaHoje(quiet=true){
+      try{
+        const dia = getDataJogoISO();
+        if(!dia || !supabase) return;
+
+        const presentesSet = new Set(presentesHoje.map(p=>p.id));
+        const presRows = todosJogadores.map(j => ({
+          data_jogo: dia,
+          apelido: j.apelido,
+          presenca: presentesSet.has(j.id),
+          faltoso: !presentesSet.has(j.id),
+        }));
+
+        const { error: delErr } = await supabase.from("presencas").delete().eq("data_jogo", dia);
+        if(delErr) throw delErr;
+
+        const { error: insErr } = await supabase.from("presencas").insert(presRows);
+        if(insErr) throw insErr;
+
+        // snapshot (para reabrir a lista mesmo saindo do painel)
+        await supabase.from("arquivos_app").delete().eq("painel","presenca").eq("data_ref", dia);
+        await supabase.from("arquivos_app").insert([{ painel:"presenca", data_ref: dia, conteudo: { dia, presentesHoje } }]);
+
+        if(!quiet) toast("Presença salva.", true);
+      }catch(e){
+        console.warn("Salvar presença falhou:", e);
+        if(!quiet) toast("Falha ao salvar presença.", false);
+      }
+    }
+
 
 
     // ===== DATA/HORA =====
@@ -719,6 +760,7 @@ function renderJogadoresTodos(){
       atualizarInfoPresentes();
       renderPresentes();
       renderEscalacoes();
+         agendarAutoSavePresenca();
     }
 
     function toggleNaoVaiJogar(apelido){
@@ -736,6 +778,7 @@ function renderJogadoresTodos(){
       syncEscalacoesComPresenca();
       renderPresentes();
       renderEscalacoes();
+         agendarAutoSavePresenca();
     }
 
     function excluirPresente(apelido){
@@ -749,6 +792,7 @@ function renderJogadoresTodos(){
       syncEscalacoesComPresenca();
       renderPresentes();
       renderEscalacoes();
+         agendarAutoSavePresenca();
     }
 
     // ===== SINCRONIZAÇÃO (NÃO DESFAZER RISCOS AO CHEGAR NOVO JOGADOR) =====
@@ -1338,13 +1382,32 @@ function calcularTotalPontos(lista){
       totais2TEl.textContent = `TOTAL PONTOS: ${totalAm2} x ${totalAz2}  (DIF: ${dif2})`;
     }
 
-    function limparPresentesHoje(){
-      if(!confirm("Limpar toda a presença de hoje?")) return;
-      presentesHoje=[];
-      limparEscalacoes();
-      atualizarInfoPresentes();
+    async function limparPresentesHoje(){
+      if(!confirm("Limpar (zerar) toda a presença de hoje?")) return;
+
+      // 1) zera a tela
+      presentesHoje = [];
+      escala1 = [];
+      escala2 = [];
+      status1T = null;
+      status2T = null;
+
       renderPresentes();
       renderEscalacoes();
+
+      // 2) zera o que foi salvo (para não voltar ao trocar de painel)
+      try{
+        const dia = getDataJogoISO();
+        if(dia && supabase){
+          await supabase.from("presencas").delete().eq("data_jogo", dia);
+          await supabase.from("escalacao").delete().eq("data_jogo", dia);
+          await supabase.from("arquivos_app").delete().eq("data_ref", dia).in("painel", ["presenca","escalacao"]);
+        }
+        toast("Presença zerada.", true);
+      }catch(e){
+        console.warn("Limpar presença falhou:", e);
+        toast("Falha ao limpar presença.", false);
+      }
     }
 
     // ===== DESFAZER ESCALAÇÃO (não mexe na lista de presença) =====
@@ -1631,7 +1694,8 @@ function calcularTotalPontos(lista){
     }
 
     // ===== EVENTOS =====
-    btnLimparPresentes.addEventListener("click", limparPresentesHoje);
+    btnLimparPresentes.addEventListener("click", ()=>{ limparPresentesHoje().catch(console.warn); });
+    if (btnSalvarPresenca) btnSalvarPresenca.addEventListener("click", ()=>{ salvarPresencaHoje(false).catch(console.warn); });
     btnEscalar1T.addEventListener("click", escalarPrimeiroTempo);
     btnEscalar2T.addEventListener("click", escalarSegundoTempo);
     btnSalvarJogo.addEventListener("click", salvarJogo);
