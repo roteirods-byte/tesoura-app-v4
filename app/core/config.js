@@ -20,8 +20,7 @@ window.TESOURA_CONFIG = {
     "aba-mensalidade":"tesoura_mensalidade_R4.html",
     "aba-caixa":     "tesoura_caixa_teste.html",
     "aba-gols":      "tesoura_gols.html",
-    "aba-banco":     "tesoura_banco_dados.html"
-  },
+     },
 
   DEFAULT_TAB: "aba-controle"
 };
