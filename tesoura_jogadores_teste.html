@@ -127,6 +127,29 @@
   #printArea .printMeta{margin:0 0 12px 0;font-size:11px;color:#333}
 }
 
+
+/* ===== PDF (PRINT) ===== */
+#printArea{display:none;}
+#printArea .printHeader{margin-bottom:12px;}
+#printArea .printStamp{font-size:12px;color:#111;margin-bottom:6px;}
+#printArea h1{margin:0 0 6px 0;font-size:18px;color:#111;}
+@media print{
+  body{background:#fff !important;}
+  body *{visibility:hidden !important;}
+  #printArea, #printArea *{visibility:visible !important;}
+  #printArea{
+    display:block !important;
+    position:absolute; left:0; top:0;
+    width:100%;
+    background:#fff !important;
+    color:#000 !important;
+    padding:16px;
+  }
+  #printArea table{width:100%; border-collapse:collapse;}
+  #printArea th, #printArea td{border:1px solid #999; padding:4px; font-size:10px; color:#000 !important;}
+  #printArea th{background:#eee !important; font-weight:700;}
+}
+
 </style>
 </head>
 <body>
@@ -194,6 +217,7 @@
   ZAGUEIRO = Z &nbsp;&nbsp; LATERAL = L &nbsp;&nbsp; MEIO = M &nbsp;&nbsp; ATAQUE = A
 </div>
       <button class="btn-recarregar" id="btn-recarregar">RECARREGAR LISTA</button>
+          <button class="btn btn-blue" id="btnPdfAtual" type="button">BAIXAR PDF (ATUAL)</button>
       <p style="font-size:12px;">ORDEM ALFABÉTICA POR APELIDO. COLUNA IDADE É CALCULADA AUTOMÁTICA.</p>
 
       <table>
@@ -722,6 +746,45 @@ carregarJogadores();
     btnRecarregar.addEventListener("click", carregarJogadores);
 
     init();
-  </script>
+  
+/* ===== PDF (ATUAL) - sem nova página ===== */
+(function(){
+  const btn = document.getElementById("btnPdfAtual");
+  if(!btn) return;
+  btn.addEventListener("click", function(){
+    try{
+      const tbody = document.getElementById("tbody-jogadores");
+      if(!tbody || tbody.children.length === 0){
+        alert("Não foi possível gerar o PDF agora. Recarregue a lista e tente novamente.");
+        return;
+      }
+      const table = tbody.closest("table");
+      if(!table){
+        alert("Não foi possível gerar o PDF agora. Recarregue a lista e tente novamente.");
+        return;
+      }
+      const now = new Date();
+      const stamp = now.toLocaleDateString("pt-BR") + " " + now.toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"});
+      const printArea = document.getElementById("printArea");
+      printArea.innerHTML = `
+        <div class="printHeader">
+          <div class="printStamp">${stamp}</div>
+          <h1>JOGADORES - LISTA ATUAL</h1>
+        </div>
+        ${table.outerHTML}
+      `;
+      window.print();
+      // limpa depois do print
+      setTimeout(()=>{ printArea.innerHTML = ""; }, 400);
+    }catch(err){
+      console.warn("PDF jogadores falhou:", err);
+      alert("Não foi possível gerar o PDF agora. Recarregue a lista e tente novamente.");
+    }
+  });
+})();
+
+</script>
+
+<div id="printArea"></div>
 </body>
 </html>
