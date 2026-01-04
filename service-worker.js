@@ -1,5 +1,5 @@
 // TESOURA - Service Worker ESTÁVEL (SEM CACHE)
-// Versão: 2026-01-03-A (força atualização do SW e limpa caches antigos)
+// Versão: 2026-01-04-A (força atualização do SW e limpa caches antigos)
 
 self.addEventListener("install", () => {
   self.skipWaiting();
