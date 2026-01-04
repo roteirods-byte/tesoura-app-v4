@@ -137,98 +137,54 @@
   const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
   const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
-
-
-  // ===== SYNC MENSALIDADE -> CAIXA =====
-  // Regra do projeto:
-  // - Ao marcar pagamento no Mensalidade, cria/atualiza uma RECEITA no CAIXA
-  // - Ao desmarcar/excluir no Mensalidade, remove do CAIXA
-  // - No CAIXA, esses lançamentos NÃO podem ser editados/excluídos
-  // Identificação: OBS = "MENSALIDADE (MM/AAAA)" + DESCRIÇÃO = apelido
-
-  function mensalObsTag(year, month){
-    return `MENSALIDADE (${pad2(month)}/${year})`;
+  // === Mensalidade -> Caixa (espelho automático) ===
+  function pad2(n){ return String(n).padStart(2,"0"); }
+  function caixaMarker(apelido, ano, mes){
+    return `MENSALIDADE|${apelido}|${pad2(mes)}|${ano}`;
   }
 
-  function nowHHMM(){
-    const d = new Date();
-    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-  }
-
-  function pickIdCol(obj){
-    if(!obj) return null;
-    if(Object.prototype.hasOwnProperty.call(obj,'id')) return 'id';
-    if(Object.prototype.hasOwnProperty.call(obj,'uuid')) return 'uuid';
-    if(Object.prototype.hasOwnProperty.call(obj,'ID')) return 'ID';
-    return null;
-  }
-
-  async function syncCaixaMensalidade(apel, year, month, pago, data_pagamento, valor){
+  async function syncCaixaMensalidade({ apelido, ano, mes, pago, data_pagamento, valor }){
     try{
-      const obsTag = mensalObsTag(year, month);
-      const apelUp = String(apel || "").toUpperCase();
+      // 1) remove qualquer duplicado anterior (por marker)
+      const marker = caixaMarker(apelido, ano, mes);
+      const { error: delErr } = await sb.from("caixa").delete().eq("obs", marker);
+      // se der erro (coluna diferente), só ignora para não travar
+if (!pago) return; // desmarcou ou excluiu: só remove
 
-      // 1) remove lançamentos antigos desse jogador nesse mês (se existir)
-      try{
-        const { data: rows, error } = await sb.from("caixa").select("*").eq("obs", obsTag);
-        if(!error && Array.isArray(rows) && rows.length){
-          const idCol = pickIdCol(rows[0]);
-          if(idCol){
-            for(const r of rows){
-              const d = String(r?.descricao || "").toUpperCase();
-              if(d === apelUp){
-                await sb.from("caixa").delete().eq(idCol, r[idCol]);
-              }
-            }
-          } else {
-            // fallback: apaga tudo desse mês (raríssimo, mas evita duplicar)
-            await sb.from("caixa").delete().eq("obs", obsTag);
-          }
-        } else if(error){
-          // fallback simples
-          await sb.from("caixa").delete().eq("obs", obsTag).eq("descricao", apelUp);
-        }
-      } catch(e){
-        console.warn("SYNC CAIXA: falha ao limpar antigo.", e);
-      }
+      // 2) insere novamente (descricao = apelido; receita positiva)
+      const v = Math.abs(Number(valor || 0)) || 0;
+      if (!v) return;
 
-      // 2) se NÃO pago, só remove e sai
-      if(!pago) return;
+      const base = {
+        data: data_pagamento || null,
+        hora: "00:00",
+        tipo: "RECEITA",
+        descricao: apelido,
+        obs: marker,
+        valor: v,
+        receita: v,
+        despesa: 0
+      };
 
-      // 3) cria lançamento no caixa
-      const data = (data_pagamento || isoToday());
-      const hora = nowHHMM();
-      const tipo = "RECEITA";
-      const desc = apelUp;
-      const obs = obsTag;
-      const mag = Math.abs(Number(valor || 0));
-
-      // tenta inserir em formatos diferentes para não quebrar com schema
-      const payloads = [
-        { data, hora, tipo, descricao: desc, obs, valor: mag },
-        { data, horario: hora, tipo, descricao: desc, obs, valor: mag },
-        { data, tipo, descricao: desc, obs, valor: mag },
-        { data_lancamento: data, hora, tipo, descricao: desc, obs, valor: mag },
-        { data_lancamento: data, tipo, descricao: desc, obs, valor: mag },
-        { data, hora, tipo, descricao: desc, obs, receita: mag, despesa: 0 },
-        { data, tipo, descricao: desc, obs, receita: mag, despesa: 0 },
-        { data_lancamento: data, hora, tipo, descricao: desc, obs, receita: mag, despesa: 0 },
-        { data_lancamento: data, tipo, descricao: desc, obs, receita: mag, despesa: 0 },
+      const candidates = [
+        // valor único
+        { data: base.data, hora: base.hora, tipo: base.tipo, descricao: base.descricao, obs: base.obs, valor: base.valor },
+        // receita/despesa
+        { data: base.data, hora: base.hora, tipo: base.tipo, descricao: base.descricao, obs: base.obs, receita: base.receita, despesa: base.despesa },
+        // sem hora/tipo
+        { data: base.data, descricao: base.descricao, obs: base.obs, valor: base.valor },
+        { data: base.data, descricao: base.descricao, obs: base.obs, receita: base.receita, despesa: base.despesa },
       ];
 
-      let ok=false, lastErr=null;
-      for(const p of payloads){
-        const { error } = await sb.from("caixa").insert(p);
-        if(!error){ ok=true; break; }
-        lastErr = error;
+      for (const payload of candidates){
+        const { error } = await sb.from("caixa").insert(payload);
+        if (!error) return;
       }
-      if(!ok){
-        console.error("SYNC CAIXA: não conseguiu inserir.", lastErr);
-      }
-    } catch(e){
-      console.error("SYNC CAIXA: erro geral.", e);
+    }catch(err){
+      console.warn("Aviso: sync Caixa falhou.", err);
     }
   }
+
 
   const selAno = document.getElementById("selAno");
   const selMes = document.getElementById("selMes");
@@ -366,8 +322,9 @@
         alert("ERRO ao salvar (atualizar): " + (error.message || "sem detalhe"));
         return false;
       }
-      return true;
-    } else {
+      await syncCaixaMensalidade({ apelido: apel, ano: year, mes: month, pago:false, data_pagamento:null, valor:0 });
+    return true;
+  } else {
       const { error } = await sb
         .from("mensalidades")
         .insert([payload]);
@@ -526,14 +483,6 @@
           );
 
           if(ok){
-            await syncCaixaMensalidade(
-              apelido,
-              year2,
-              month2,
-              pagoAgora,
-              (pagoAgora ? inpDate.value : null),
-              (pagoAgora ? valorCalc : null)
-            );
             toast(pagoAgora ? `SALVO (PAGO): ${apelido}` : `SALVO (NÃO PAGO): ${apelido}`);
             load();
           }
@@ -593,7 +542,6 @@
 
           const ok = await excluirRegistro(apelido, year2, month2);
           if(ok){
-            await syncCaixaMensalidade(apelido, year2, month2, false, null, null);
             toast("EXCLUIDO.");
             chk.checked = false;
             inpDate.value = "";
