@@ -1,21 +1,21 @@
-// TESOURA - Service Worker ESTÁVEL (SEM CACHE)
-// Versão: 2026-01-04-A (força atualização do SW e limpa caches antigos)
-
-self.addEventListener("install", () => {
+/* TESOURA - SERVICE WORKER (AUTO-DESATIVA) */
+self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
-    try{
+    try {
       const keys = await caches.keys();
       await Promise.all(keys.map(k => caches.delete(k)));
-    }catch(e){}
-    await self.clients.claim();
+    } catch(e) {}
+    try {
+      await self.registration.unregister();
+    } catch(e) {}
+    try {
+      await self.clients.claim();
+    } catch(e) {}
   })());
 });
 
-// Sempre rede (não armazena cache)
-self.addEventListener("fetch", (event) => {
-  event.respondWith(fetch(event.request));
-});
+// sem fetch handler = sem cache/interceptação
