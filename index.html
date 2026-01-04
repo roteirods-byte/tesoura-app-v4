@@ -439,14 +439,25 @@ function setBadge(){
     }
 
 
-  function TESOURA_SAIR(){
+ function TESOURA_SAIR(){
+  try{
     if ($("senhaJogador")) $("senhaJogador").value = "";
     if ($("senhaDiretor")) $("senhaDiretor").value = "";
 
+    window.TESOURA_ROLE = null;
+    window.TESOURA_CAN_CAIXA = false;
+
+    try{ setMsg(""); }catch(e){}
+    try{ hideFrame(); }catch(e){}
+    try{ showTelaInicial(true); }catch(e){}
+    try{ setBadge(""); }catch(e){}
+  }catch(e){
+    location.reload();
+  }
+}
 </script>
 </body>
 </html>
-
 
 
   
