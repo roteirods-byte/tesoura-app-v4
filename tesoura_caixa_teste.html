@@ -20,7 +20,7 @@
     }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    .wrap{max-width:1200px;margin:0 auto;padding:18px}
+    \.wrap{max-width:1400px;margin:0 auto;padding:18px}
     .card{background:linear-gradient(180deg,rgba(18,24,45,.92),rgba(10,16,32,.92));border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
     .title{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:2px solid rgba(255,138,42,.55)}
     .title h1{margin:0;font-size:18px;letter-spacing:.4px;color:var(--orange)}
@@ -46,10 +46,14 @@
     tbody td{padding:10px;border-top:1px solid rgba(255,255,255,.08);vertical-align:middle;font-size:12px;color:#e9f1ff}
     tbody tr:nth-child(even){background:rgba(255,255,255,.02)}
     .col-date{width:110px}
-    .col-desc{width:320px}
-    .col-obs{width:180px}
+    .col-desc{width:280px}
+    .col-obs{width:140px}
     .col-money{width:120px;text-align:right}
-    .col-actions{width:220px;text-align:center}
+    .col-actions{width:260px;text-align:center}
+
+    td.col-desc, td.col-obs{white-space:normal;}
+    td.col-desc{text-align:left;}
+    td.col-obs{text-align:left;}
     .money.pos{color:var(--green);font-weight:800}
     .money.neg{color:var(--red);font-weight:800}
     .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;border:1px solid rgba(255,255,255,.14);color:#dbe7ff;background:rgba(0,0,0,.18)}
@@ -517,7 +521,7 @@ async function carregar(){
       mens = await fetchMensalidadesPago(ini, fim);
     }catch(err){
       // não trava o caixa se mensalidades estiver com problema
-      console.warn("Aviso: não conseguiu ler mensalidades.", err);
+      /* aviso suprimido para não poluir o console */
       mens = [];
     }
 
