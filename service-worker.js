@@ -1,5 +1,5 @@
 // TESOURA - Service Worker ESTÁVEL (SEM CACHE)
-// Objetivo: impedir que versões antigas travem o site.
+// Versão: 2026-01-03-A (força atualização do SW e limpa caches antigos)
 
 self.addEventListener("install", () => {
   self.skipWaiting();
