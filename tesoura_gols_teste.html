@@ -553,14 +553,30 @@ function baixarPDF(){
 </body>
 </html>`;
 
-  const w = window.open("", "_blank");
-  if(!w) return;
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  w.focus();
-  w.print();
-  w.close();
+    // imprime sem pop-up (mais compatível no celular)
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  iframe.srcdoc = html;
+  document.body.appendChild(iframe);
+
+  iframe.onload = () => {
+    try{
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    }catch(e){
+      console.error("Erro ao imprimir PDF:", e);
+      alert("Não foi possível abrir o PDF. Tente novamente em outro navegador.");
+    }
+    // remove depois (não atrapalha o uso)
+    setTimeout(() => {
+      try{ document.body.removeChild(iframe); }catch(e){}
+    }, 2000);
+  };
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
