@@ -1,7 +1,5 @@
-/* TESOURA SW - ANTI-CACHE (HTML network-first) */
-const VERSION = "2026-01-04-anti-cache-01";
-const CACHE_PREFIX = "tesoura-cache-";
-const STATIC_CACHE = `${CACHE_PREFIX}${VERSION}`;
+/* TESOURA - SW AUTO-LIMPEZA (SEM CACHE) */
+const SW_REV = "SW_CLEAN_20260104_01";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -9,61 +7,23 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
+    // apaga QUALQUER cache antigo (de qualquer revisão)
     const keys = await caches.keys();
-    await Promise.all(
-      keys
-        .filter((k) => k.startsWith(CACHE_PREFIX) && k !== STATIC_CACHE)
-        .map((k) => caches.delete(k))
-    );
+    await Promise.all(keys.map((k) => caches.delete(k)));
+
+    // assume controle imediatamente
     await self.clients.claim();
+
+    // se desinstala para acabar com “versão velha presa”
+    try { await self.registration.unregister(); } catch (e) {}
+
+    // força recarregar as abas para pegar o site direto da rede
+    const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    clients.forEach((c) => { try { c.navigate(c.url); } catch (e) {} });
   })());
 });
 
+// enquanto estiver ativo, não faz cache de nada
 self.addEventListener("fetch", (event) => {
-  const req = event.request;
-  if (req.method !== "GET") return;
-
-  const url = new URL(req.url);
-
-  // Só controla o próprio site (mesma origem)
-  if (url.origin !== self.location.origin) return;
-
-  const accept = req.headers.get("accept") || "";
-  const isHTML =
-    req.mode === "navigate" ||
-    accept.includes("text/html") ||
-    url.pathname === "/" ||
-    url.pathname.endsWith(".html") ||
-    url.pathname.endsWith("/index.html");
-
-  // 1) HTML: sempre INTERNET primeiro (acabou “página velha”)
-  if (isHTML) {
-    event.respondWith((async () => {
-      try {
-        return await fetch(new Request(req, { cache: "no-store" }));
-      } catch (e) {
-        const cached = await caches.match(req);
-        return cached || new Response("Offline", {
-          status: 503,
-          headers: { "content-type": "text/plain; charset=utf-8" }
-        });
-      }
-    })());
-    return;
-  }
-
-  // 2) Assets: cache rápido (stale-while-revalidate)
-  event.respondWith((async () => {
-    const cache = await caches.open(STATIC_CACHE);
-    const cached = await cache.match(req);
-
-    const fetchPromise = fetch(req)
-      .then((res) => {
-        if (res && res.ok) cache.put(req, res.clone());
-        return res;
-      })
-      .catch(() => null);
-
-    return cached || (await fetchPromise) || new Response("", { status: 504 });
-  })());
+  event.respondWith(fetch(event.request, { cache: "no-store" }));
 });
