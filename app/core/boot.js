@@ -1,144 +1,127 @@
-/* TESOURA BOOT (destrava login/abas/iframe) */
-(function(){
-  const $ = (id)=>document.getElementById(id);
-  const qs = (s)=>document.querySelector(s);
+/* TESOURA BOOT (anti-flash compatível) */
+(function () {
+  "use strict";
 
-  function setTopMsg(txt){
-    const el = $("msg") || $("loginMsg") || $("msgTelaInicial");
-    if(el) el.textContent = txt || "";
+  const byId = (id) => document.getElementById(id);
+  const qs = (sel, root = document) => root.querySelector(sel);
+
+  function getFrame() {
+    return byId("frame") || byId("conteudo") || qs("iframe");
   }
 
-  function setBadge(txt){
-    const b = $("badge") || qs(".badge");
-    if(b) b.textContent = txt || "";
+  function getLoader() {
+    return byId("frameLoader") || byId("loader") || qs(".frameLoader");
   }
 
-  function showOverlay(show){
-    const ov = $("overlay") || qs(".overlay");
-    if(ov) ov.style.display = show ? "flex" : "none";
+  function showLoader(on) {
+    const l = getLoader();
+    if (!l) return;
+    l.style.display = on ? "flex" : "none";
   }
 
-  function activeTab(tabId){
-    document.querySelectorAll(".tab, .tabBtn").forEach(el=>el.classList.remove("active"));
-    const t = $(tabId);
-    if(t) t.classList.add("active");
+  function setActive(tabId) {
+    document.querySelectorAll(".tab, .tab-btn").forEach((el) => el.classList.remove("active"));
+    const el =
+      byId(tabId) ||
+      document.querySelector(`.tab-btn[data-tab="${tabId}"]`) ||
+      document.querySelector(`.tab[data-tab="${tabId}"]`);
+    if (el) el.classList.add("active");
   }
 
-  function applyCaixaVisibility(){
-    const can = !!window.TESOURA_CAN_CAIXA;
-    const caixa = $("aba-caixa");
-    if(caixa) caixa.style.display = can ? "" : "none";
-  }
-
-  function loadPanel(tabId){
+  function mapUrl(tabId) {
     const cfg = window.TESOURA_CONFIG || {};
-    const map = cfg.PANELS || {};
-    const frame = $("frame");
-    if(!frame) return setTopMsg("ERRO: iframe #frame não encontrado.");
+    const mapPanels = cfg.PANELS || {};
+    const mapTabs = window.TESOURA_TABS || {};
 
+    if (mapPanels[tabId]) return mapPanels[tabId];
+    if (mapTabs[tabId]) return mapTabs[tabId];
 
-      // ANTI-PISCA: esconde o quadro antes de trocar a página
-      frame.style.visibility = "hidden";
-      frame.onload = () => { frame.style.visibility = "visible"; };
-    const url = map[tabId];
-    if(!url) return setTopMsg("ERRO: aba sem página: " + tabId);
+    // fallback: se vier "jogadores" vira "aba-jogadores"
+    const guess = "aba-" + tabId;
+    if (mapPanels[guess]) return mapPanels[guess];
 
-    activeTab(tabId);
-
-    // cache-buster
-    const sep = url.includes("?") ? "&" : "?";
-    frame.src = url + sep + "v=" + Date.now();
-
-    setTopMsg("");
+    return "";
   }
 
-  function requireLogin(){
-    if(!window.TESOURA_ROLE){
-      showOverlay(true);
-      setTopMsg("Faça login para acessar.");
-      return true;
+  function normalizeTab(tabId) {
+    if (tabId === "aba-caixa" && window.TESOURA_ROLE === "diretoria" && window.TESOURA_CAN_CAIXA === false) {
+      return "aba-controle";
     }
-    return false;
+    return tabId;
   }
 
-  function loginJogadores(){
-    const cfg = window.TESOURA_CONFIG || {};
-    const pinCfg = String(cfg.APP_PIN || "TESOURA2026").trim();
-    const pin = String(($("pinJog")?.value || $("senhaJogador")?.value || "")).trim();
+  function swapTo(url) {
+    const fr = getFrame();
+    if (!fr) return;
 
-    if(!pin) return setTopMsg("Digite a senha dos JOGADORES.");
-    if(pinCfg && pin !== pinCfg) return setTopMsg("Senha incorreta.");
+    showLoader(true);
 
-    window.TESOURA_ROLE = "jogador";
-    window.TESOURA_CAN_CAIXA = false;
+    // 1) esconder imediatamente
+    fr.onload = null;
+    fr.style.visibility = "hidden";
 
-    applyCaixaVisibility();
-    setBadge("JOGADOR (VISUAL)");
-    showOverlay(false);
+    // 2) limpar para about:blank
+    fr.src = "about:blank";
 
-    loadPanel((cfg.DEFAULT_TAB || "aba-controle"));
+    // 3) só depois carregar o painel novo e mostrar no onload
+    setTimeout(() => {
+      fr.onload = () => {
+        fr.style.visibility = "visible";
+        showLoader(false);
+      };
+      fr.src = url;
+    }, 30);
   }
 
-  function loginDiretoria(){
-    const cfg = window.TESOURA_CONFIG || {};
-    const pins = cfg.DIRETORIA_PINS || {};
-    const pin = String(($("pinDir")?.value || $("senhaDiretor")?.value || "")).trim();
+  function openTab(tabId) {
+    tabId = normalizeTab(tabId);
+    setActive(tabId);
 
-    if(!pin) return setTopMsg("Digite a senha da DIRETORIA.");
-    if(!pins[pin]) return setTopMsg("Senha incorreta.");
+    const url =
+      mapUrl(tabId) ||
+      mapUrl("aba-controle") ||
+      mapUrl("controle");
 
-    window.TESOURA_ROLE = "diretoria";
-    window.TESOURA_CAN_CAIXA = !!pins[pin].caixa;
+    if (!url) return;
 
-    applyCaixaVisibility();
-    setBadge("DIRETORIA");
-    showOverlay(false);
-
-    loadPanel((cfg.DEFAULT_TAB || "aba-controle"));
+    swapTo(url);
   }
 
-  function sair(){
-    window.TESOURA_ROLE = "";
-    window.TESOURA_CAN_CAIXA = false;
-    if($("pinJog")) $("pinJog").value = "";
-    if($("pinDir")) $("pinDir").value = "";
-    if($("senhaJogador")) $("senhaJogador").value = "";
-    if($("senhaDiretor")) $("senhaDiretor").value = "";
-    setBadge("");
-    showOverlay(true);
-    setTopMsg("");
-    const frame = $("frame");
-    if(frame) frame.src = "about:blank";
-  }
+  function wireTabs() {
+    // abas por id (seu caso: aba-jogadores, aba-presenca, etc.)
+    document.querySelectorAll(".tab").forEach((btn) => {
+      if (!btn.id) return;
+      btn.addEventListener("click", () => openTab(btn.id));
+    });
 
-  function bindTabs(){
-    document.querySelectorAll(".tab, .tabBtn").forEach(el=>{
-      el.addEventListener("click", ()=>{
-        if(requireLogin()) return;
-        loadPanel(el.id);
-      });
+    // fallback: abas por data-tab (caso exista)
+    document.querySelectorAll(".tab-btn[data-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => openTab(btn.dataset.tab));
     });
   }
 
-  window.addEventListener("DOMContentLoaded", ()=>{
-    // sempre começa pedindo senha
-    showOverlay(true);
-    applyCaixaVisibility();
-    bindTabs();
+  function boot() {
+    showLoader(false);
+    wireTabs();
 
-    // botões
-    $("btnEntrarJogadores")?.addEventListener("click", loginJogadores);
-    $("btnEntrarDiretoria")?.addEventListener("click", loginDiretoria);
-    $("btnSair")?.addEventListener("click", sair);
-    $("btnLogin")?.addEventListener("click", ()=>showOverlay(true));
+    const cfg = window.TESOURA_CONFIG || {};
+    const def = cfg.DEFAULT_TAB || window.TESOURA_DEFAULT_TAB || "aba-controle";
+    openTab(def);
+  }
 
-    // Enter nos inputs
-    $("pinJog")?.addEventListener("keydown", (e)=>{ if(e.key==="Enter") loginJogadores(); });
-    $("pinDir")?.addEventListener("keydown", (e)=>{ if(e.key==="Enter") loginDiretoria(); });
-    $("senhaJogador")?.addEventListener("keydown", (e)=>{ if(e.key==="Enter") loginJogadores(); });
-    $("senhaDiretor")?.addEventListener("keydown", (e)=>{ if(e.key==="Enter") loginDiretoria(); });
+  // se o index já tiver abrirAba(), mantém e reforça o anti-flash
+  if (typeof window.abrirAba === "function") {
+    const old = window.abrirAba;
+    window.abrirAba = function (tabId) {
+      try { old(tabId); } catch (e) {}
+      try { openTab(tabId); } catch (e) {}
+    };
+  } else {
+    window.abrirAba = openTab;
+  }
 
-    // se tiver uma aba marcada no HTML, carrega depois do login
-    setTopMsg("");
-  });
+  window.TesouraOpenTab = openTab;
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
 })();
