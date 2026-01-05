@@ -1,26 +1,17 @@
-/* TESOURA BOOT (anti-flash definitivo v5.1)
+/* TESOURA BOOT — PATCH V5.2 (FRAME id="frame")
    - Trava qualquer click/onclick antigo (capture + stopPropagation)
-   - Sempre cria IFRAME NOVO a cada navegação (zera conteúdo anterior)
-   - Cache-buster por navegação (evita HTML antigo)
-   - Protege contra BFCache (pageshow.persisted)
+   - Sempre cria IFRAME NOVO a cada troca de aba (elimina “flash”)
+   - Cache-buster por navegação
+   - Protege BFCache (pageshow.persisted)
 */
-
 (function () {
   "use strict";
 
-  // Altere o valor abaixo quando quiser forçar atualização geral.
-  // (não precisa ser data real; pode ser v5_1, v5_2, etc.)
-  const REV = "v5_1";
-
+  const REV = "v5_2";
   let navToken = 0;
 
-  function qs(sel, root) {
-    return (root || document).querySelector(sel);
-  }
-
-  function qsa(sel, root) {
-    return Array.from((root || document).querySelectorAll(sel));
-  }
+  const qs = (sel, root = document) => root.querySelector(sel);
+  const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
   function setLoader(on) {
     const l = qs("#loader");
@@ -35,11 +26,11 @@
   }
 
   function getTabMap() {
-    return window.TESOURA_TABS || {};
+    return window.TESOURA_TABS || (window.TESOURA_CONFIG && window.TESOURA_CONFIG.PANELS) || {};
   }
 
   function setActiveTab(tabId) {
-    qsa(".tab, .tab-btn, [data-tab]").forEach((btn) => {
+    qsa("[data-tab]").forEach((btn) => {
       const tid = btn?.dataset?.tab;
       if (!tid) return;
       btn.classList.toggle("active", tid === tabId);
@@ -49,36 +40,53 @@
   function getTabBtnFromEvent(e) {
     const t = e.target;
     if (!t || !t.closest) return null;
-    return t.closest(".tab, .tab-btn, [data-tab]");
+    return t.closest("[data-tab]");
   }
 
-  // Garante 1 único iframe e já inicia escondido/blank
+  function getFrameWrap() {
+    // container do iframe (normalmente o pai do #frame)
+    const fr = qs("#frame");
+    return fr?.parentElement || qs("#conteudoWrap") || qs(".conteudoWrap") || qs("main") || document.body;
+  }
+
   function ensureSingleIframe() {
-    const iframes = qsa("iframe");
-    let frame = qs("#conteudo") || iframes[0];
+    const wrap = getFrameWrap();
+    let frame = qs("#frame") || qs("iframe", wrap) || qs("iframe");
 
     if (!frame) {
       frame = document.createElement("iframe");
-      frame.id = "conteudo";
+      frame.id = "frame";
       frame.title = "Conteúdo";
       frame.style.width = "100%";
       frame.style.height = "100%";
       frame.style.border = "0";
-      (qs("#conteudoWrap") || document.body).appendChild(frame);
+      wrap.appendChild(frame);
     }
 
-    // Remove qualquer outro iframe “fantasma”
-    iframes.forEach((f) => {
+    // remove iframes extras (fantasmas)
+    qsa("iframe").forEach((f) => {
       if (f !== frame) f.remove();
     });
 
-    // Esconde e zera imediatamente
+    // começa escondido e em branco
     frame.style.visibility = "hidden";
-    try {
-      frame.src = "about:blank";
-    } catch (_) {}
+    frame.style.opacity = "0";
+    frame.style.pointerEvents = "none";
+    try { frame.src = "about:blank"; } catch (_) {}
 
     return frame;
+  }
+
+  function showFrame(frame) {
+    frame.style.visibility = "visible";
+    frame.style.opacity = "1";
+    frame.style.pointerEvents = "auto";
+  }
+
+  function hideFrame(frame) {
+    frame.style.visibility = "hidden";
+    frame.style.opacity = "0";
+    frame.style.pointerEvents = "none";
   }
 
   function openTab(tabId) {
@@ -91,38 +99,43 @@
     setLoader(true);
     setActiveTab(tabId);
 
-    // Salva última aba
-    try {
-      localStorage.setItem("TESOURA_LAST_TAB", tabId);
-    } catch (_) {}
+    try { localStorage.setItem("TESOURA_LAST_TAB", tabId); } catch (_) {}
 
-    // SEMPRE cria iframe novo (mata o flash)
+    // garante iframe único e esconde já
     const old = ensureSingleIframe();
+
+    // cria IFRAME NOVO (id=frame) para matar qualquer conteúdo anterior
     const fresh = document.createElement("iframe");
-    fresh.id = "conteudo";
+    fresh.id = "frame";
     fresh.title = "Conteúdo";
     fresh.style.width = old.style.width || "100%";
     fresh.style.height = old.style.height || "100%";
     fresh.style.border = old.style.border || "0";
-    fresh.style.visibility = "hidden";
-    fresh.setAttribute("referrerpolicy", "no-referrer");
+    hideFrame(fresh);
 
+    // substitui imediatamente (assim o velho some na hora)
     old.replaceWith(fresh);
 
     fresh.onload = () => {
-      if (token !== navToken) return; // navegação antiga, ignora
-      fresh.style.visibility = "visible";
+      if (token !== navToken) return;
+      showFrame(fresh);
       setLoader(false);
+    };
+
+    fresh.onerror = () => {
+      if (token !== navToken) return;
+      setLoader(false);
+      // mantém escondido, evita “flash”
+      hideFrame(fresh);
+      console.error("Erro ao carregar painel:", tabId, url);
     };
 
     const finalUrl = buildUrl(url);
 
-    // 2 ticks: garante “blank” antes do src final
+    // força blank antes do src final (duplo tick)
     setTimeout(() => {
       if (token !== navToken) return;
-      try {
-        fresh.src = "about:blank";
-      } catch (_) {}
+      try { fresh.src = "about:blank"; } catch (_) {}
       setTimeout(() => {
         if (token !== navToken) return;
         fresh.src = finalUrl;
@@ -133,8 +146,7 @@
   function init() {
     ensureSingleIframe();
 
-    // 1) BLOQUEIA qualquer onclick antigo (inclusive inline)
-    //    Capture phase + stopPropagation = só o boot manda
+    // BLOQUEIA onclick antigo de abas (capture phase)
     document.addEventListener(
       "click",
       (e) => {
@@ -153,37 +165,26 @@
       true
     );
 
-    // 2) Compatibilidade com código legado: se algum lugar chamar abrirAba(...)
+    // compatibilidade: se algum código chamar abrirAba(...)
     window.abrirAba = openTab;
 
-    // 3) BFCache: se voltar do histórico “congelado”, recarrega pra não mostrar iframe antigo
+    // BFCache: se voltar do histórico congelado, recarrega
     window.addEventListener("pageshow", (e) => {
-      if (e && e.persisted) {
-        location.reload();
-      }
+      if (e && e.persisted) location.reload();
     });
 
-    // 4) Abre a aba inicial
+    // abre última aba (ou a ativa)
     const map = getTabMap();
-    let initial = null;
+    let initial = "";
+    try { initial = localStorage.getItem("TESOURA_LAST_TAB") || ""; } catch (_) {}
 
-    try {
-      initial = localStorage.getItem("TESOURA_LAST_TAB");
-    } catch (_) {}
+    if (initial && map[initial]) return openTab(initial);
 
-    if (initial && map[initial]) {
-      openTab(initial);
-      return;
-    }
-
-    const active = qs(".tab.active, .tab-btn.active, [data-tab].active");
+    const active = qs("[data-tab].active");
     const tid = active?.dataset?.tab;
-    if (tid && map[tid]) openTab(tid);
+    if (tid && map[tid]) return openTab(tid);
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
 })();
