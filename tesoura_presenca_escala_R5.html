@@ -426,7 +426,7 @@ function toast(msg, ok=false){
 
     function agendarAutoSavePresenca(ms=800){
       if(__autoSavePresencaTimer) clearTimeout(__autoSavePresencaTimer);
-      __autoSavePresencaTimer = setTimeout(()=>{ salvarPresencaHoje(true).catch(console.warn); }, ms);
+      __autoSavePresencaTimer = setTimeout(()=>{ salvarPresencaHoje(false).catch(console.warn); }, ms);
     }
 
     async function salvarPresencaHoje(forceMsg){
@@ -441,11 +441,11 @@ function toast(msg, ok=false){
     try{
       const { error: errIns } = await supabase
         .from("arquivos_app")
-        .insert([{ painel: "presenca", periodo: "diario", data_ref: dia, mes_ref: mesAnoBR(dia), ano_ref: dia.slice(0,4), conteudo: payload }]);
+        .insert([{ painel: "presenca", periodo: "diario", data_ref: dia, mes_ref: mesRefNum(dia), ano_ref: Number(dia.slice(0,4)), conteudo: payload }]);
       if(errIns) throw errIns;
     }catch(e){
       console.warn("Falha ao salvar presença em arquivos_app:", e);
-      if(forceMsg) alert("Não consegui salvar a PRESENÇA no banco. Veja o Console.");
+      if(forceMsg) toast("Não consegui salvar a PRESENÇA no banco. Veja o Console.", false);
       return false;
     }
 
@@ -453,7 +453,7 @@ function toast(msg, ok=false){
     try{
       // apaga tudo do dia
       await supabase.from("presencas").delete().eq("data_jogo", dia);
-      const presRows = jogadoresTodos.map(j => ({
+      const presRows = todosJogadores.map(j => ({
         data_jogo: dia,
         apelido: j.apelido,
         presenca: presentesHoje.some(p => p.apelido === j.apelido),
@@ -468,7 +468,7 @@ function toast(msg, ok=false){
       console.warn("Compat presencas falhou (ok):", e);
     }
 
-    if(forceMsg) alert("PRESENÇA salva.");
+    if(forceMsg) toast("PRESENÇA salva.", true);
     return true;
   }
 
@@ -492,7 +492,19 @@ function getDataJogoISO() {
     function comparaHoraStr(a,b){ return (a||"").localeCompare(b||""); }
 
     function atualizarInfoPresentes(){
-      infoPresentesEl.textContent = `Presentes hoje: ${presentesHoje.length}`;
+      infoPresentesEl.textContent = `Presentes hoje: ${presentesHoje.length}
+
+    // ===== REGRA: PRESENÇA só pode ser marcada até 07:30 =====
+    const LIMITE_PRESENCA_HHMM = "07:30";
+
+    function passouLimitePresencaAgora(){
+      const agora = new Date();
+      const hh = String(agora.getHours()).padStart(2,"0");
+      const mm = String(agora.getMinutes()).padStart(2,"0");
+      const hhmm = `${hh}:${mm}`;
+      return hhmm > LIMITE_PRESENCA_HHMM;
+    }
+`;
     }
 
     // ===== REGRA PAGAMENTO =====
@@ -666,7 +678,7 @@ function getDataJogoISO() {
       }catch(err){
         console.error(err);
         statusBaseEl.textContent = "ERRO ao carregar base. Ver F12 > Console.";
-        alert("Erro ao carregar base (ver Console).");
+        /* sem alert para evitar “flash” (ver Console). */
       }
     }
 
@@ -687,8 +699,29 @@ function getDataJogoISO() {
       if(!error && data && data.length){
         const c = data[0].conteudo || {};
         presentesHoje = Array.isArray(c.presentesHoje) ? c.presentesHoje : [];
-        renderPresentesHoje();
-        atualizarContadorPresentes();
+
+        // garante formato (compat com versões antigas)
+        presentesHoje = (presentesHoje || []).map(p=>{
+          const apelido = String(p?.apelido || "").trim();
+          const k = keyApelido(apelido);
+          const base = mapaJogadores[k] || {};
+          return {
+            id: (p?.id != null ? p.id : base.id),
+            apelido,
+            horaChegada: String(p?.horaChegada || ""),
+            obs: String(p?.obs || ""),
+            naoVaiJogar: !!p?.naoVaiJogar,
+            escalou1: !!p?.escalou1,
+            escalou2: !!p?.escalou2,
+            saiu: !!p?.saiu,
+            pontos: (p?.pontos != null ? Number(p.pontos) : (base.pontos || 0))
+          };
+        });
+
+        // mantém escalações consistentes com a presença
+        syncEscalacoesComPresenca();
+renderPresentes();
+        atualizarInfoPresentes();
         return; // ok
       }
     }catch(e){ /* segue para fallback */ }
@@ -703,7 +736,7 @@ function getDataJogoISO() {
 
       if(err) throw err;
       const set = new Set((rows||[]).map(r=>String(r.apelido||"")));
-      presentesHoje = jogadoresTodos
+      presentesHoje = todosJogadores
         .filter(j=>set.has(j.apelido))
         .map(j=>({
           id: j.id,
@@ -716,8 +749,8 @@ function getDataJogoISO() {
       presentesHoje = [];
     }
 
-    renderPresentesHoje();
-    atualizarContadorPresentes();
+    renderPresentes();
+    atualizarInfoPresentes();
   }
 function renderJogadoresTodos(){
       tbodyJogadoresTodos.innerHTML = "";
@@ -747,6 +780,12 @@ function renderJogadoresTodos(){
     function marcarChegada(j){
       const apelido = j?.apelido;
       if(!apelido) return;
+
+
+      if(passouLimitePresencaAgora()){
+        alert("Presença só pode ser marcada até 07:30.");
+        return;
+      }
 
       if(presentesHoje.find(p=>p.apelido===apelido)){
         alert("Este jogador já está na lista de presença hoje.");
@@ -1044,7 +1083,13 @@ function renderJogadoresTodos(){
 
     function mesAnoBR(diaISO){
       // "YYYY-MM-DD" -> "MM/YYYY"
-      return `${diaISO.slice(5,7)}/${diaISO.slice(0,4)}`;
+      return `${diaISO.slice(5,7)}
+
+    function mesRefNum(diaISO){
+      // "YYYY-MM-DD" -> 202601 (Number)
+      return Number(`${diaISO.slice(0,4)}${diaISO.slice(5,7)}`);
+    }
+/${diaISO.slice(0,4)}`;
     }
 
 
@@ -1417,15 +1462,15 @@ function calcularTotalPontos(lista){
 
     // zera na tela
     presentesHoje = [];
-    renderPresentesHoje();
-    atualizarContadorPresentes();
+    renderPresentes();
+    atualizarInfoPresentes();
 
     // salva vazio (arquivos_app)
     try{
       const payload = { dia, presentesHoje: [], ts: new Date().toISOString(), limpo: true };
       const { error: errIns } = await supabase
         .from("arquivos_app")
-        .insert([{ painel: "presenca", periodo: "diario", data_ref: dia, mes_ref: mesAnoBR(dia), ano_ref: dia.slice(0,4), conteudo: payload }]);
+        .insert([{ painel: "presenca", periodo: "diario", data_ref: dia, mes_ref: mesRefNum(dia), ano_ref: Number(dia.slice(0,4)), conteudo: payload }]);
       if(errIns) throw errIns;
     }catch(e){
       console.warn("Falha ao salvar LIMPEZA (arquivos_app):", e);
@@ -1728,7 +1773,7 @@ function calcularTotalPontos(lista){
 
     // ===== EVENTOS =====
     btnLimparPresentes.addEventListener("click", ()=>{ limparPresentesHoje().catch(console.warn); });
-    if (btnSalvarPresenca) btnSalvarPresenca.addEventListener("click", ()=>{ salvarPresencaHoje(false).catch(console.warn); });
+    if (btnSalvarPresenca) btnSalvarPresenca.addEventListener("click", ()=>{ salvarPresencaHoje(true).catch(console.warn); });
     btnEscalar1T.addEventListener("click", escalarPrimeiroTempo);
     btnEscalar2T.addEventListener("click", escalarSegundoTempo);
     btnSalvarJogo.addEventListener("click", salvarJogo);
