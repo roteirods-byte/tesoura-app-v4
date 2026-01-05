@@ -1,190 +1,272 @@
-/* TESOURA BOOT — PATCH V5.2 (FRAME id="frame")
-   - Trava qualquer click/onclick antigo (capture + stopPropagation)
-   - Sempre cria IFRAME NOVO a cada troca de aba (elimina “flash”)
-   - Cache-buster por navegação
-   - Protege BFCache (pageshow.persisted)
-*/
+/* TESOURA BOOT — Patch V5 (anti-flash iframe + cache-buster + bfcache) */
 (function () {
   "use strict";
 
-  const REV = "v5_2";
-  let navToken = 0;
+  const REV = "v5_3_2026-01-05";
 
-  const qs = (sel, root = document) => root.querySelector(sel);
-  const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const TABS = {
+    "aba-jogadores": "tesoura_jogadores_teste.html",
+    "aba-presenca": "tesoura_presenca_escala_R5.html",
+    "aba-controle": "tesoura_controle_geral_teste.html",
+    "aba-mensalidade": "tesoura_mensalidade_R4.html",
+    "aba-caixa": "tesoura_caixa_teste.html",
+    "aba-gols": "tesoura_gols.html"
+  };
+
+  const $id = (id) => document.getElementById(id);
+
+  const frame = $id("frame");
+  const loader = $id("frameLoader");
+  const overlay = $id("overlay");
+
+  const btnLogin = $id("btnLogin");
+  const btnSair = $id("btnSair");
+  const badge = $id("badge");
+
+  const inJog = $id("senhaJogador");
+  const inDir = $id("senhaDiretor");
+  const btnJog = $id("btnEntrarJogadores");
+  const btnDir = $id("btnEntrarDiretoria");
+  const loginMsg = $id("loginMsg");
+
+  const tabCaixa = $id("aba-caixa");
 
   function setLoader(on) {
-    const l = qs("#loader");
-    if (!l) return;
-    l.classList.toggle("on", !!on);
+    if (!loader) return;
+    loader.classList.toggle("on", !!on);
   }
 
-  function buildUrl(u) {
-    if (!u) return "";
-    const sep = u.includes("?") ? "&" : "?";
-    return `${u}${sep}rev=${encodeURIComponent(REV)}_${Date.now()}`;
+  function hideFrame() {
+    if (!frame) return;
+    frame.classList.remove("frame-on");
   }
 
-  function getTabMap() {
-    return window.TESOURA_TABS || (window.TESOURA_CONFIG && window.TESOURA_CONFIG.PANELS) || {};
+  function showFrame() {
+    if (!frame) return;
+    frame.classList.add("frame-on");
+  }
+
+  function hardBlankFrame() {
+    if (!frame) return;
+    try {
+      frame.onload = null;
+      frame.src = "about:blank";
+    } catch (_) {}
+    hideFrame();
+  }
+
+  function cacheBust(url) {
+    const sep = url.includes("?") ? "&" : "?";
+    return url + sep + "rev=" + encodeURIComponent(REV) + "&_=" + Date.now();
   }
 
   function setActiveTab(tabId) {
-    qsa("[data-tab]").forEach((btn) => {
-      const tid = btn?.dataset?.tab;
-      if (!tid) return;
-      btn.classList.toggle("active", tid === tabId);
+    document.querySelectorAll(".tab").forEach((btn) => {
+      btn.classList.toggle("active", btn.id === tabId);
     });
   }
 
-  function getTabBtnFromEvent(e) {
-    const t = e.target;
-    if (!t || !t.closest) return null;
-    return t.closest("[data-tab]");
+  function modeLabel(mode) {
+    if (mode === "diretoria") return "DIRETORIA";
+    if (mode === "jogador") return "JOGADOR (VISUAL)";
+    return "LOGIN";
   }
 
-  function getFrameWrap() {
-    // container do iframe (normalmente o pai do #frame)
-    const fr = qs("#frame");
-    return fr?.parentElement || qs("#conteudoWrap") || qs(".conteudoWrap") || qs("main") || document.body;
+  function getMode() {
+    // session.js expõe TESOURA.getMode(); fallback localStorage
+    try {
+      if (window.TESOURA && typeof window.TESOURA.getMode === "function") {
+        return window.TESOURA.getMode();
+      }
+    } catch (_) {}
+    return localStorage.getItem("tesoura_mode") || "";
   }
 
-  function ensureSingleIframe() {
-    const wrap = getFrameWrap();
-    let frame = qs("#frame") || qs("iframe", wrap) || qs("iframe");
+  function setMode(mode) {
+    try {
+      if (window.TESOURA && typeof window.TESOURA.setMode === "function") {
+        window.TESOURA.setMode(mode);
+        return;
+      }
+    } catch (_) {}
+    localStorage.setItem("tesoura_mode", mode);
+  }
 
-    if (!frame) {
-      frame = document.createElement("iframe");
-      frame.id = "frame";
-      frame.title = "Conteúdo";
-      frame.style.width = "100%";
-      frame.style.height = "100%";
-      frame.style.border = "0";
-      wrap.appendChild(frame);
+  function clearMode() {
+    try {
+      if (window.TESOURA && typeof window.TESOURA.clearMode === "function") {
+        window.TESOURA.clearMode();
+      } else {
+        localStorage.removeItem("tesoura_mode");
+      }
+    } catch (_) {
+      localStorage.removeItem("tesoura_mode");
+    }
+  }
+
+  function showOverlay(on) {
+    if (!overlay) return;
+    overlay.style.display = on ? "flex" : "none";
+  }
+
+  function updateUI() {
+    const mode = getMode();
+
+    // Badge
+    if (badge) badge.textContent = modeLabel(mode);
+
+    // Botões topo
+    if (btnSair) btnSair.style.display = mode ? "inline-flex" : "none";
+    if (btnLogin) btnLogin.style.display = mode ? "none" : "inline-flex";
+
+    // CAIXA só na diretoria
+    if (tabCaixa) {
+      const allowed = (mode === "diretoria");
+      tabCaixa.disabled = !allowed;
+      tabCaixa.classList.toggle("disabled", !allowed);
+    }
+  }
+
+  async function openTab(tabId) {
+    const rawUrl = TABS[tabId];
+    if (!rawUrl || !frame) return;
+
+    const mode = getMode();
+    if (tabId === "aba-caixa" && mode !== "diretoria") {
+      alert("CAIXA: acesso restrito à Diretoria.");
+      return;
     }
 
-    // remove iframes extras (fantasmas)
-    qsa("iframe").forEach((f) => {
-      if (f !== frame) f.remove();
-    });
-
-    // começa escondido e em branco
-    frame.style.visibility = "hidden";
-    frame.style.opacity = "0";
-    frame.style.pointerEvents = "none";
-    try { frame.src = "about:blank"; } catch (_) {}
-
-    return frame;
-  }
-
-  function showFrame(frame) {
-    frame.style.visibility = "visible";
-    frame.style.opacity = "1";
-    frame.style.pointerEvents = "auto";
-  }
-
-  function hideFrame(frame) {
-    frame.style.visibility = "hidden";
-    frame.style.opacity = "0";
-    frame.style.pointerEvents = "none";
-  }
-
-  function openTab(tabId) {
-    const map = getTabMap();
-    const url = map[tabId];
-    if (!url) return;
-
-    const token = ++navToken;
-
-    setLoader(true);
     setActiveTab(tabId);
 
-    try { localStorage.setItem("TESOURA_LAST_TAB", tabId); } catch (_) {}
+    // Esconde imediatamente (evita ver o painel anterior durante o carregamento)
+    setLoader(true);
+    hardBlankFrame();
 
-    // garante iframe único e esconde já
-    const old = ensureSingleIframe();
+    const url = cacheBust(rawUrl);
 
-    // cria IFRAME NOVO (id=frame) para matar qualquer conteúdo anterior
-    const fresh = document.createElement("iframe");
-    fresh.id = "frame";
-    fresh.title = "Conteúdo";
-    fresh.style.width = old.style.width || "100%";
-    fresh.style.height = old.style.height || "100%";
-    fresh.style.border = old.style.border || "0";
-    hideFrame(fresh);
-
-    // substitui imediatamente (assim o velho some na hora)
-    old.replaceWith(fresh);
-
-    fresh.onload = () => {
-      if (token !== navToken) return;
-      showFrame(fresh);
+    // Fallback: se o onload não disparar (cache/erro), libera a tela
+    const fallback = setTimeout(() => {
       setLoader(false);
+      showFrame();
+    }, 4500);
+
+    frame.onload = () => {
+      clearTimeout(fallback);
+      setLoader(false);
+      showFrame();
+      frame.onload = null;
     };
 
-    fresh.onerror = () => {
-      if (token !== navToken) return;
-      setLoader(false);
-      // mantém escondido, evita “flash”
-      hideFrame(fresh);
-      console.error("Erro ao carregar painel:", tabId, url);
-    };
-
-    const finalUrl = buildUrl(url);
-
-    // força blank antes do src final (duplo tick)
-    setTimeout(() => {
-      if (token !== navToken) return;
-      try { fresh.src = "about:blank"; } catch (_) {}
-      setTimeout(() => {
-        if (token !== navToken) return;
-        fresh.src = finalUrl;
-      }, 0);
-    }, 0);
+    frame.src = url;
+    localStorage.setItem("tesoura_last_tab", tabId);
   }
 
-  function init() {
-    ensureSingleIframe();
+  function openDefaultTab() {
+    const mode = getMode();
+    const last = localStorage.getItem("tesoura_last_tab") || "";
+    const safeLast = (last && TABS[last]) ? last : "";
 
-    // BLOQUEIA onclick antigo de abas (capture phase)
-    document.addEventListener(
-      "click",
-      (e) => {
-        const btn = getTabBtnFromEvent(e);
-        if (!btn) return;
+    // Jogador: sempre começa em JOGADORES
+    if (mode === "jogador") return openTab("aba-jogadores");
 
-        const tabId = btn?.dataset?.tab;
-        if (!tabId) return;
+    // Diretoria: tenta last (se não for CAIXA), senão controle
+    if (mode === "diretoria") {
+      if (safeLast && safeLast !== "aba-caixa") return openTab(safeLast);
+      return openTab("aba-controle");
+    }
+  }
 
+  function doLogin(mode) {
+    const pinOk =
+      (mode === "jogador" && (inJog?.value || "").trim() === (window.TESOURA_CONFIG?.JOGADOR_PIN || "")) ||
+      (mode === "diretoria" && (inDir?.value || "").trim() === (window.TESOURA_CONFIG?.DIRETORIA_PIN || ""));
+
+    if (!pinOk) {
+      if (loginMsg) loginMsg.textContent = "Senha incorreta.";
+      return;
+    }
+
+    if (loginMsg) loginMsg.textContent = "";
+    setMode(mode);
+    showOverlay(false);
+    updateUI();
+    openDefaultTab();
+  }
+
+  function doLogout() {
+    clearMode();
+    updateUI();
+    showOverlay(true);
+    setLoader(false);
+    hardBlankFrame();
+  }
+
+  function bindEvents() {
+    // Tabs
+    document.querySelectorAll(".tab").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
         e.preventDefault();
-        e.stopImmediatePropagation();
-        e.stopPropagation();
-
-        openTab(tabId);
-      },
-      true
-    );
-
-    // compatibilidade: se algum código chamar abrirAba(...)
-    window.abrirAba = openTab;
-
-    // BFCache: se voltar do histórico congelado, recarrega
-    window.addEventListener("pageshow", (e) => {
-      if (e && e.persisted) location.reload();
+        const mode = getMode();
+        if (!mode) {
+          showOverlay(true);
+          return;
+        }
+        openTab(btn.id);
+      });
     });
 
-    // abre última aba (ou a ativa)
-    const map = getTabMap();
-    let initial = "";
-    try { initial = localStorage.getItem("TESOURA_LAST_TAB") || ""; } catch (_) {}
+    // Login / sair
+    if (btnLogin) btnLogin.addEventListener("click", () => showOverlay(true));
+    if (btnSair) btnSair.addEventListener("click", () => doLogout());
 
-    if (initial && map[initial]) return openTab(initial);
+    // Entrar
+    if (btnJog) btnJog.addEventListener("click", () => doLogin("jogador"));
+    if (btnDir) btnDir.addEventListener("click", () => doLogin("diretoria"));
 
-    const active = qs("[data-tab].active");
-    const tid = active?.dataset?.tab;
-    if (tid && map[tid]) return openTab(tid);
+    // Enter nos campos
+    if (inJog) inJog.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") doLogin("jogador");
+    });
+    if (inDir) inDir.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") doLogin("diretoria");
+    });
+
+    // bfcache: antes de sair da página, já esconde o iframe (evita “flash” ao voltar)
+    window.addEventListener("pagehide", () => {
+      setLoader(true);
+      hardBlankFrame();
+    });
+
+    // quando voltar (bfcache), reabre o painel sem mostrar o anterior
+    window.addEventListener("pageshow", (ev) => {
+      if (ev && ev.persisted) {
+        setLoader(false);
+        hardBlankFrame();
+        showOverlay(true); // sempre pede senha (regra do JORGE)
+      }
+    });
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
+  function disableServiceWorker() {
+    // evita versão antiga aparecer por cache do SW
+    try {
+      if (!("serviceWorker" in navigator)) return;
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((r) => r.unregister());
+      });
+      if ("caches" in window) {
+        caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
+      }
+    } catch (_) {}
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Sempre pede senha ao abrir (sem “auto-login”)
+    updateUI();
+    showOverlay(true);
+    hardBlankFrame();
+    bindEvents();
+    disableServiceWorker();
+  });
 })();
