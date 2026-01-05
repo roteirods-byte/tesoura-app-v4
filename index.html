@@ -171,8 +171,13 @@
         <div class="loaderText">Carregando painel...</div>
       </div>
 
-      <!-- CONTROLE GERAL SEMPRE VISÍVEL POR TRÁS -->
-      <iframe id="frame" src="about:blank"></iframe>
+<!-- IFRAME ÚNICO (começa SEMPRE vazio e escondido: evita “flash”) -->
+<iframe
+  id="frame"
+  title="Conteúdo"
+  src="about:blank"
+  style="width:100%;height:100%;border:0;visibility:hidden;opacity:0;pointer-events:none"
+></iframe>
     </div>
 
     <div id="msg" class="msg"></div>
