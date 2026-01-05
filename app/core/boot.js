@@ -1,272 +1,254 @@
-/* TESOURA BOOT — Patch V5 (anti-flash iframe + cache-buster + bfcache) */
-(function () {
+/* TESOURA BOOT (login/abas/iframe) — Patch V6 */
+(() => {
   "use strict";
 
-  const REV = "v5_3_2026-01-05";
+  const VERSION = "v6_2026-01-05";
 
-  const TABS = {
-    "aba-jogadores": "tesoura_jogadores_teste.html",
-    "aba-presenca": "tesoura_presenca_escala_R5.html",
-    "aba-controle": "tesoura_controle_geral_teste.html",
-    "aba-mensalidade": "tesoura_mensalidade_R4.html",
-    "aba-caixa": "tesoura_caixa_teste.html",
-    "aba-gols": "tesoura_gols.html"
-  };
+  const $ = (sel, root = document) => root.querySelector(sel);
 
-  const $id = (id) => document.getElementById(id);
+  // --- UI helpers
+  function showLoader(on) {
+    const el = $("#loader");
+    if (!el) return;
+    el.classList.toggle("on", !!on);
+  }
 
-  const frame = $id("frame");
-  const loader = $id("frameLoader");
-  const overlay = $id("overlay");
+  function setBadge(text) {
+    const el = $("#badgeMode");
+    if (el) el.textContent = text || "---";
+  }
 
-  const btnLogin = $id("btnLogin");
-  const btnSair = $id("btnSair");
-  const badge = $id("badge");
-
-  const inJog = $id("senhaJogador");
-  const inDir = $id("senhaDiretor");
-  const btnJog = $id("btnEntrarJogadores");
-  const btnDir = $id("btnEntrarDiretoria");
-  const loginMsg = $id("loginMsg");
-
-  const tabCaixa = $id("aba-caixa");
-
-  function setLoader(on) {
-    if (!loader) return;
-    loader.classList.toggle("on", !!on);
+  function msg(text) {
+    const el = $("#msg");
+    if (!el) return;
+    el.textContent = text || "";
+    if (text) setTimeout(() => { if (el.textContent === text) el.textContent = ""; }, 2500);
   }
 
   function hideFrame() {
-    if (!frame) return;
-    frame.classList.remove("frame-on");
+    const fr = $("#frame");
+    if (!fr) return;
+    fr.style.visibility = "hidden";
+    fr.style.opacity = "0";
+    fr.style.pointerEvents = "none";
   }
 
   function showFrame() {
-    if (!frame) return;
-    frame.classList.add("frame-on");
+    const fr = $("#frame");
+    if (!fr) return;
+    fr.style.visibility = "visible";
+    fr.style.opacity = "1";
+    fr.style.pointerEvents = "auto";
   }
 
-  function hardBlankFrame() {
-    if (!frame) return;
-    try {
-      frame.onload = null;
-      frame.src = "about:blank";
-    } catch (_) {}
-    hideFrame();
-  }
-
-  function cacheBust(url) {
-    const sep = url.includes("?") ? "&" : "?";
-    return url + sep + "rev=" + encodeURIComponent(REV) + "&_=" + Date.now();
+  // --- abas
+  function tabMap() {
+    // nomes oficiais do repo
+    return {
+      jogadores: "tesoura_jogadores_teste.html",
+      presenca: "tesoura_presenca_escala_R5.html",
+      controle: "tesoura_controle_geral_teste.html",
+      mensalidade: "tesoura_mensalidade_R4.html",
+      caixa: "tesoura_caixa_teste.html",
+      gols: "tesoura_gols_teste.html",
+    };
   }
 
   function setActiveTab(tabId) {
-    document.querySelectorAll(".tab").forEach((btn) => {
-      btn.classList.toggle("active", btn.id === tabId);
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.tab === tabId);
     });
   }
 
-  function modeLabel(mode) {
-    if (mode === "diretoria") return "DIRETORIA";
-    if (mode === "jogador") return "JOGADOR (VISUAL)";
-    return "LOGIN";
+  function canUseCaixa() {
+    const mode = (window.session?.get?.("mode") || "").toLowerCase();
+    // diretoria pode tudo; jogador visual sem caixa (como você pediu antes)
+    return mode === "diretoria";
   }
 
-  function getMode() {
-    // session.js expõe TESOURA.getMode(); fallback localStorage
-    try {
-      if (window.TESOURA && typeof window.TESOURA.getMode === "function") {
-        return window.TESOURA.getMode();
-      }
-    } catch (_) {}
-    return localStorage.getItem("tesoura_mode") || "";
+  function refreshPermissionsUI() {
+    const caixaBtn = $("#tab-caixa");
+    if (caixaBtn) caixaBtn.disabled = !canUseCaixa();
   }
 
-  function setMode(mode) {
-    try {
-      if (window.TESOURA && typeof window.TESOURA.setMode === "function") {
-        window.TESOURA.setMode(mode);
-        return;
-      }
-    } catch (_) {}
-    localStorage.setItem("tesoura_mode", mode);
+  function currentTabUrl(tabId) {
+    const map = tabMap();
+    const file = map[tabId] || "";
+    if (!file) return "";
+    // cache-buster forte (evita voltar conteúdo antigo)
+    const bust = `${VERSION}_${Date.now()}`;
+    const sep = file.includes("?") ? "&" : "?";
+    return `${file}${sep}rev=${encodeURIComponent(bust)}`;
   }
 
-  function clearMode() {
-    try {
-      if (window.TESOURA && typeof window.TESOURA.clearMode === "function") {
-        window.TESOURA.clearMode();
-      } else {
-        localStorage.removeItem("tesoura_mode");
-      }
-    } catch (_) {
-      localStorage.removeItem("tesoura_mode");
-    }
-  }
+  function openTab(tabId) {
+    const fr = $("#frame");
+    const url = currentTabUrl(tabId);
+    if (!fr || !url) return;
 
-  function showOverlay(on) {
-    if (!overlay) return;
-    overlay.style.display = on ? "flex" : "none";
-  }
-
-  function updateUI() {
-    const mode = getMode();
-
-    // Badge
-    if (badge) badge.textContent = modeLabel(mode);
-
-    // Botões topo
-    if (btnSair) btnSair.style.display = mode ? "inline-flex" : "none";
-    if (btnLogin) btnLogin.style.display = mode ? "none" : "inline-flex";
-
-    // CAIXA só na diretoria
-    if (tabCaixa) {
-      const allowed = (mode === "diretoria");
-      tabCaixa.disabled = !allowed;
-      tabCaixa.classList.toggle("disabled", !allowed);
-    }
-  }
-
-  async function openTab(tabId) {
-    const rawUrl = TABS[tabId];
-    if (!rawUrl || !frame) return;
-
-    const mode = getMode();
-    if (tabId === "aba-caixa" && mode !== "diretoria") {
-      alert("CAIXA: acesso restrito à Diretoria.");
+    // Permissão do CAIXA
+    if (tabId === "caixa" && !canUseCaixa()) {
+      msg("CAIXA: acesso apenas Diretoria.");
       return;
     }
 
     setActiveTab(tabId);
+    showLoader(true);
 
-    // Esconde imediatamente (evita ver o painel anterior durante o carregamento)
-    setLoader(true);
-    hardBlankFrame();
+    // ANTI-FLASH definitivo:
+    // 1) esconde iframe
+    // 2) limpa para about:blank
+    // 3) só então carrega a aba nova (com cache-buster)
+    hideFrame();
+    fr.onload = null;
 
-    const url = cacheBust(rawUrl);
+    try { fr.src = "about:blank"; } catch {}
 
-    // Fallback: se o onload não disparar (cache/erro), libera a tela
-    const fallback = setTimeout(() => {
-      setLoader(false);
-      showFrame();
-    }, 4500);
-
-    frame.onload = () => {
-      clearTimeout(fallback);
-      setLoader(false);
-      showFrame();
-      frame.onload = null;
-    };
-
-    frame.src = url;
-    localStorage.setItem("tesoura_last_tab", tabId);
+    // Carrega na próxima “virada” do browser (evita mostrar resíduo)
+    requestAnimationFrame(() => {
+      fr.onload = () => {
+        showLoader(false);
+        // mostra só depois de carregar
+        showFrame();
+        // salva última aba
+        try { window.session?.set?.("lastTab", tabId); } catch {}
+      };
+      fr.src = url;
+    });
   }
 
-  function openDefaultTab() {
-    const mode = getMode();
-    const last = localStorage.getItem("tesoura_last_tab") || "";
-    const safeLast = (last && TABS[last]) ? last : "";
+  // --- login
+  function pins() {
+    const cfg = window.TESOURA_CONFIG || {};
+    return {
+      jogador: String(cfg.pin_jogador || "TESOURA2026"),
+      diretoria: String(cfg.pin_diretoria || "1baidec"),
+    };
+  }
 
-    // Jogador: sempre começa em JOGADORES
-    if (mode === "jogador") return openTab("aba-jogadores");
+  function showLogin() {
+    const ov = $("#loginOverlay");
+    if (ov) ov.style.display = "flex";
+    $("#btnLogin")?.classList.add("orange");
+    $("#btnSair")?.classList.remove("orange");
+    hideFrame();
+  }
 
-    // Diretoria: tenta last (se não for CAIXA), senão controle
-    if (mode === "diretoria") {
-      if (safeLast && safeLast !== "aba-caixa") return openTab(safeLast);
-      return openTab("aba-controle");
+  function hideLogin() {
+    const ov = $("#loginOverlay");
+    if (ov) ov.style.display = "none";
+    $("#btnLogin")?.classList.remove("orange");
+    $("#btnSair")?.classList.add("orange");
+  }
+
+  function enterAs(mode) {
+    const m = String(mode || "").toLowerCase();
+    window.session?.set?.("mode", m === "diretoria" ? "diretoria" : "jogador");
+    setBadge(m === "diretoria" ? "DIRETORIA (edita)" : "JOGADOR (visual)");
+    refreshPermissionsUI();
+    hideLogin();
+
+    // abre a última aba usada; se não, abre PRESENÇA (mais usado no dia)
+    const last = window.session?.get?.("lastTab") || "presenca";
+    openTab(last);
+  }
+
+  function tryLoginJogador() {
+    const p = pins();
+    const v = String($("#pinJog")?.value || "").trim();
+    if (v !== p.jogador) { msg("Senha incorreta (Jogadores)."); return; }
+    enterAs("jogador");
+  }
+
+  function tryLoginDiretoria() {
+    const p = pins();
+    const v = String($("#pinDir")?.value || "").trim();
+    if (v !== p.diretoria) { msg("Senha incorreta (Diretoria)."); return; }
+    enterAs("diretoria");
+  }
+
+  function logout() {
+    // não apaga tudo; só força voltar ao login
+    showLogin();
+    setBadge("---");
+    refreshPermissionsUI();
+    showLoader(false);
+    const fr = $("#frame");
+    if (fr) {
+      hideFrame();
+      try { fr.src = "about:blank"; } catch {}
     }
   }
 
-  function doLogin(mode) {
-    const pinOk =
-      (mode === "jogador" && (inJog?.value || "").trim() === (window.TESOURA_CONFIG?.JOGADOR_PIN || "")) ||
-      (mode === "diretoria" && (inDir?.value || "").trim() === (window.TESOURA_CONFIG?.DIRETORIA_PIN || ""));
+  // --- eventos
+  function bind() {
+    // Tabs
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => openTab(btn.dataset.tab));
+    });
 
-    if (!pinOk) {
-      if (loginMsg) loginMsg.textContent = "Senha incorreta.";
+    // Login overlay
+    $("#btnEntrarJogadores")?.addEventListener("click", tryLoginJogador);
+    $("#btnEntrarDiretoria")?.addEventListener("click", tryLoginDiretoria);
+
+    // Enter no input
+    $("#pinJog")?.addEventListener("keydown", (e) => { if (e.key === "Enter") tryLoginJogador(); });
+    $("#pinDir")?.addEventListener("keydown", (e) => { if (e.key === "Enter") tryLoginDiretoria(); });
+
+    // Top buttons
+    $("#btnLogin")?.addEventListener("click", showLogin);
+    $("#btnSair")?.addEventListener("click", logout);
+
+    // BFCache: se voltar “do nada”, força estado consistente
+    window.addEventListener("pageshow", (e) => {
+      if (e.persisted) {
+        // volta de cache: esconde frame e reabre com bust
+        hideFrame();
+        showLoader(false);
+        refreshPermissionsUI();
+
+        const mode = window.session?.get?.("mode");
+        if (!mode) { showLogin(); return; }
+        hideLogin();
+        const last = window.session?.get?.("lastTab") || "presenca";
+        openTab(last);
+      }
+    });
+
+    // Ao sair da página, limpa iframe pra não “vazar” na volta
+    window.addEventListener("pagehide", () => {
+      const fr = $("#frame");
+      if (!fr) return;
+      hideFrame();
+      try { fr.src = "about:blank"; } catch {}
+    });
+  }
+
+  // --- boot
+  function boot() {
+    showLoader(false);
+    hideFrame();
+
+    // Config carregada? (não bloqueia se falhar)
+    refreshPermissionsUI();
+
+    const mode = window.session?.get?.("mode");
+    if (!mode) {
+      showLogin();
       return;
     }
 
-    if (loginMsg) loginMsg.textContent = "";
-    setMode(mode);
-    showOverlay(false);
-    updateUI();
-    openDefaultTab();
-  }
+    // Se já tem sessão salva
+    setBadge(mode === "diretoria" ? "DIRETORIA (edita)" : "JOGADOR (visual)");
+    hideLogin();
+    refreshPermissionsUI();
 
-  function doLogout() {
-    clearMode();
-    updateUI();
-    showOverlay(true);
-    setLoader(false);
-    hardBlankFrame();
-  }
-
-  function bindEvents() {
-    // Tabs
-    document.querySelectorAll(".tab").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        const mode = getMode();
-        if (!mode) {
-          showOverlay(true);
-          return;
-        }
-        openTab(btn.id);
-      });
-    });
-
-    // Login / sair
-    if (btnLogin) btnLogin.addEventListener("click", () => showOverlay(true));
-    if (btnSair) btnSair.addEventListener("click", () => doLogout());
-
-    // Entrar
-    if (btnJog) btnJog.addEventListener("click", () => doLogin("jogador"));
-    if (btnDir) btnDir.addEventListener("click", () => doLogin("diretoria"));
-
-    // Enter nos campos
-    if (inJog) inJog.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") doLogin("jogador");
-    });
-    if (inDir) inDir.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") doLogin("diretoria");
-    });
-
-    // bfcache: antes de sair da página, já esconde o iframe (evita “flash” ao voltar)
-    window.addEventListener("pagehide", () => {
-      setLoader(true);
-      hardBlankFrame();
-    });
-
-    // quando voltar (bfcache), reabre o painel sem mostrar o anterior
-    window.addEventListener("pageshow", (ev) => {
-      if (ev && ev.persisted) {
-        setLoader(false);
-        hardBlankFrame();
-        showOverlay(true); // sempre pede senha (regra do JORGE)
-      }
-    });
-  }
-
-  function disableServiceWorker() {
-    // evita versão antiga aparecer por cache do SW
-    try {
-      if (!("serviceWorker" in navigator)) return;
-      navigator.serviceWorker.getRegistrations().then((regs) => {
-        regs.forEach((r) => r.unregister());
-      });
-      if ("caches" in window) {
-        caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
-      }
-    } catch (_) {}
+    const last = window.session?.get?.("lastTab") || "presenca";
+    openTab(last);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    // Sempre pede senha ao abrir (sem “auto-login”)
-    updateUI();
-    showOverlay(true);
-    hardBlankFrame();
-    bindEvents();
-    disableServiceWorker();
+    bind();
+    boot();
   });
 })();
