@@ -429,36 +429,48 @@ function toast(msg, ok=false){
       __autoSavePresencaTimer = setTimeout(()=>{ salvarPresencaHoje(true).catch(console.warn); }, ms);
     }
 
-    async function salvarPresencaHoje(quiet=true){
-      try{
-        const dia = getDataJogoISO();
-        if(!dia || !supabase) return;
+    async function salvarPresencaHoje(forceMsg){
+    const dia = getDiaISO();
+    const payload = {
+      dia,
+      presentesHoje,
+      ts: new Date().toISOString(),
+    };
 
-        const presentesSet = new Set(presentesHoje.map(p=>p.id));
-        const presRows = todosJogadores.map(j => ({
-          data_jogo: dia,
-          apelido: j.apelido,
-          presenca: presentesSet.has(j.id),
-          faltoso: !presentesSet.has(j.id),
-        }));
-
-        const { error: delErr } = await supabase.from("presencas").delete().eq("data_jogo", dia);
-        if(delErr) throw delErr;
-
-        const { error: insErr } = await supabase.from("presencas").insert(presRows);
-        if(insErr) throw insErr;
-
-        // snapshot (para reabrir a lista mesmo saindo do painel)
-        await supabase.from("arquivos_app").delete().eq("painel","presenca").eq("data_ref", dia);
-        await supabase.from("arquivos_app").insert([{ painel:"presenca", data_ref: dia, conteudo: { dia, presentesHoje } }]);
-
-        if(!quiet) toast("Presença salva.", true);
-      }catch(e){
-        console.warn("Salvar presença falhou:", e);
-        if(!quiet) toast("Falha ao salvar presença.", false);
-      }
+    // A) SALVA/ATUALIZA A "FONTE" (arquivos_app) — sem delete (evita problema de permissão)
+    try{
+      const { error: errIns } = await supabase
+        .from("arquivos_app")
+        .insert([{ painel: "presenca", periodo: "diario", data_ref: dia, mes_ref: isoToBR(dia).slice(3), ano_ref: isoToBR(dia).slice(6), conteudo: payload }]);
+      if(errIns) throw errIns;
+    }catch(e){
+      console.warn("Falha ao salvar presença em arquivos_app:", e);
+      if(forceMsg) alert("Não consegui salvar a PRESENÇA no banco. Veja o Console.");
+      return false;
     }
 
+    // B) COMPAT: tenta sincronizar na tabela presencas (se existir e permitir delete)
+    try{
+      // apaga tudo do dia
+      await supabase.from("presencas").delete().eq("data_jogo", dia);
+      const presRows = jogadoresTodos.map(j => ({
+        data_jogo: dia,
+        apelido: j.apelido,
+        presenca: presentesHoje.some(p => p.apelido === j.apelido),
+        faltoso: false,
+      }));
+      if(presRows.length){
+        const { error: errPres } = await supabase.from("presencas").insert(presRows);
+        if(errPres) throw errPres;
+      }
+    }catch(e){
+      // não quebra o app
+      console.warn("Compat presencas falhou (ok):", e);
+    }
+
+    if(forceMsg) alert("PRESENÇA salva.");
+    return true;
+  }
 
 
     // ===== DATA/HORA =====
@@ -661,51 +673,52 @@ function getDataJogoISO() {
     
     // ===== CARREGAR PRESENÇA DO DIA (para estabilidade) =====
     async function carregarPresencaHoje(){
-      const dia = getDataJogoISO();
-      dataJogoIso = dia; // habilita SALVAR
+    const dia = getDiaISO();
+    // 1) tenta carregar do ARQUIVOS_APP (fonte principal, garante persistência e permite “limpar” sem delete)
+    try{
+      const { data, error } = await supabase
+        .from("arquivos_app")
+        .select("conteudo, created_at")
+        .eq("painel", "presenca")
+        .eq("data_ref", dia)
+        .order("created_at", { ascending: false })
+        .limit(1);
 
-      statusPresentesEl.textContent = "Carregando presença...";
-      try{
-        const { data: rows, error } = await supabase
-          .from("presencas")
-          .select("apelido, presenca")
-          .eq("data_jogo", dia);
-
-        if(error) throw error;
-
-        const setPresentes = new Set(
-          (rows || [])
-            .filter(r => r && (r.presenca === true || r.presenca === 1))
-            .map(r => String(r.apelido || "").trim())
-        );
-
-        presentesHoje = (todosJogadores || [])
-          .filter(j => setPresentes.has(j.apelido))
-          .map(j => ({
-            id: j.id,
-            apelido: j.apelido,
-            horaChegada: "",
-            naoVaiJogar: false,
-            escalou1: false,
-            escalou2: false,
-            saiu: false,
-            obs: "",
-            pontos: Number(j.pontos || 0),
-          }));
-
-        atualizarInfoPresentes();
-        renderPresentes();
-        syncEscalacoesComPresenca();
-        renderEscalacoes();
-
-        statusPresentesEl.textContent = "Presença carregada.";
-      }catch(err){
-        console.error(err);
-        statusPresentesEl.textContent = "Erro ao carregar presença (ver Console).";
-        // não derruba a base toda
+      if(!error && data && data.length){
+        const c = data[0].conteudo || {};
+        presentesHoje = Array.isArray(c.presentesHoje) ? c.presentesHoje : [];
+        renderPresentesHoje();
+        atualizarContadorPresentes();
+        return; // ok
       }
+    }catch(e){ /* segue para fallback */ }
+
+    // 2) fallback: tabela PRESENCAS (compatibilidade)
+    try{
+      const { data: rows, error: err } = await supabase
+        .from("presencas")
+        .select("apelido")
+        .eq("data_jogo", dia)
+        .eq("presenca", true);
+
+      if(err) throw err;
+      const set = new Set((rows||[]).map(r=>String(r.apelido||"")));
+      presentesHoje = jogadoresTodos
+        .filter(j=>set.has(j.apelido))
+        .map(j=>({
+          id: j.id,
+          apelido: j.apelido,
+          horaChegada: "",
+          obs: "",
+          naoVaiJogar: false,
+        }));
+    }catch(e){
+      presentesHoje = [];
     }
 
+    renderPresentesHoje();
+    atualizarContadorPresentes();
+  }
 function renderJogadoresTodos(){
       tbodyJogadoresTodos.innerHTML = "";
       todosJogadores.forEach(j=>{
@@ -1382,89 +1395,75 @@ function calcularTotalPontos(lista){
       totais2TEl.textContent = `TOTAL PONTOS: ${totalAm2} x ${totalAz2}  (DIF: ${dif2})`;
     }
 
-
-
-    
     async function limparPresentesHoje(){
-      if(!confirm("Limpar (zerar) toda a presença de hoje?")) return;
+    if(!confirm("CONFIRMA LIMPAR a PRESENÇA de HOJE?\n\nIsso zera a lista e salva vazio.")) return;
 
-      // 1) zera a tela
-      presentesHoje = [];
-      escala1 = [];
-      escala2 = [];
-      status1T = null;
-      status2T = null;
+    const dia = getDiaISO();
 
+    // zera na tela
+    presentesHoje = [];
+    renderPresentesHoje();
+    atualizarContadorPresentes();
+
+    // salva vazio (arquivos_app)
+    try{
+      const payload = { dia, presentesHoje: [], ts: new Date().toISOString(), limpo: true };
+      const { error: errIns } = await supabase
+        .from("arquivos_app")
+        .insert([{ painel: "presenca", periodo: "diario", data_ref: dia, mes_ref: isoToBR(dia).slice(3), ano_ref: isoToBR(dia).slice(6), conteudo: payload }]);
+      if(errIns) throw errIns;
+    }catch(e){
+      console.warn("Falha ao salvar LIMPEZA (arquivos_app):", e);
+      alert("Não consegui salvar a LIMPEZA no banco. Veja o Console.");
+      return;
+    }
+
+    // tenta limpar legacy (se permitido)
+    try{
+      await supabase.from("presencas").delete().eq("data_jogo", dia);
+      await supabase.from("escalacao").delete().eq("data_jogo", dia);
+    }catch(e){
+      console.warn("Compat delete falhou (ok):", e);
+    }
+
+    alert("Presença de hoje foi limpa.");
+  }
+    // ===== DESFAZER ESCALAÇÃO (não mexe na lista de presença) =====
+    function desfazerEscalacao1T(){
+      if(!confirm("Desfazer escalação do 1º tempo?")) return;
+      escala1 = { amarelo: [], azul: [] };
+
+      // limpa "saiu" (só faz sentido quando existe 1º tempo)
+      (presentesHoje||[]).forEach(p=>{ p.saiu=false; });
+
+      syncEscalacoesComPresenca();
       renderPresentes();
       renderEscalacoes();
-
-      // 2) zera o que foi salvo (para não voltar ao trocar de painel)
-      try{
-        const dia = getDataJogoISO();
-        if(dia && supabase){
-          await supabase.from("presencas").delete().eq("data_jogo", dia);
-          await supabase.from("escalacao").delete().eq("data_jogo", dia);
-          await supabase.from("arquivos_app").delete().eq("data_ref", dia).in("painel", ["presenca","escalacao"]);
-        }
-        toast("Presença zerada.", true);
-      }catch(e){
-        console.warn("Limpar presença falhou:", e);
-        toast("Falha ao limpar presença.", false);
-      }
+      toast("Escalação 1º tempo desfeita.", true);
     }
 
-<script>
-async function limparPresentesHoje(){
-  const ok = confirm("Confirmar: LIMPAR a presença de HOJE?\nIsso apaga a presença e as escalações de hoje.");
-  if(!ok) return;
+    function desfazerEscalacao2T(){
+      if(!confirm("Desfazer escalação do 2º tempo?")) return;
+      escala2 = { amarelo: [], azul: [] };
 
-  // 1) Cancela autosave pendente (evita repopular depois)
-  try{
-    if(window.__autoSavePresencaTimer){
-      clearTimeout(window.__autoSavePresencaTimer);
-      window.__autoSavePresencaTimer = null;
+      syncEscalacoesComPresenca();
+      renderPresentes();
+      renderEscalacoes();
+      toast("Escalação 2º tempo desfeita.", true);
     }
-  }catch(e){}
 
-  // 2) Zera tudo na tela (estado local)
-  presentesHoje = [];
-  escalacao1 = [];
-  escalacao2 = [];
-  escalacaoSalva1 = false;
-  escalacaoSalva2 = false;
+    // ===== BAIXAR (rápido) =====
+    function downloadBlob(filename, mime, content){
+      const blob = new Blob([content], {type: mime});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 200);
+    }
 
-  renderPresentesHoje();
-  renderEscalacao();
-
-  // 3) Apaga no Supabase (persistência)
-  try{
-    const dia = getDataJogoISO();
-    if(!supabase) throw new Error("Supabase não inicializado.");
-
-    // Presença
-    let r = await supabase.from("presencas").delete().eq("data_jogo", dia);
-    if(r.error) throw r.error;
-
-    // Escalação
-    r = await supabase.from("escalacao").delete().eq("data_jogo", dia);
-    if(r.error) throw r.error;
-
-    // Snapshots (se existirem)
-    r = await supabase
-      .from("arquivos_app")
-      .delete()
-      .eq("data", dia)
-      .eq("periodo", "dia")
-      .in("painel", ["presenca","escalacao"]);
-    if(r.error) throw r.error;
-
-    alert("OK. Presença de hoje foi limpa e salva vazia.");
-  }catch(err){
-    console.warn("limparPresentesHoje falhou:", err);
-    alert("Não foi possível limpar no banco. Recarregue a página e tente novamente.");
-  }
-}
-</script>
         
         // ===== EXPORTAR (SEM POP-UP, NÃO QUEBRA O PAINEL) =====
         function escapeHtml(s){
