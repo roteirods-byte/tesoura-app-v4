@@ -255,6 +255,14 @@ let editingId = null;
 let editingPayloadBase = null; // guarda colunas detectadas
 let lastLoadedRows = []; // já com mensalidades mescladas
 
+// modo download (arquivo antigo): não muda o visor, só prepara BAIXAR PDF
+let downloadMode = null; // { ini, fim, label, p }
+
+// helper: compara ranges
+function sameRange(a,b){
+  return a && b && a.ini===b.ini && a.fim===b.fim;
+}
+
 /* ===== UI builders ===== */
 function buildAno(){
   selAno.innerHTML = "";
@@ -297,31 +305,53 @@ function buildSemanas(){
 }
 function updateUIByPeriodo(){
   const p = selPeriodo.value;
-  selSemana.disabled = (p !== "SEMANAL");
+  // SEMANAL desativado (visor é sempre mês corrente)
+  selSemana.disabled = true;
   selMes.disabled = (p === "ANUAL");
 }
 function setStatus(msg){ statusEl.textContent = msg; }
 
 /* ===== datas do filtro ===== */
+function addDaysISO(iso, days){
+  const [y,m,d] = iso.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m-1, d));
+  dt.setUTCDate(dt.getUTCDate() + Number(days||0));
+  return isoDate(dt);
+}
+
+// Regra oficial:
+// - Visor do CAIXA: sempre MÊS CORRENTE (01 até 01 do mês seguinte, INCLUSIVO)
+// - Para ficar inclusivo no "dia 01" do mês seguinte, usamos fimExclusivo = dia 02 do mês seguinte.
+function getCurrentRange(){
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1; // 1-12
+  const ini = `${y}-${pad2(m)}-01`;
+  const next = (m===12) ? { y:y+1, m:1 } : { y:y, m:m+1 };
+  const fimFirst = `${next.y}-${pad2(next.m)}-01`;
+  const fim = addDaysISO(fimFirst, 1); // inclui o dia 01 do mês seguinte
+  return { ini, fim, y, m };
+}
+
+// Filtro (para ARQUIVO/BAIXAR, não para trocar o visor)
 function getRange(){
   const p = selPeriodo.value;
   const year = Number(selAno.value);
   const month = Number(selMes.value); // 1-12
+
   if (p === "ANUAL"){
     const ini = `${year}-01-01`;
-    const fim = `${year+1}-01-01`;
-    return { ini, fim };
+    const fimFirst = `${year+1}-01-01`;
+    const fim = addDaysISO(fimFirst, 1); // inclui 01/01 do ano seguinte
+    return { ini, fim, label: String(year), p };
   }
-  if (p === "MENSAL"){
-    const ini = `${year}-${pad2(month)}-01`;
-    const next = (month===12) ? { y:year+1, m:1 } : { y:year, m:month+1 };
-    const fim = `${next.y}-${pad2(next.m)}-01`;
-    return { ini, fim };
-  }
-  // semanal
-  const idx = Number(selSemana.value || 0);
-  const w = WEEKS[idx] || WEEKS[0];
-  return { ini: w.ini, fim: w.fim };
+
+  // MENSAL (padrão)
+  const ini = `${year}-${pad2(month)}-01`;
+  const next = (month===12) ? { y:year+1, m:1 } : { y:year, m:month+1 };
+  const fimFirst = `${next.y}-${pad2(next.m)}-01`;
+  const fim = addDaysISO(fimFirst, 1); // inclui o dia 01 do mês seguinte
+  return { ini, fim, label: `${pad2(month)}/${year}`, p: "MENSAL" };
 }
 
 /* ===== SUPABASE: CAIXA (manual) ===== */
@@ -507,45 +537,48 @@ function render(rows){
 }
 
 /* ===== carregar ===== */
+async function mergedRows(ini, fim){
+  const manual = await fetchCaixaManual(ini, fim);
+  // remove mensalidade gravada na tabela caixa (se existir) para evitar duplicar
+  let rows = (manual.rows || []).filter(r => !isMensalidadeRow(r));
+
+  // mensalidades pagas no intervalo (auto)
+  let mens = [];
+  try{
+    mens = await fetchMensalidadesPago(ini, fim);
+  }catch(e){
+    console.warn("Aviso: não foi possível buscar mensalidades (auto).", e);
+    mens = [];
+  }
+
+  rows = rows.concat(mens);
+
+  // ordena por data; em empate, CAIXA antes de MENSALIDADE
+  rows.sort((a,b)=>{
+    const da = String(a.data||"");
+    const db = String(b.data||"");
+    if (da !== db) return da.localeCompare(db);
+    if (a._src === b._src) return 0;
+    return (a._src === "CAIXA") ? -1 : 1;
+  });
+
+  return rows;
+}
+
+/* ===== carregar (VISOR SEMPRE MÊS CORRENTE) ===== */
 async function carregar(){
   try{
     setStatus("Carregando...");
-    const { ini, fim } = getRange();
+    const cur = getCurrentRange();
+    const { ini, fim } = cur;
 
-    const manual = await fetchCaixaManual(ini, fim);
-    let rows = manual.rows;
-
-    // mensalidades pagas no intervalo
-    let mens = [];
-    try{
-      mens = await fetchMensalidadesPago(ini, fim);
-    }catch(err){
-      // não trava o caixa se mensalidades estiver com problema
-      /* aviso suprimido para não poluir o console */
-      mens = [];
-    }
-
-    // remove mensalidades antigas gravadas no caixa (phantom) da tela, mas sem apagar do banco
-    rows = rows.filter(r => !isMensalidadeRow(r));
-
-    // mescla
-    rows = rows.concat(mens);
-
-    // ordena por data (e por origem)
-    rows.sort((a,b)=>{
-      const da = a.data || "0000-00-00";
-      const db = b.data || "0000-00-00";
-      if (da < db) return -1;
-      if (da > db) return 1;
-      // manual antes de auto no mesmo dia
-      if (a._src === b._src) return 0;
-      return a._src === "CAIXA" ? -1 : 1;
-    });
+    const rows = await mergedRows(ini, fim);
 
     lastLoadedRows = rows;
-    setStatus(`LISTA CARREGADA. Registros: ${rows.length}`);
+    const curLabel = `${pad2(cur.m)}/${cur.y}`;
+    setStatus(`MÊS CORRENTE (${curLabel}) carregado. Registros: ${rows.length}`);
 
-    // saldo anterior: calculo simples = 0 (mantém como estava)
+    // saldo anterior: mantém como estava (0)
     sAnterior.textContent = "R$ 0,00";
     render(rows);
   }catch(e){
@@ -553,34 +586,6 @@ async function carregar(){
     setStatus("ERRO ao buscar CAIXA (ver console).");
     alert("ERRO ao buscar CAIXA (ver console).");
   }
-}
-
-/* ===== criar/editar/excluir manual ===== */
-function resetForm(){
-  editingId = null;
-  editingPayloadBase = null;
-  btnCancelar.style.display = "none";
-  btnSalvar.textContent = "SALVAR";
-  inDesc.value = "";
-  inObs.value = "";
-  inValor.value = "";
-}
-
-function startEdit(r){
-  // só manual
-  if (!r || r.locked) return;
-  editingId = r.id;
-
-  // preenche form
-  inData.value = (r.data || "");
-  const signed = (Number(r.receita||0) - Number(r.despesa||0));
-  inTipo.value = (signed >= 0) ? "RECEITA" : "DESPESA";
-  inDesc.value = r.descricao || "";
-  inObs.value = r.obs || "";
-  inValor.value = money(Math.abs(signed));
-
-  btnCancelar.style.display = "inline-block";
-  btnSalvar.textContent = "ATUALIZAR";
 }
 
 async function addOrUpdate(){
@@ -663,32 +668,140 @@ async function doDelete(r){
   carregar();
 }
 
+
+async function printRowsToPdf(title, rows){
+  // imprime SEM alterar o visor: usa iframe invisível (não abre popup)
+  const esc = (x)=>String(x??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+
+  let saldo = 0;
+  const trs = rows.map(r=>{
+    saldo += (Number(r.receita||0) - Number(r.despesa||0));
+    const dataBr = r.data ? r.data.split("-").reverse().join("/") : "";
+    const receita = r.receita ? money(r.receita) : "";
+    const despesa = r.despesa ? money(r.despesa) : "";
+    const saldoTxt = money(saldo);
+    return `<tr>
+      <td>${esc(dataBr)}</td>
+      <td>${esc(r.descricao||"")}</td>
+      <td>${esc(r.obs||"")}</td>
+      <td style="text-align:right">${esc(receita)}</td>
+      <td style="text-align:right">${esc(despesa)}</td>
+      <td style="text-align:right">${esc(saldoTxt)}</td>
+    </tr>`;
+  }).join("");
+
+  const html = `<!doctype html><html lang="pt-BR"><head>
+    <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>${esc(title)}</title>
+    <style>
+      body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;padding:10px}
+      h1{font-size:16px;margin:0 0 8px 0}
+      table{width:100%;border-collapse:collapse;font-size:12px}
+      th,td{border:1px solid #999;padding:6px;vertical-align:top}
+      th{background:#f2f2f2}
+      @page{size:A4 landscape;margin:10mm}
+    </style></head><body>
+    <h1>${esc(title)}</h1>
+    <table>
+      <thead><tr>
+        <th>DATA</th><th>DESCRIÇÃO</th><th>OBS</th>
+        <th>RECEITA (R$)</th><th>DESPESA (R$)</th><th>SALDO (R$)</th>
+      </tr></thead>
+      <tbody>${trs}</tbody>
+    </table>
+    <script>
+      window.onload = () => { setTimeout(()=>{ window.print(); }, 50); };
+      window.onafterprint = () => { setTimeout(()=>{ window.close?.(); }, 50); };
+    </script>
+  </body></html>`;
+
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
+
+  // remove depois (para não acumular)
+  setTimeout(()=>{ try{ iframe.remove(); }catch(e){} }, 5000);
+}
+
+async function onConsultar(){
+  // filtro serve só para preparar DOWNLOAD (não muda o visor)
+  const cur = getCurrentRange();
+  const curLabel = `${pad2(cur.m)}/${cur.y}`;
+  const sel = getRange(); // range do filtro
+  const same = (sel.p==="MENSAL" && sel.label===curLabel);
+  downloadMode = same ? null : sel;
+
+  await carregar();
+
+  if (downloadMode){
+    setStatus(`MÊS CORRENTE (${curLabel}) carregado. Arquivo ${downloadMode.label} pronto para BAIXAR PDF.`);
+  }
+}
+
+async function onPdf(){
+  // sem downloadMode: baixa exatamente o que está vendo (visor = mês corrente)
+  if (!downloadMode){
+    window.print();
+    return;
+  }
+
+  // download de arquivo antigo: imprime em iframe sem alterar o visor
+  try{
+    setStatus(`Preparando PDF do arquivo ${downloadMode.label}...`);
+    const rows = await mergedRows(downloadMode.ini, downloadMode.fim);
+    await printRowsToPdf(`TESOURA - CAIXA (${downloadMode.label})`, rows);
+    const cur = getCurrentRange();
+    setStatus(`MÊS CORRENTE (${pad2(cur.m)}/${cur.y}) carregado. PDF do arquivo ${downloadMode.label} gerado.`);
+  }catch(e){
+    console.error(e);
+    setStatus("ERRO ao gerar PDF (ver console).");
+    alert("ERRO ao gerar PDF (ver console).");
+  }
+}
+
 /* ===== eventos ===== */
-btnPdf.addEventListener("click", ()=>window.print());
-btnConsultar.addEventListener("click", carregar);
+btnPdf.addEventListener("click", onPdf);
+btnConsultar.addEventListener("click", onConsultar);
 btnSalvar.addEventListener("click", addOrUpdate);
 btnCancelar.addEventListener("click", ()=>{ resetForm(); });
 
 selPeriodo.addEventListener("change", ()=>{ updateUIByPeriodo(); });
-selAno.addEventListener("change", ()=>{ buildSemanas(); updateUIByPeriodo(); });
-selMes.addEventListener("change", ()=>{ /* mês muda só o range */ });
+selAno.addEventListener("change", ()=>{ updateUIByPeriodo(); });
+selMes.addEventListener("change", ()=>{ /* filtro para download */ });
 
 /* ===== init ===== */
 (function init(){
   buildAno();
   buildMes();
 
+  // remove SEMANAL do seletor e esconde SEMANA (não muda layout geral)
+  try{
+    const opt = Array.from(selPeriodo.options).find(o=>o.value==="SEMANAL");
+    if (opt) opt.remove();
+    const fieldSemana = selSemana.closest(".field");
+    if (fieldSemana) fieldSemana.style.display = "none";
+    selSemana.disabled = true;
+  }catch(e){}
+
   const now = new Date();
   selAno.value = String(now.getFullYear());
   selMes.value = String(now.getMonth()+1);
-  buildSemanas();
+  selPeriodo.value = "MENSAL";
   updateUIByPeriodo();
 
   inData.value = isoDate(now);
   resetForm();
 
+  downloadMode = null;
   carregar();
-})();
-</script>
+})();</script>
 </body>
 </html>
