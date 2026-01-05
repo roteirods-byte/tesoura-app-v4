@@ -1382,6 +1382,9 @@ function calcularTotalPontos(lista){
       totais2TEl.textContent = `TOTAL PONTOS: ${totalAm2} x ${totalAz2}  (DIF: ${dif2})`;
     }
 
+
+
+    
     async function limparPresentesHoje(){
       if(!confirm("Limpar (zerar) toda a presença de hoje?")) return;
 
@@ -1410,42 +1413,58 @@ function calcularTotalPontos(lista){
       }
     }
 
-    // ===== DESFAZER ESCALAÇÃO (não mexe na lista de presença) =====
-    function desfazerEscalacao1T(){
-      if(!confirm("Desfazer escalação do 1º tempo?")) return;
-      escala1 = { amarelo: [], azul: [] };
+<script>
+async function limparPresentesHoje(){
+  const ok = confirm("Confirmar: LIMPAR a presença de HOJE?\nIsso apaga a presença e as escalações de hoje.");
+  if(!ok) return;
 
-      // limpa "saiu" (só faz sentido quando existe 1º tempo)
-      (presentesHoje||[]).forEach(p=>{ p.saiu=false; });
-
-      syncEscalacoesComPresenca();
-      renderPresentes();
-      renderEscalacoes();
-      toast("Escalação 1º tempo desfeita.", true);
+  // 1) Cancela autosave pendente (evita repopular depois)
+  try{
+    if(window.__autoSavePresencaTimer){
+      clearTimeout(window.__autoSavePresencaTimer);
+      window.__autoSavePresencaTimer = null;
     }
+  }catch(e){}
 
-    function desfazerEscalacao2T(){
-      if(!confirm("Desfazer escalação do 2º tempo?")) return;
-      escala2 = { amarelo: [], azul: [] };
+  // 2) Zera tudo na tela (estado local)
+  presentesHoje = [];
+  escalacao1 = [];
+  escalacao2 = [];
+  escalacaoSalva1 = false;
+  escalacaoSalva2 = false;
 
-      syncEscalacoesComPresenca();
-      renderPresentes();
-      renderEscalacoes();
-      toast("Escalação 2º tempo desfeita.", true);
-    }
+  renderPresentesHoje();
+  renderEscalacao();
 
-    // ===== BAIXAR (rápido) =====
-    function downloadBlob(filename, mime, content){
-      const blob = new Blob([content], {type: mime});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 200);
-    }
+  // 3) Apaga no Supabase (persistência)
+  try{
+    const dia = getDataJogoISO();
+    if(!supabase) throw new Error("Supabase não inicializado.");
 
+    // Presença
+    let r = await supabase.from("presencas").delete().eq("data_jogo", dia);
+    if(r.error) throw r.error;
+
+    // Escalação
+    r = await supabase.from("escalacao").delete().eq("data_jogo", dia);
+    if(r.error) throw r.error;
+
+    // Snapshots (se existirem)
+    r = await supabase
+      .from("arquivos_app")
+      .delete()
+      .eq("data", dia)
+      .eq("periodo", "dia")
+      .in("painel", ["presenca","escalacao"]);
+    if(r.error) throw r.error;
+
+    alert("OK. Presença de hoje foi limpa e salva vazia.");
+  }catch(err){
+    console.warn("limparPresentesHoje falhou:", err);
+    alert("Não foi possível limpar no banco. Recarregue a página e tente novamente.");
+  }
+}
+</script>
         
         // ===== EXPORTAR (SEM POP-UP, NÃO QUEBRA O PAINEL) =====
         function escapeHtml(s){
