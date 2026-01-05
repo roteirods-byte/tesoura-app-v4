@@ -492,7 +492,9 @@ function getDataJogoISO() {
     function comparaHoraStr(a,b){ return (a||"").localeCompare(b||""); }
 
     function atualizarInfoPresentes(){
-      infoPresentesEl.textContent = `Presentes hoje: ${presentesHoje.length}
+      if (!infoPresentesEl) return;
+      infoPresentesEl.textContent = `Presentes hoje: ${presentesHoje.length}`;
+    }
 
     // ===== REGRA: PRESENÇA só pode ser marcada até 07:30 =====
     const LIMITE_PRESENCA_HHMM = "07:30";
@@ -503,8 +505,6 @@ function getDataJogoISO() {
       const mm = String(agora.getMinutes()).padStart(2,"0");
       const hhmm = `${hh}:${mm}`;
       return hhmm > LIMITE_PRESENCA_HHMM;
-    }
-`;
     }
 
     // ===== REGRA PAGAMENTO =====
@@ -1083,14 +1083,13 @@ function renderJogadoresTodos(){
 
     function mesAnoBR(diaISO){
       // "YYYY-MM-DD" -> "MM/YYYY"
-      return `${diaISO.slice(5,7)}
+	      return `${diaISO.slice(5,7)}/${diaISO.slice(0,4)}`;
+	    }
 
-    function mesRefNum(diaISO){
-      // "YYYY-MM-DD" -> 202601 (Number)
-      return Number(`${diaISO.slice(0,4)}${diaISO.slice(5,7)}`);
-    }
-/${diaISO.slice(0,4)}`;
-    }
+	    function mesRefNum(diaISO){
+	      // "YYYY-MM-DD" -> 202601 (Number)
+	      return Number(`${diaISO.slice(0,4)}${diaISO.slice(5,7)}`);
+	    }
 
 
     function domingoAnterior(dataISO){
