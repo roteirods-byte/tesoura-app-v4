@@ -441,7 +441,7 @@ function toast(msg, ok=false){
     try{
       const { error: errIns } = await supabase
         .from("arquivos_app")
-        .insert([{ painel: "presenca", periodo: "diario", data_ref: dia, mes_ref: isoToBR(dia).slice(3), ano_ref: isoToBR(dia).slice(6), conteudo: payload }]);
+        .insert([{ painel: "presenca", periodo: "diario", data_ref: dia, mes_ref: mesAnoBR(dia), ano_ref: dia.slice(0,4), conteudo: payload }]);
       if(errIns) throw errIns;
     }catch(e){
       console.warn("Falha ao salvar presença em arquivos_app:", e);
@@ -1033,6 +1033,21 @@ function renderJogadoresTodos(){
       return `${y}-${m}-${d}`;
     }
 
+    // Retorna o dia atual em ISO (YYYY-MM-DD) no horário local do dispositivo
+    function getDiaISO(){
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      const dd = String(d.getDate()).padStart(2,"0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function mesAnoBR(diaISO){
+      // "YYYY-MM-DD" -> "MM/YYYY"
+      return `${diaISO.slice(5,7)}/${diaISO.slice(0,4)}`;
+    }
+
+
     function domingoAnterior(dataISO){
       const dt = parseDataISO(dataISO);
       // volta 7 dias
@@ -1410,7 +1425,7 @@ function calcularTotalPontos(lista){
       const payload = { dia, presentesHoje: [], ts: new Date().toISOString(), limpo: true };
       const { error: errIns } = await supabase
         .from("arquivos_app")
-        .insert([{ painel: "presenca", periodo: "diario", data_ref: dia, mes_ref: isoToBR(dia).slice(3), ano_ref: isoToBR(dia).slice(6), conteudo: payload }]);
+        .insert([{ painel: "presenca", periodo: "diario", data_ref: dia, mes_ref: mesAnoBR(dia), ano_ref: dia.slice(0,4), conteudo: payload }]);
       if(errIns) throw errIns;
     }catch(e){
       console.warn("Falha ao salvar LIMPEZA (arquivos_app):", e);
