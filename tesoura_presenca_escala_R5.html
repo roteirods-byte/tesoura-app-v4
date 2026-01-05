@@ -1087,9 +1087,9 @@ function renderJogadoresTodos(){
 	    }
 
 	    function mesRefNum(diaISO){
-	      // "YYYY-MM-DD" -> 202601 (Number)
-	      return Number(`${diaISO.slice(0,4)}${diaISO.slice(5,7)}`);
-	    }
+      // "YYYY-MM-DD" -> 1..12 (Number) (coluna mes_ref é INTEGER)
+      return Number(diaISO.slice(5,7));
+    }
 
 
     function domingoAnterior(dataISO){
