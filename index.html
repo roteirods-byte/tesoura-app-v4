@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Tesoura — Controle do Futebol</title>
 
-<style>
-    :root{
+  <style>
+:root{
       --bg:#07101f;
       --bg2:#0b1630;
       --card:#0b1a33;
@@ -127,16 +127,29 @@
   .loginField input{width:260px;max-width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.25);color:#fff;outline:none}
   .loginField input:focus{border-color:rgba(255,255,255,.28)}
 
-</style>
+    /* PATCH V5 — anti-flash do iframe */
+    #frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+    #frame.frame-on {
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
 
-  <!-- TESOURA CORE (central) -->
-  <script defer src="app/core/config.js?v=1"></script>
-  <script defer src="app/core/session.js?v=1"></script>
-  <script defer src="app/core/supabase.js?v=1"></script>
-  <script defer src="app/core/override.js?v=1"></script>
-  <script defer src="app/core/boot.js?v=1"></script>
+  <!-- Core (uma vez só) -->
+  <script defer src="./app/core/config.js?rev=v5_3_2026-01-05"></script>
+  <script defer src="./app/core/session.js?rev=v5_3_2026-01-05"></script>
+  <script defer src="./app/core/supabase.js?rev=v5_3_2026-01-05"></script>
+  <script defer src="./app/core/override.js?rev=v5_3_2026-01-05"></script>
+  <script defer src="./app/core/boot.js?rev=v5_3_2026-01-05"></script>
 </head>
-
 <body>
 
   <div class="topbar">
@@ -171,13 +184,8 @@
         <div class="loaderText">Carregando painel...</div>
       </div>
 
-<!-- IFRAME ÚNICO (começa SEMPRE vazio e escondido: evita “flash”) -->
-<iframe
-  id="frame"
-  title="Conteúdo"
-  src="about:blank"
-  style="width:100%;height:100%;border:0;visibility:hidden;opacity:0;pointer-events:none"
-></iframe>
+      <!-- CONTROLE GERAL SEMPRE VISÍVEL POR TRÁS -->
+      <iframe id="frame" src="about:blank"></iframe>
     </div>
 
     <div id="msg" class="msg"></div>
@@ -213,8 +221,6 @@
     </div>
   </div>
   
+
 </body>
 </html>
-
-
-  
