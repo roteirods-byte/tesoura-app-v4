@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Tesoura - CAIXA</title>
 
-  <!-- Anti-cache leve (não mexe em service-worker) -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -29,13 +28,15 @@
     }
 
     body{ margin:0; font-family: var(--sans); background: var(--bg); color: var(--text); }
-    .wrap{ max-width: 1100px; margin: 0 auto; padding: 18px; }
+    .wrap{ max-width: 1200px; margin: 0 auto; padding: 18px; }
 
     .title{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin: 10px 0 14px; }
     .title h1{ margin:0; font-size: 22px; letter-spacing:.5px; color: var(--orange); }
     .subtitle{ margin: 3px 0 0; color: var(--muted); font-size: 13px; }
 
-    .grid{ display:grid; grid-template-columns: 1fr; gap: 14px; }
+    .grid{ display:grid; grid-template-columns: 420px 1fr; gap: 14px; }
+    @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
+
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
       border: 1px solid rgba(255,255,255,.08);
@@ -57,7 +58,8 @@
       padding: 10px 12px;
       font-size: 14px;
       outline: none;
-      min-width: 140px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     button{
@@ -85,6 +87,7 @@
       border:1px solid rgba(255,255,255,.08);
       color: var(--muted);
       font-size: 12px;
+      white-space: nowrap;
     }
 
     .warn{
@@ -155,9 +158,12 @@
       color: var(--muted);
       font-size: 13px;
     }
+
+    .stack{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stack3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .wbtn{ width: 100%; }
   </style>
 
-  <!-- Supabase JS (se já estiver no app, ok. Se não estiver, carrega aqui) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
@@ -172,42 +178,93 @@
     </div>
 
     <div class="grid">
-      <!-- Filtro PDF (não muda a tela) -->
+      <!-- ESQUERDA: LANÇAMENTOS + PDF -->
       <div class="card">
         <div class="row">
           <div class="left">
-            <div>
-              <label>ANO (PDF)</label>
-              <select id="pdfYear"></select>
-            </div>
-
-            <div>
-              <label>MÊS (PDF)</label>
-              <select id="pdfMonth"></select>
-            </div>
-
-            <div>
-              <button id="btnPdf">BAIXAR PDF</button>
-            </div>
-          </div>
-
-          <div class="right">
             <div class="pill" id="pillStatus">Inicializando…</div>
-          </div>
-        </div>
-
-        <div id="msgArea"></div>
-      </div>
-
-      <!-- Tabela do mês corrente -->
-      <div class="card">
-        <div class="row" style="align-items:center;">
-          <div class="left">
-            <div class="pill" id="pillNow">Mês corrente: …</div>
-            <div class="pill" id="pillCount">0 lançamentos</div>
           </div>
           <div class="right">
             <button id="btnReload" class="btn-mini">ATUALIZAR</button>
+          </div>
+        </div>
+
+        <div style="height:10px;"></div>
+
+        <div class="pill" id="pillNow">Mês corrente: …</div>
+
+        <div style="height:12px;"></div>
+
+        <div class="mono" style="margin-bottom:6px; color: var(--orange); font-weight:800;">LANÇAMENTOS</div>
+
+        <div class="stack">
+          <div>
+            <label>DATA</label>
+            <input id="inData" type="date" />
+          </div>
+          <div>
+            <label>TIPO</label>
+            <select id="inTipo">
+              <option value="RECEITA">RECEITA</option>
+              <option value="DESPESA">DESPESA</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="height:10px;"></div>
+
+        <div>
+          <label>DESCRIÇÃO</label>
+          <input id="inDesc" type="text" placeholder="Ex: MENSALIDADE - JOÃO (01/2026) / Compras / Campo / etc" />
+        </div>
+
+        <div style="height:10px;"></div>
+
+        <div>
+          <label>OBS</label>
+          <input id="inObs" type="text" placeholder="Opcional" />
+        </div>
+
+        <div style="height:10px;"></div>
+
+        <div>
+          <label>VALOR (R$)</label>
+          <input id="inValor" type="number" step="0.01" placeholder="Ex: 70,00" />
+        </div>
+
+        <div style="height:12px;"></div>
+
+        <button id="btnSalvar" class="wbtn">SALVAR</button>
+
+        <div id="msgArea"></div>
+
+        <div style="height:18px;"></div>
+
+        <div class="mono" style="margin-bottom:6px; color: var(--orange); font-weight:800;">PDF (ARQUIVO MENSAL)</div>
+
+        <div class="stack">
+          <div>
+            <label>ANO (PDF)</label>
+            <select id="pdfYear"></select>
+          </div>
+          <div>
+            <label>MÊS (PDF)</label>
+            <select id="pdfMonth"></select>
+          </div>
+        </div>
+
+        <div style="height:10px;"></div>
+        <button id="btnPdf" class="wbtn">BAIXAR PDF</button>
+      </div>
+
+      <!-- DIREITA: TABELA -->
+      <div class="card">
+        <div class="row" style="align-items:center;">
+          <div class="left">
+            <div class="pill" id="pillCount">0 lançamentos</div>
+          </div>
+          <div class="right">
+            <div class="pill" id="pillView">Visualizando: …</div>
           </div>
         </div>
 
@@ -217,13 +274,14 @@
               <th style="width:120px;">DATA</th>
               <th>DESCRIÇÃO</th>
               <th style="width:120px;">TIPO</th>
-              <th style="width:140px;">VALOR</th>
+              <th style="width:120px;">RECEITA</th>
+              <th style="width:120px;">DESPESA</th>
               <th style="width:140px;">SALDO</th>
-              <th style="width:140px;">AÇÕES</th>
+              <th style="width:120px;">AÇÕES</th>
             </tr>
           </thead>
           <tbody id="tbody">
-            <tr><td colspan="6" class="muted">Carregando…</td></tr>
+            <tr><td colspan="7" class="muted">Carregando…</td></tr>
           </tbody>
         </table>
 
@@ -239,45 +297,37 @@
   (() => {
     "use strict";
 
-    /**********************
-     * CONFIG (somente CAIXA)
-     **********************/
-    const TABLE_TRIES = ["vw_caixa_com_saldo", "caixa"];
-       const DATE_COL_TRIES = ["data", "created_at", "data_hora", "timestamp"];
+    // Supabase (ler mais estável pela view; gravar na tabela)
+    const READ_TABLES = ["vw_caixa_com_saldo", "caixa"];
+    const WRITE_TABLE = "caixa";
 
-    const COL_DESCR_TRIES = ["descricao", "descrição", "descricao_texto", "texto", "obs", "observacao", "observação"];
-    const COL_TIPO_TRIES  = ["tipo", "categoria"];
-    const COL_VALOR_TRIES = ["valor", "amount", "quantia"];
+    // Chaves/colunas possíveis (robusto)
+    const DATE_COL_TRIES  = ["data", "created_at", "data_hora", "timestamp"];
+    const DESC_TRIES      = ["descricao","descrição","descricao_texto","texto","obs_texto"];
+    const OBS_TRIES       = ["obs","observacao","observação"];
+    const TIPO_TRIES      = ["tipo","categoria"];
+    const VALOR_TRIES     = ["valor","amount","quantia"];
+    const RECEITA_TRIES   = ["receita","valor_receita","entrada"];
+    const DESPESA_TRIES   = ["despesa","valor_despesa","saida"];
+    const SALDO_TRIES     = ["saldo","saldo_final","saldo_acumulado"];
 
-    const MENSALIDADE_TEXT_PREFIX = "MENSALIDADE - ";
+    const MENSALIDADE_PREFIX = "MENSALIDADE - ";
 
-    /**********************
-     * Helpers DOM
-     **********************/
     const el = (id) => document.getElementById(id);
 
-    function pad2(n){ return String(n).padStart(2, "0"); }
-
+    function pad2(n){ return String(n).padStart(2,"0"); }
     function brl(v){
       const num = Number(v || 0);
       return num.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
     }
-
-    function monthNamePT(mIndex){
-      const names = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-      return names[mIndex] || "-";
-    }
-
-    function fmtDateBR(d){
-      const dt = (d instanceof Date) ? d : parseDateFlexible(d);
-      if (!dt || isNaN(dt.getTime())) return "-";
-      return `${pad2(dt.getDate())}/${pad2(dt.getMonth()+1)}/${dt.getFullYear()}`;
+    function monthNamePT(i){
+      return ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][i] || "-";
     }
 
     function setMsg(type, text){
       const area = el("msgArea");
-      if(!text){ area.innerHTML = ""; return; }
-      area.innerHTML = `<div class="${type === "ok" ? "ok" : "warn"}">${text}</div>`;
+      if(!text){ area.innerHTML=""; return; }
+      area.innerHTML = `<div class="${type==="ok"?"ok":"warn"}">${text}</div>`;
     }
 
     function findFirstKey(obj, keys){
@@ -287,103 +337,124 @@
       return null;
     }
 
-    function guessLocked(row){
-      if (!row) return false;
-      if (row.mensalidade_id || row.mensalidadeId || row.id_mensalidade) return true;
-      if (row.locked === true || row.bloqueado === true) return true;
-
-      const origemKey = findFirstKey(row, ["origem","source","fonte","tipo_registro"]);
-      if (origemKey && String(row[origemKey]).toUpperCase().includes("MENSAL")) return true;
-
-      const descrKey = findFirstKey(row, COL_DESCR_TRIES);
-      if (descrKey && String(row[descrKey]).toUpperCase().startsWith(MENSALIDADE_TEXT_PREFIX)) return true;
-
-      return false;
-    }
-
-    // Data flexível (para corrigir “CAIXA zerado” quando a coluna data não é timestamp)
     function parseDateFlexible(v){
-      if (!v) return null;
+      if(!v) return null;
+      if(v instanceof Date) return v;
 
-      // Date já
-      if (v instanceof Date) return v;
-
-      // Timestamp ISO / Postgres
       const d1 = new Date(v);
-      if (!isNaN(d1.getTime())) return d1;
+      if(!isNaN(d1.getTime())) return d1;
 
-      // "DD/MM/AAAA"
       const s = String(v).trim();
-      const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-      if (m){
-        const dd = Number(m[1]), mm = Number(m[2]) - 1, yy = Number(m[3]);
-        const d2 = new Date(yy, mm, dd, 0, 0, 0, 0);
-        if (!isNaN(d2.getTime())) return d2;
+
+      // DD/MM/AAAA
+      const m1 = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if(m1){
+        const dd=+m1[1], mm=+m1[2]-1, yy=+m1[3];
+        const d2 = new Date(yy,mm,dd,0,0,0,0);
+        if(!isNaN(d2.getTime())) return d2;
       }
 
-      // "AAAA-MM-DD"
+      // AAAA-MM-DD
       const m2 = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if (m2){
-        const yy = Number(m2[1]), mm = Number(m2[2]) - 1, dd = Number(m2[3]);
-        const d3 = new Date(yy, mm, dd, 0, 0, 0, 0);
-        if (!isNaN(d3.getTime())) return d3;
+      if(m2){
+        const yy=+m2[1], mm=+m2[2]-1, dd=+m2[3];
+        const d3 = new Date(yy,mm,dd,0,0,0,0);
+        if(!isNaN(d3.getTime())) return d3;
       }
 
       return null;
     }
 
+    function fmtDateBR(v){
+      const d = parseDateFlexible(v);
+      if(!d) return "-";
+      return `${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()}`;
+    }
+
     function getCurrentMonthRange(){
       const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-      const end   = new Date(now.getFullYear(), now.getMonth()+1, 1, 0, 0, 0, 0);
+      const start = new Date(now.getFullYear(), now.getMonth(), 1, 0,0,0,0);
+      const end   = new Date(now.getFullYear(), now.getMonth()+1, 1, 0,0,0,0);
       return { now, start, end };
     }
 
     function getMonthRange(year, monthIndex){
-      const start = new Date(year, monthIndex, 1, 0, 0, 0, 0);
-      const end   = new Date(year, monthIndex+1, 1, 0, 0, 0, 0);
+      const start = new Date(year, monthIndex, 1, 0,0,0,0);
+      const end   = new Date(year, monthIndex+1, 1, 0,0,0,0);
       return { start, end };
     }
 
     function iso(d){ return new Date(d).toISOString(); }
 
-    /**********************
-     * Supabase client (isolado, sem nome supabase)
-     **********************/
-    let sbClient = null;
+    // ------- Credenciais (pega até de scripts do app) -------
+    function extractCredsFromText(text){
+      if(!text) return null;
+
+      // createClient("URL","KEY")
+      const r1 = /createClient\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)/g;
+      let m;
+      while((m = r1.exec(text))){
+        const url = m[1], key = m[2];
+        if(url.includes("supabase.co") && key.length > 20) return { url, key };
+      }
+
+      // SUPABASE_URL / ANON_KEY
+      const u = text.match(/SUPABASE_URL\s*=\s*['"]([^'"]+)['"]/);
+      const k = text.match(/SUPABASE_ANON_KEY\s*=\s*['"]([^'"]+)['"]/);
+      if(u && k && u[1].includes("supabase.co") && k[1].length > 20) return { url: u[1], key: k[1] };
+
+      // supabaseUrl / supabaseKey
+      const u2 = text.match(/supabaseUrl\s*=\s*['"]([^'"]+)['"]/i);
+      const k2 = text.match(/(supabaseKey|anonKey)\s*=\s*['"]([^'"]+)['"]/i);
+      if(u2 && k2 && u2[1].includes("supabase.co") && k2[2].length > 20) return { url: u2[1], key: k2[2] };
+
+      return null;
+    }
 
     function getSupabaseCreds(){
-      // 1) globais diretos
-      if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
-        return { url: window.SUPABASE_URL, key: window.SUPABASE_ANON_KEY };
-      }
-      // 2) globais alternativos
-      if (window.__SUPABASE_URL__ && window.__SUPABASE_ANON_KEY__) {
-        return { url: window.__SUPABASE_URL__, key: window.__SUPABASE_ANON_KEY__ };
-      }
-      // 3) localStorage
+      // 1) window
+      if(window.SUPABASE_URL && window.SUPABASE_ANON_KEY) return { url: window.SUPABASE_URL, key: window.SUPABASE_ANON_KEY };
+      if(window.__SUPABASE_URL__ && window.__SUPABASE_ANON_KEY__) return { url: window.__SUPABASE_URL__, key: window.__SUPABASE_ANON_KEY__ };
+
+      // 2) localStorage
       try{
         const url = localStorage.getItem("SUPABASE_URL");
         const key = localStorage.getItem("SUPABASE_ANON_KEY");
-        if (url && key) return { url, key };
+        if(url && key) return { url, key };
       }catch(e){}
+
+      // 3) varrer scripts inline do app (pega o createClient)
+      try{
+        for(const s of Array.from(document.scripts)){
+          const t = s.textContent || "";
+          if(!t) continue;
+          // ignora este próprio arquivo
+          if(t.includes("vw_caixa_com_saldo") && t.includes("WRITE_TABLE")) continue;
+          const creds = extractCredsFromText(t);
+          if(creds) return creds;
+        }
+      }catch(e){}
+
       return null;
     }
+
+    // ------- Supabase client isolado -------
+    let sb = null;
 
     function initSupabase(){
       try{
         const creds = getSupabaseCreds();
         if(!creds){
-          el("pillStatus").textContent = "Sem credenciais";
-          setMsg("warn", "Não achei SUPABASE_URL/KEY. Me envie o início do arquivo do painel JOGADORES (onde conecta no Supabase) e eu ajusto aqui.");
+          el("pillStatus").textContent = "Sem Supabase";
+          setMsg("warn", "Não encontrei SUPABASE_URL/KEY no app. (O resto do app funciona, então está em algum script, mas não consegui ler).");
           return false;
         }
-        if (!window.supabase || !window.supabase.createClient){
-          el("pillStatus").textContent = "Supabase JS ausente";
-          setMsg("warn", "A biblioteca do Supabase não carregou. Tente atualizar a página (Ctrl+F5).");
+        if(!window.supabase || !window.supabase.createClient){
+          el("pillStatus").textContent = "Lib Supabase falhou";
+          setMsg("warn", "A biblioteca Supabase não carregou. Atualize com Ctrl+F5.");
           return false;
         }
-        sbClient = window.supabase.createClient(creds.url, creds.key);
+        sb = window.supabase.createClient(creds.url, creds.key);
         el("pillStatus").textContent = "Conectado";
         return true;
       }catch(e){
@@ -393,203 +464,395 @@
       }
     }
 
-    /**********************
-     * Query: tenta filtrar por data (rápido) + fallback (robusto)
-     **********************/
-    async function tryRangeQuery(table, dateCol, startDate, endDate){
-      const { data, error } = await sbClient
-        .from(table)
-        .select("*")
-        .gte(dateCol, iso(startDate))
-        .lt(dateCol, iso(endDate))
-        .order(dateCol, { ascending: true });
-
-      if (error) throw error;
+    // ------- Leitura robusta mês (1→1) -------
+    async function rangeQuery(table, dateCol, start, end){
+      const { data, error } = await sb.from(table).select("*").gte(dateCol, iso(start)).lt(dateCol, iso(end)).order(dateCol, { ascending: true });
+      if(error) throw error;
       return Array.isArray(data) ? data : [];
     }
 
-    async function tryLastRowsQuery(table, dateCol){
-      // pega “muita coisa” e filtra no navegador (corrige casos DD/MM/AAAA, etc.)
-      const { data, error } = await sbClient
-        .from(table)
-        .select("*")
-        .order(dateCol, { ascending: false })
-        .limit(700);
-
-      if (error) throw error;
+    async function lastRowsQuery(table, dateCol){
+      const { data, error } = await sb.from(table).select("*").order(dateCol, { ascending: false }).limit(1200);
+      if(error) throw error;
       return Array.isArray(data) ? data : [];
     }
 
-    async function fetchRowsForRange(startDate, endDate){
+    async function fetchMonthRows(start, end){
       let lastErr = null;
 
-      for (const table of TABLE_TRIES){
-        for (const dateCol of DATE_COL_TRIES){
+      for(const table of READ_TABLES){
+        for(const dateCol of DATE_COL_TRIES){
           try{
-            // 1) tentativa normal por range
-            const rows = await tryRangeQuery(table, dateCol, startDate, endDate);
-            if (rows.length > 0){
-              return { rows, usedTable: table, usedDateCol: dateCol };
-            }
-
-            // 2) fallback: pega últimos e filtra por data flexível
-            const lastRows = await tryLastRowsQuery(table, dateCol);
-            const filtered = lastRows
+            // 1) tenta range direto
+            const rows = await rangeQuery(table, dateCol, start, end);
+            // se vier vazio, faz fallback (pra datas em DD/MM/AAAA)
+            const fallback = await lastRowsQuery(table, dateCol);
+            const filtered = fallback
               .map(r => ({ r, d: parseDateFlexible(r[dateCol] ?? r.data ?? r.created_at ?? r.data_hora) }))
-              .filter(x => x.d && x.d >= startDate && x.d < endDate)
+              .filter(x => x.d && x.d >= start && x.d < end)
               .sort((a,b)=> a.d - b.d)
               .map(x => x.r);
 
-            return { rows: filtered, usedTable: table, usedDateCol: dateCol };
+            return { rows: rows.length ? rows : filtered, usedTable: table, usedDateCol: dateCol };
           }catch(e){
             lastErr = e;
           }
         }
       }
-
       throw lastErr || new Error("Falha ao consultar CAIXA.");
     }
 
-    /**********************
-     * Render + cálculo saldo
-     **********************/
-    function calcAndRender(rows, usedDateCol){
-      const sample = rows[0] || {};
-      const descrKey = findFirstKey(sample, COL_DESCR_TRIES) || "descricao";
-      const tipoKey  = findFirstKey(sample, COL_TIPO_TRIES)  || "tipo";
-      const valorKey = findFirstKey(sample, COL_VALOR_TRIES) || "valor";
+    // ------- Totais/saldo + render -------
+    function normalizeRow(r){
+      const descKey = findFirstKey(r, DESC_TRIES) || "descricao";
+      const obsKey  = findFirstKey(r, OBS_TRIES);
+      const tipoKey = findFirstKey(r, TIPO_TRIES);
+      const valKey  = findFirstKey(r, VALOR_TRIES);
+      const recKey  = findFirstKey(r, RECEITA_TRIES);
+      const desKey  = findFirstKey(r, DESPESA_TRIES);
+      const salKey  = findFirstKey(r, SALDO_TRIES);
 
-      // ordem ASC para saldo correto
-      const asc = rows.slice().sort((a,b)=> {
-        const da = parseDateFlexible(a[usedDateCol] ?? a.data ?? a.created_at) || new Date(0);
-        const db = parseDateFlexible(b[usedDateCol] ?? b.data ?? b.created_at) || new Date(0);
+      const descricao = String(r[descKey] ?? "").trim();
+      const obs = obsKey ? String(r[obsKey] ?? "").trim() : "";
+      const tipoRaw = tipoKey ? String(r[tipoKey] ?? "").trim() : "";
+      const tipoUp = tipoRaw.toUpperCase();
+
+      let receita = 0, despesa = 0;
+
+      if(recKey || desKey){
+        receita = Number(r[recKey] ?? 0) || 0;
+        despesa = Number(r[desKey] ?? 0) || 0;
+      }else if(valKey || tipoKey){
+        const v = Number(r[valKey] ?? 0) || 0;
+        if(tipoUp.includes("DESP")) despesa = Math.abs(v);
+        else if(tipoUp.includes("RECE")) receita = Math.abs(v);
+        else {
+          // se não tiver tipo, tenta pelo sinal
+          if(v >= 0) receita = v;
+          else despesa = Math.abs(v);
+        }
+      }
+
+      const saldo = (salKey != null) ? (Number(r[salKey]) || null) : null;
+      const locked = descricao.toUpperCase().startsWith(MENSALIDADE_PREFIX);
+
+      return { descricao, obs, tipoUp, receita, despesa, saldo, locked };
+    }
+
+    function calcSaldoIfMissing(rows, dateCol){
+      // calcula saldo acumulado por ordem de data (se não vier do view)
+      const asc = rows.slice().sort((a,b)=>{
+        const da = parseDateFlexible(a[dateCol] ?? a.data ?? a.created_at) || new Date(0);
+        const db = parseDateFlexible(b[dateCol] ?? b.data ?? b.created_at) || new Date(0);
         return da - db;
       });
 
-      let saldo = 0;
-      let totalReceita = 0;
-      let totalDespesa = 0;
-
-      const computed = asc.map(r => {
-        const tipoRaw = (r[tipoKey] ?? "").toString().trim();
-        const tipoUp  = tipoRaw.toUpperCase();
-
-        let valor = Number(r[valorKey] ?? 0);
-        let delta = valor;
-
-        if (tipoUp.includes("DESP") && delta > 0) delta = -delta;
-        if (tipoUp.includes("RECE") && delta < 0) delta = Math.abs(delta);
-
-        saldo += delta;
-        if (delta >= 0) totalReceita += delta;
-        else totalDespesa += Math.abs(delta);
-
-        const dateAny = r[usedDateCol] ?? r.data ?? r.created_at ?? r.data_hora;
-        return { raw:r, date: dateAny, descr: r[descrKey] ?? "", tipo: tipoRaw || "-", delta, saldo };
+      let running = 0;
+      const computed = asc.map(r=>{
+        const n = normalizeRow(r);
+        const delta = (n.receita || 0) - (n.despesa || 0);
+        running += delta;
+        return { r, computedSaldo: running };
       });
 
-      // exibição DESC (últimos movimentos)
-      const show = computed.slice().sort((a,b)=>{
-        const da = parseDateFlexible(a.date) || new Date(0);
-        const db = parseDateFlexible(b.date) || new Date(0);
+      const map = new Map();
+      for(const it of computed){
+        map.set(it.r, it.computedSaldo);
+      }
+      return map;
+    }
+
+    function render(rows, usedDateCol){
+      const tbody = el("tbody");
+
+      if(!rows.length){
+        tbody.innerHTML = `<tr><td colspan="7" class="muted">Sem lançamentos neste mês.</td></tr>`;
+        el("pillCount").textContent = `0 lançamentos`;
+        el("totals").textContent = `Receitas: ${brl(0)} • Despesas: ${brl(0)} • Saldo: ${brl(0)}`;
+        el("lastUpdate").textContent = `Atualizado: ${new Date().toLocaleString("pt-BR")}`;
+        return;
+      }
+
+      // saldo: se vier da view, usa; senão calcula
+      const sampleNorm = normalizeRow(rows[0]);
+      const hasSaldoFromView = sampleNorm.saldo !== null;
+      const saldoMap = hasSaldoFromView ? null : calcSaldoIfMissing(rows, usedDateCol);
+
+      // mostrar últimos primeiro
+      const show = rows.slice().sort((a,b)=>{
+        const da = parseDateFlexible(a[usedDateCol] ?? a.data ?? a.created_at) || new Date(0);
+        const db = parseDateFlexible(b[usedDateCol] ?? b.data ?? b.created_at) || new Date(0);
         return db - da;
       });
 
-      const tbody = el("tbody");
-
-      if(!show.length){
-        tbody.innerHTML = `<tr><td colspan="6" class="muted">Sem lançamentos neste mês.</td></tr>`;
-      } else {
-        tbody.innerHTML = show.map(item => {
-          const locked = guessLocked(item.raw);
-          const deltaClass = item.delta >= 0 ? "pos" : "neg";
-          const tipoUp = String(item.tipo).toUpperCase();
-          const tipoLabel = tipoUp.includes("DESP") ? "DESPESA" : (tipoUp.includes("RECE") ? "RECEITA" : item.tipo);
-
-          const safeDesc = String(item.descr || "").replaceAll("<","&lt;").replaceAll(">","&gt;");
-
-          const id = item.raw.id ?? "";
-          return `
-            <tr>
-              <td class="mono">${fmtDateBR(item.date)}</td>
-              <td>${safeDesc}</td>
-              <td class="mono">${tipoLabel}</td>
-              <td class="${deltaClass} mono">${brl(item.delta)}</td>
-              <td class="mono">${brl(item.saldo)}</td>
-              <td>
-                <div class="actions">
-                  ${locked
-                    ? `<span class="muted">Bloqueado</span>`
-                    : `<button class="btn-mini danger" data-del="${id}">Excluir</button>`
-                  }
-                </div>
-              </td>
-            </tr>
-          `;
-        }).join("");
-
-        // excluir (somente lançamentos manuais)
-        tbody.querySelectorAll("button[data-del]").forEach(btn=>{
-          btn.onclick = async () => {
-            const id = btn.getAttribute("data-del");
-            if(!id) return;
-
-            if(!confirm("Excluir este lançamento do CAIXA?")) return;
-
-            try{
-              el("pillStatus").textContent = "Excluindo…";
-              const { error } = await sbClient.from(TABLE_TRIES[0]).delete().eq("id", id);
-              // Se a tabela real não for TABLE_TRIES[0], tenta pelas outras
-              if (error){
-                let ok = false;
-                for (const t of TABLE_TRIES){
-                  const r = await sbClient.from(t).delete().eq("id", id);
-                  if (!r.error){ ok = true; break; }
-                }
-                if(!ok) throw error;
-              }
-              el("pillStatus").textContent = "Conectado";
-              await loadCurrentMonth();
-            }catch(e){
-              el("pillStatus").textContent = "Erro";
-              setMsg("warn", "Falha ao excluir (se veio do Mensalidade, é bloqueado). Detalhe: " + (e?.message || e));
-            }
-          };
-        });
+      let totalR = 0, totalD = 0;
+      for(const r of rows){
+        const n = normalizeRow(r);
+        totalR += n.receita || 0;
+        totalD += n.despesa || 0;
       }
+      const saldoFinal = totalR - totalD;
+
+      tbody.innerHTML = show.map(r=>{
+        const n = normalizeRow(r);
+        const dateAny = r[usedDateCol] ?? r.data ?? r.created_at ?? r.data_hora;
+        const saldo = hasSaldoFromView ? n.saldo : (saldoMap.get(r) ?? null);
+        const id = r.id ?? null;
+
+        const tipoLabel = n.tipoUp.includes("DESP") ? "DESPESA" : (n.tipoUp.includes("RECE") ? "RECEITA" : (n.receita>0 ? "RECEITA" : "DESPESA"));
+
+        const rec = n.receita || 0;
+        const des = n.despesa || 0;
+
+        const canDelete = (!n.locked) && id;
+
+        return `
+          <tr>
+            <td class="mono">${fmtDateBR(dateAny)}</td>
+            <td>${(n.descricao||"").replaceAll("<","&lt;").replaceAll(">","&gt;")}${n.obs ? `<div class="muted">${(n.obs||"").replaceAll("<","&lt;").replaceAll(">","&gt;")}</div>` : ""}</td>
+            <td class="mono">${tipoLabel}</td>
+            <td class="pos mono">${rec ? brl(rec) : ""}</td>
+            <td class="neg mono">${des ? brl(des) : ""}</td>
+            <td class="mono">${saldo === null ? "" : brl(saldo)}</td>
+            <td>
+              <div class="actions">
+                ${n.locked ? `<span class="muted">Mensalidade</span>` : (canDelete ? `<button class="btn-mini danger" data-del="${id}">Excluir</button>` : `<span class="muted">—</span>`)}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      // bind excluir (apenas manual com id)
+      tbody.querySelectorAll("button[data-del]").forEach(btn=>{
+        btn.onclick = async () => {
+          const id = btn.getAttribute("data-del");
+          if(!id) return;
+          if(!confirm("Excluir este lançamento do CAIXA?")) return;
+
+          try{
+            el("pillStatus").textContent = "Excluindo…";
+            const { error } = await sb.from(WRITE_TABLE).delete().eq("id", id);
+            if(error) throw error;
+            el("pillStatus").textContent = "Conectado";
+            await loadCurrentMonth();
+          }catch(e){
+            el("pillStatus").textContent = "Erro";
+            setMsg("warn", "Falha ao excluir. Detalhe: " + (e?.message || e));
+          }
+        };
+      });
 
       el("pillCount").textContent = `${show.length} lançamentos`;
-      el("totals").textContent = `Receitas: ${brl(totalReceita)} • Despesas: ${brl(totalDespesa)} • Saldo: ${brl(totalReceita - totalDespesa)}`;
+      el("totals").textContent = `Receitas: ${brl(totalR)} • Despesas: ${brl(totalD)} • Saldo: ${brl(saldoFinal)}`;
       el("lastUpdate").textContent = `Atualizado: ${new Date().toLocaleString("pt-BR")}`;
     }
 
+    // ------- Mensalidades fallback (se faltar no caixa) -------
+    function buildMensalidadeKey(nome, mm, yyyy){
+      return `${String(nome||"").trim().toUpperCase()}|${pad2(mm)}|${yyyy}`;
+    }
+
+    function parseMensalidadeFromDescricao(desc){
+      // "MENSALIDADE - NOME (MM/AAAA)"
+      const s = String(desc||"").trim();
+      const m = s.match(/MENSALIDADE\s*-\s*(.+?)\s*\((\d{2})\/(\d{4})\)/i);
+      if(!m) return null;
+      return { nome: m[1].trim(), mm: Number(m[2]), yyyy: Number(m[3]) };
+    }
+
+    async function fetchMensalidadesPaid(year, monthIndex){
+      // tenta buscar mensalidades do mês selecionado (se colunas existirem)
+      // se não existir, não quebra: só retorna vazio
+      try{
+        // melhores chaves possíveis
+        const { data, error } = await sb
+          .from("mensalidades")
+          .select("*")
+          .limit(2000);
+
+        if(error) throw error;
+        const rows = Array.isArray(data) ? data : [];
+
+        // tenta identificar colunas
+        const sample = rows[0] || {};
+        const pagoKey = findFirstKey(sample, ["pago","pago_bool","is_pago","status_pago","pago_"]);
+        const mesKey  = findFirstKey(sample, ["mes","mes_num","mes_referencia","mes_ref"]);
+        const anoKey  = findFirstKey(sample, ["ano","ano_ref","ano_referencia"]);
+        const valKey  = findFirstKey(sample, ["valor","valor_pago","valor_mensalidade","amount"]);
+        const nomeKey = findFirstKey(sample, ["apelido","nome","atleta","jogador","nome_jogador"]);
+        const dataKey = findFirstKey(sample, ["data_pagamento","data","created_at"]);
+
+        const mm = monthIndex + 1;
+        const yyyy = year;
+
+        const paid = rows.filter(r=>{
+          const pago = pagoKey ? (r[pagoKey] === true || String(r[pagoKey]).toUpperCase()==="PAGO" || String(r[pagoKey]).toUpperCase()==="SIM") : false;
+
+          const okMes = mesKey ? (Number(r[mesKey]) === mm || String(r[mesKey]).includes(pad2(mm))) : true;
+          const okAno = anoKey ? (Number(r[anoKey]) === yyyy || String(r[anoKey]).includes(String(yyyy))) : true;
+
+          return pago && okMes && okAno;
+        }).map(r=>{
+          const nome = nomeKey ? String(r[nomeKey] ?? "").trim() : "";
+          const valor = Number(r[valKey] ?? 0) || 0;
+          const dp = dataKey ? (r[dataKey] ?? null) : null;
+          const d = parseDateFlexible(dp) || new Date(yyyy, monthIndex, 1);
+
+          return {
+            descricao: `MENSALIDADE - ${nome || "JOGADOR"} (${pad2(mm)}/${yyyy})`,
+            obs: "gerado pela mensalidade",
+            tipo: "RECEITA",
+            receita: valor > 0 ? valor : 0,
+            despesa: 0,
+            data: d,
+            locked: true
+          };
+        });
+
+        return paid;
+      }catch(e){
+        return [];
+      }
+    }
+
+    function mergeMensalidadesIfMissing(caixaRows, mensRows, usedDateCol, monthIndex, year){
+      // monta set do que já existe no caixa
+      const set = new Set();
+      for(const r of caixaRows){
+        const n = normalizeRow(r);
+        const mm = monthIndex + 1;
+        const key = parseMensalidadeFromDescricao(n.descricao);
+        if(key){
+          set.add(buildMensalidadeKey(key.nome, key.mm, key.yyyy));
+        }
+      }
+
+      // acrescenta faltantes como “linhas virtuais”
+      const virtual = [];
+      for(const m of mensRows){
+        const key = parseMensalidadeKey(m.descricao, pad2(monthIndex+1), year); // simples
+        // melhor: extrai nome
+        const p = parseMensalidadeFromDescricao(m.descricao);
+        const k2 = p ? buildMensalidadeKey(p.nome, p.mm, p.yyyy) : key;
+        if(!set.has(k2)){
+          virtual.push({
+            __virtual: true,
+            data: m.data,
+            descricao: m.descricao,
+            obs: m.obs,
+            tipo: "RECEITA",
+            receita: m.receita,
+            despesa: 0,
+            saldo: null
+          });
+        }
+      }
+
+      return caixaRows.concat(virtual);
+    }
+
+    // ------- Carregar mês corrente (fixo 1→1) -------
     async function loadCurrentMonth(){
       setMsg("", "");
       const { now, start, end } = getCurrentMonthRange();
 
       el("pillPeriod").textContent = `Mês corrente: ${monthNamePT(now.getMonth())}/${now.getFullYear()}`;
-      el("pillNow").textContent = `Visualizando: ${monthNamePT(now.getMonth())}/${now.getFullYear()} (1 → 1)`;
-      el("tbody").innerHTML = `<tr><td colspan="6" class="muted">Carregando…</td></tr>`;
+      el("pillNow").textContent = `Mês corrente: ${monthNamePT(now.getMonth())}/${now.getFullYear()}`;
+      el("pillView").textContent = `Visualizando: ${monthNamePT(now.getMonth())}/${now.getFullYear()} (1 → 1)`;
+      el("tbody").innerHTML = `<tr><td colspan="7" class="muted">Carregando…</td></tr>`;
 
       try{
         el("pillStatus").textContent = "Carregando…";
-        const res = await fetchRowsForRange(start, end);
+        const res = await fetchMonthRows(start, end);
+
+        // fallback mensalidades (se o caixa vier “zerado” ou faltando)
+        const mens = await fetchMensalidadesPaid(now.getFullYear(), now.getMonth());
+        const merged = mergeMensalidadesIfMissing(res.rows, mens, res.usedDateCol, now.getMonth(), now.getFullYear());
+
         el("pillStatus").textContent = "Conectado";
-
-        // dica silenciosa para debug (se quiser ver depois)
-        // console.log("CAIXA:", res.usedTable, res.usedDateCol, res.rows.length);
-
-        calcAndRender(res.rows, res.usedDateCol);
+        render(merged, res.usedDateCol);
       }catch(e){
         el("pillStatus").textContent = "Erro";
-        el("tbody").innerHTML = `<tr><td colspan="6" class="muted">Erro ao carregar.</td></tr>`;
+        el("tbody").innerHTML = `<tr><td colspan="7" class="muted">Erro ao carregar.</td></tr>`;
         setMsg("warn", "Erro ao carregar CAIXA. Detalhe: " + (e?.message || e));
       }
     }
 
-    /**********************
-     * PDF (ano/mês) — não muda a tela
-     **********************/
+    // ------- Salvar lançamento (tenta formatos) -------
+    function toDDMMYYYY(d){
+      const dt = parseDateFlexible(d) || new Date();
+      return `${pad2(dt.getDate())}/${pad2(dt.getMonth()+1)}/${dt.getFullYear()}`;
+    }
+
+    async function tryInsert(payload){
+      const { error } = await sb.from(WRITE_TABLE).insert(payload);
+      if(error) throw error;
+    }
+
+    async function handleSalvar(){
+      setMsg("", "");
+
+      const dataISO = el("inData").value; // YYYY-MM-DD
+      const tipo = el("inTipo").value;
+      const desc = el("inDesc").value.trim();
+      const obs  = el("inObs").value.trim();
+      const valor = Number(el("inValor").value);
+
+      if(!dataISO){ setMsg("warn","Informe a DATA."); return; }
+      if(!desc){ setMsg("warn","Informe a DESCRIÇÃO."); return; }
+      if(!valor || valor <= 0){ setMsg("warn","Informe o VALOR (maior que zero)."); return; }
+
+      const d = new Date(dataISO + "T00:00:00");
+      const ddmmyyyy = toDDMMYYYY(d);
+
+      el("pillStatus").textContent = "Salvando…";
+
+      // tenta formatos comuns sem quebrar
+      const attempts = [];
+
+      // A) data + tipo + descricao + obs + valor
+      attempts.push({ data: dataISO, tipo, descricao: desc, obs, valor });
+      attempts.push({ data: ddmmyyyy, tipo, descricao: desc, obs, valor });
+
+      // B) data + receita/despesa separados
+      if(tipo === "RECEITA"){
+        attempts.push({ data: dataISO, descricao: desc, obs, receita: valor, despesa: 0 });
+        attempts.push({ data: ddmmyyyy, descricao: desc, obs, receita: valor, despesa: 0 });
+      }else{
+        attempts.push({ data: dataISO, descricao: desc, obs, receita: 0, despesa: valor });
+        attempts.push({ data: ddmmyyyy, descricao: desc, obs, receita: 0, despesa: valor });
+      }
+
+      // C) valor com sinal (receita + / despesa -)
+      attempts.push({ data: dataISO, descricao: desc, obs, valor: (tipo==="RECEITA"? valor : -valor) });
+
+      let lastErr = null;
+      for(const p of attempts){
+        try{
+          await tryInsert(p);
+          lastErr = null;
+          break;
+        }catch(e){
+          lastErr = e;
+        }
+      }
+
+      if(lastErr){
+        el("pillStatus").textContent = "Erro";
+        setMsg("warn", "Não consegui salvar (colunas da tabela podem ser diferentes). Detalhe: " + (lastErr?.message || lastErr));
+        return;
+      }
+
+      el("pillStatus").textContent = "Conectado";
+      setMsg("ok", "Salvo com sucesso.");
+      el("inDesc").value = "";
+      el("inObs").value = "";
+      el("inValor").value = "";
+      await loadCurrentMonth();
+    }
+
+    // ------- PDF (ano/mês) sem mudar tela -------
     function fillPdfSelectors(){
       const y = el("pdfYear");
       const m = el("pdfMonth");
@@ -618,47 +881,38 @@
     }
 
     function buildPrintHtml(title, periodText, rows, usedDateCol){
-      const sample = rows[0] || {};
-      const descrKey = findFirstKey(sample, COL_DESCR_TRIES) || "descricao";
-      const tipoKey  = findFirstKey(sample, COL_TIPO_TRIES)  || "tipo";
-      const valorKey = findFirstKey(sample, COL_VALOR_TRIES) || "valor";
-
-      // saldo em ordem ASC
+      // ordena por data asc e calcula saldo
       const asc = rows.slice().sort((a,b)=>{
         const da = parseDateFlexible(a[usedDateCol] ?? a.data ?? a.created_at) || new Date(0);
         const db = parseDateFlexible(b[usedDateCol] ?? b.data ?? b.created_at) || new Date(0);
         return da - db;
       });
 
-      let saldo = 0;
-      let totalReceita = 0;
-      let totalDespesa = 0;
+      let running = 0;
+      let totalR = 0, totalD = 0;
 
       const trs = asc.map(r=>{
-        const tipoRaw = (r[tipoKey] ?? "").toString().trim();
-        const tipoUp  = tipoRaw.toUpperCase();
-        let valor = Number(r[valorKey] ?? 0);
-        let delta = valor;
+        const n = normalizeRow(r);
+        const dateAny = r[usedDateCol] ?? r.data ?? r.created_at ?? r.data_hora ?? r.data;
 
-        if (tipoUp.includes("DESP") && delta > 0) delta = -delta;
-        if (tipoUp.includes("RECE") && delta < 0) delta = Math.abs(delta);
+        const rec = n.receita || 0;
+        const des = n.despesa || 0;
 
-        saldo += delta;
-        if (delta >= 0) totalReceita += delta;
-        else totalDespesa += Math.abs(delta);
+        totalR += rec;
+        totalD += des;
 
-        const tipoLabel = tipoUp.includes("DESP") ? "DESPESA" : (tipoUp.includes("RECE") ? "RECEITA" : (tipoRaw || "-"));
-        const safeDesc = String(r[descrKey] ?? "").replaceAll("<","&lt;").replaceAll(">","&gt;");
-        const dateAny = r[usedDateCol] ?? r.data ?? r.created_at ?? r.data_hora;
+        running += (rec - des);
 
-        const deltaStyle = delta >= 0 ? "color:#0f9d58;font-weight:700;" : "color:#d93025;font-weight:700;";
+        const safeDesc = String(n.descricao||"").replaceAll("<","&lt;").replaceAll(">","&gt;");
+        const safeObs  = String(n.obs||"").replaceAll("<","&lt;").replaceAll(">","&gt;");
+
         return `
           <tr>
             <td>${fmtDateBR(dateAny)}</td>
-            <td>${safeDesc}</td>
-            <td>${tipoLabel}</td>
-            <td style="${deltaStyle}">${brl(delta)}</td>
-            <td>${brl(saldo)}</td>
+            <td>${safeDesc}${safeObs ? `<div style="color:#666;font-size:11px;">${safeObs}</div>` : ""}</td>
+            <td style="color:#0f9d58;font-weight:700;">${rec ? brl(rec) : ""}</td>
+            <td style="color:#d93025;font-weight:700;">${des ? brl(des) : ""}</td>
+            <td>${brl(running)}</td>
           </tr>
         `;
       }).join("");
@@ -678,7 +932,6 @@
     th, td{ border:1px solid #ddd; padding:8px; text-align:left; vertical-align:top; }
     th{ background:#f4f4f4; }
     .tot{ margin-top:12px; font-size:12px; }
-    @media print{ button{ display:none; } }
   </style>
 </head>
 <body>
@@ -690,9 +943,9 @@
       <tr>
         <th style="width:110px;">DATA</th>
         <th>DESCRIÇÃO</th>
-        <th style="width:90px;">TIPO</th>
-        <th style="width:110px;">VALOR</th>
-        <th style="width:110px;">SALDO</th>
+        <th style="width:120px;">RECEITA</th>
+        <th style="width:120px;">DESPESA</th>
+        <th style="width:140px;">SALDO</th>
       </tr>
     </thead>
     <tbody>
@@ -701,9 +954,9 @@
   </table>
 
   <div class="tot">
-    <b>Receitas:</b> ${brl(totalReceita)} &nbsp;&nbsp;
-    <b>Despesas:</b> ${brl(totalDespesa)} &nbsp;&nbsp;
-    <b>Saldo:</b> ${brl(totalReceita - totalDespesa)}
+    <b>Receitas:</b> ${brl(totalR)} &nbsp;&nbsp;
+    <b>Despesas:</b> ${brl(totalD)} &nbsp;&nbsp;
+    <b>Saldo:</b> ${brl(totalR - totalD)}
   </div>
 </body>
 </html>
@@ -712,6 +965,8 @@
 
     async function handlePdf(){
       setMsg("", "");
+      if(!sb){ setMsg("warn","Supabase não inicializado."); return; }
+
       const year = Number(el("pdfYear").value);
       const monthIndex = Number(el("pdfMonth").value);
 
@@ -720,27 +975,26 @@
         el("pillStatus").textContent = "Preparando PDF…";
 
         const { start, end } = getMonthRange(year, monthIndex);
-        const res = await fetchRowsForRange(start, end);
+        const res = await fetchMonthRows(start, end);
 
-        el("pillStatus").textContent = "Conectado";
-        el("btnPdf").disabled = false;
+        // também tenta completar com mensalidades, se necessário
+        const mens = await fetchMensalidadesPaid(year, monthIndex);
+        const merged = mergeMensalidadesIfMissing(res.rows, mens, res.usedDateCol, monthIndex, year);
 
-        // NÃO muda a tela: só abre uma janela de impressão
         const title = `CAIXA - ${monthNamePT(monthIndex)}/${year}`;
-        const periodText = `Período do arquivo: dia 1 até dia 1 do mês seguinte.`;
-
-        const html = buildPrintHtml(title, periodText, res.rows, res.usedDateCol);
+        const html = buildPrintHtml(title, "Período do arquivo: dia 1 até dia 1 do mês seguinte.", merged, res.usedDateCol);
 
         const w = window.open("", "_blank");
         w.document.open();
         w.document.write(html);
         w.document.close();
 
-        // imprime sem precisar colocar <script> dentro do HTML (evita vazamento)
         setTimeout(() => {
           try{ w.focus(); w.print(); } catch(e){}
-        }, 400);
+        }, 450);
 
+        el("pillStatus").textContent = "Conectado";
+        el("btnPdf").disabled = false;
         setMsg("ok", `PDF pronto: ${monthNamePT(monthIndex)}/${year}. (A tela continua no mês corrente.)`);
       }catch(e){
         el("btnPdf").disabled = false;
@@ -749,18 +1003,29 @@
       }
     }
 
-    /**********************
-     * START (idempotente)
-     **********************/
-    function start(){
+    function initDefaults(){
+      // data padrão = hoje
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = pad2(now.getMonth()+1);
+      const dd = pad2(now.getDate());
+      el("inData").value = `${yyyy}-${mm}-${dd}`;
+    }
+
+    async function start(){
       fillPdfSelectors();
+      initDefaults();
+
+      const { now } = getCurrentMonthRange();
+      el("pillNow").textContent = `Mês corrente: ${monthNamePT(now.getMonth())}/${now.getFullYear()}`;
+      el("pillView").textContent = `Visualizando: ${monthNamePT(now.getMonth())}/${now.getFullYear()} (1 → 1)`;
 
       const ok = initSupabase();
-      if(ok) loadCurrentMonth();
+      if(ok) await loadCurrentMonth();
 
-      // evita duplicar listener se o painel for carregado mais de 1x
-      el("btnPdf").onclick = handlePdf;
       el("btnReload").onclick = loadCurrentMonth;
+      el("btnSalvar").onclick = handleSalvar;
+      el("btnPdf").onclick = handlePdf;
     }
 
     start();
