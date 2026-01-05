@@ -130,7 +130,25 @@
 </style>
 
   <!-- TESOURA CORE (central) -->
-  <script src="app/core/config.js"></script>
+  <script src="app/core/config.js">
+// ===== HOTFIX CAIXA (DIRETORIA) =====
+try{
+  function __forceCaixaDiretoria__(){
+    if(window.TESOURA_ROLE === "diretoria"){
+      window.TESOURA_CAN_CAIXA = true;
+      var b = document.getElementById("aba-caixa");
+      if(b){ b.style.display = ""; b.disabled = false; }
+    }
+  }
+  __forceCaixaDiretoria__();
+  window.addEventListener("DOMContentLoaded", __forceCaixaDiretoria__);
+  window.addEventListener("load", __forceCaixaDiretoria__);
+  setTimeout(__forceCaixaDiretoria__, 400);
+  setTimeout(__forceCaixaDiretoria__, 1500);
+}catch(e){}
+// ===== FIM HOTFIX CAIXA =====
+
+</script>
   <script src="app/core/session.js"></script>
   <script src="app/core/supabase.js"></script>
   <script src="app/core/override.js"></script>
