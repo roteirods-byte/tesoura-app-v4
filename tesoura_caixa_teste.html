@@ -173,4 +173,598 @@
 
     <div class="grid">
       <!-- Filtro PDF (não muda a tela) -->
-      <div class="car
+      <div class="card">
+        <div class="row">
+          <div class="left">
+            <div>
+              <label>ANO (PDF)</label>
+              <select id="pdfYear"></select>
+            </div>
+
+            <div>
+              <label>MÊS (PDF)</label>
+              <select id="pdfMonth"></select>
+            </div>
+
+            <div>
+              <button id="btnPdf">BAIXAR PDF</button>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="pill" id="pillStatus">Inicializando…</div>
+          </div>
+        </div>
+
+        <div id="msgArea"></div>
+      </div>
+
+      <!-- Tabela do mês corrente -->
+      <div class="card">
+        <div class="row" style="align-items:center;">
+          <div class="left">
+            <div class="pill" id="pillNow">Mês corrente: …</div>
+            <div class="pill" id="pillCount">0 lançamentos</div>
+          </div>
+          <div class="right">
+            <button id="btnReload" class="btn-mini">ATUALIZAR</button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:120px;">DATA</th>
+              <th>DESCRIÇÃO</th>
+              <th style="width:120px;">TIPO</th>
+              <th style="width:140px;">VALOR</th>
+              <th style="width:140px;">SALDO</th>
+              <th style="width:140px;">AÇÕES</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="6" class="muted">Carregando…</td></tr>
+          </tbody>
+        </table>
+
+        <div class="footerline">
+          <div id="totals" class="mono">Receitas: R$ 0,00 • Despesas: R$ 0,00 • Saldo: R$ 0,00</div>
+          <div class="muted" id="lastUpdate">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    "use strict";
+
+    /**********************
+     * CONFIG (somente CAIXA)
+     **********************/
+    const TABLE_TRIES = ["caixa", "CAIXA", "caixa_lancamentos", "lancamentos_caixa"]; // tenta variações
+    const DATE_COL_TRIES = ["data", "created_at", "data_hora", "timestamp"];
+
+    const COL_DESCR_TRIES = ["descricao", "descrição", "descricao_texto", "texto", "obs", "observacao", "observação"];
+    const COL_TIPO_TRIES  = ["tipo", "categoria"];
+    const COL_VALOR_TRIES = ["valor", "amount", "quantia"];
+
+    const MENSALIDADE_TEXT_PREFIX = "MENSALIDADE - ";
+
+    /**********************
+     * Helpers DOM
+     **********************/
+    const el = (id) => document.getElementById(id);
+
+    function pad2(n){ return String(n).padStart(2, "0"); }
+
+    function brl(v){
+      const num = Number(v || 0);
+      return num.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+    }
+
+    function monthNamePT(mIndex){
+      const names = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+      return names[mIndex] || "-";
+    }
+
+    function fmtDateBR(d){
+      const dt = (d instanceof Date) ? d : parseDateFlexible(d);
+      if (!dt || isNaN(dt.getTime())) return "-";
+      return `${pad2(dt.getDate())}/${pad2(dt.getMonth()+1)}/${dt.getFullYear()}`;
+    }
+
+    function setMsg(type, text){
+      const area = el("msgArea");
+      if(!text){ area.innerHTML = ""; return; }
+      area.innerHTML = `<div class="${type === "ok" ? "ok" : "warn"}">${text}</div>`;
+    }
+
+    function findFirstKey(obj, keys){
+      for(const k of keys){
+        if(obj && Object.prototype.hasOwnProperty.call(obj, k) && obj[k] != null) return k;
+      }
+      return null;
+    }
+
+    function guessLocked(row){
+      if (!row) return false;
+      if (row.mensalidade_id || row.mensalidadeId || row.id_mensalidade) return true;
+      if (row.locked === true || row.bloqueado === true) return true;
+
+      const origemKey = findFirstKey(row, ["origem","source","fonte","tipo_registro"]);
+      if (origemKey && String(row[origemKey]).toUpperCase().includes("MENSAL")) return true;
+
+      const descrKey = findFirstKey(row, COL_DESCR_TRIES);
+      if (descrKey && String(row[descrKey]).toUpperCase().startsWith(MENSALIDADE_TEXT_PREFIX)) return true;
+
+      return false;
+    }
+
+    // Data flexível (para corrigir “CAIXA zerado” quando a coluna data não é timestamp)
+    function parseDateFlexible(v){
+      if (!v) return null;
+
+      // Date já
+      if (v instanceof Date) return v;
+
+      // Timestamp ISO / Postgres
+      const d1 = new Date(v);
+      if (!isNaN(d1.getTime())) return d1;
+
+      // "DD/MM/AAAA"
+      const s = String(v).trim();
+      const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (m){
+        const dd = Number(m[1]), mm = Number(m[2]) - 1, yy = Number(m[3]);
+        const d2 = new Date(yy, mm, dd, 0, 0, 0, 0);
+        if (!isNaN(d2.getTime())) return d2;
+      }
+
+      // "AAAA-MM-DD"
+      const m2 = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m2){
+        const yy = Number(m2[1]), mm = Number(m2[2]) - 1, dd = Number(m2[3]);
+        const d3 = new Date(yy, mm, dd, 0, 0, 0, 0);
+        if (!isNaN(d3.getTime())) return d3;
+      }
+
+      return null;
+    }
+
+    function getCurrentMonthRange(){
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      const end   = new Date(now.getFullYear(), now.getMonth()+1, 1, 0, 0, 0, 0);
+      return { now, start, end };
+    }
+
+    function getMonthRange(year, monthIndex){
+      const start = new Date(year, monthIndex, 1, 0, 0, 0, 0);
+      const end   = new Date(year, monthIndex+1, 1, 0, 0, 0, 0);
+      return { start, end };
+    }
+
+    function iso(d){ return new Date(d).toISOString(); }
+
+    /**********************
+     * Supabase client (isolado, sem nome supabase)
+     **********************/
+    let sbClient = null;
+
+    function getSupabaseCreds(){
+      // 1) globais diretos
+      if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+        return { url: window.SUPABASE_URL, key: window.SUPABASE_ANON_KEY };
+      }
+      // 2) globais alternativos
+      if (window.__SUPABASE_URL__ && window.__SUPABASE_ANON_KEY__) {
+        return { url: window.__SUPABASE_URL__, key: window.__SUPABASE_ANON_KEY__ };
+      }
+      // 3) localStorage
+      try{
+        const url = localStorage.getItem("SUPABASE_URL");
+        const key = localStorage.getItem("SUPABASE_ANON_KEY");
+        if (url && key) return { url, key };
+      }catch(e){}
+      return null;
+    }
+
+    function initSupabase(){
+      try{
+        const creds = getSupabaseCreds();
+        if(!creds){
+          el("pillStatus").textContent = "Sem credenciais";
+          setMsg("warn", "Não achei SUPABASE_URL/KEY. Me envie o início do arquivo do painel JOGADORES (onde conecta no Supabase) e eu ajusto aqui.");
+          return false;
+        }
+        if (!window.supabase || !window.supabase.createClient){
+          el("pillStatus").textContent = "Supabase JS ausente";
+          setMsg("warn", "A biblioteca do Supabase não carregou. Tente atualizar a página (Ctrl+F5).");
+          return false;
+        }
+        sbClient = window.supabase.createClient(creds.url, creds.key);
+        el("pillStatus").textContent = "Conectado";
+        return true;
+      }catch(e){
+        el("pillStatus").textContent = "Erro";
+        setMsg("warn", "Erro ao iniciar Supabase: " + (e?.message || e));
+        return false;
+      }
+    }
+
+    /**********************
+     * Query: tenta filtrar por data (rápido) + fallback (robusto)
+     **********************/
+    async function tryRangeQuery(table, dateCol, startDate, endDate){
+      const { data, error } = await sbClient
+        .from(table)
+        .select("*")
+        .gte(dateCol, iso(startDate))
+        .lt(dateCol, iso(endDate))
+        .order(dateCol, { ascending: true });
+
+      if (error) throw error;
+      return Array.isArray(data) ? data : [];
+    }
+
+    async function tryLastRowsQuery(table, dateCol){
+      // pega “muita coisa” e filtra no navegador (corrige casos DD/MM/AAAA, etc.)
+      const { data, error } = await sbClient
+        .from(table)
+        .select("*")
+        .order(dateCol, { ascending: false })
+        .limit(700);
+
+      if (error) throw error;
+      return Array.isArray(data) ? data : [];
+    }
+
+    async function fetchRowsForRange(startDate, endDate){
+      let lastErr = null;
+
+      for (const table of TABLE_TRIES){
+        for (const dateCol of DATE_COL_TRIES){
+          try{
+            // 1) tentativa normal por range
+            const rows = await tryRangeQuery(table, dateCol, startDate, endDate);
+            if (rows.length > 0){
+              return { rows, usedTable: table, usedDateCol: dateCol };
+            }
+
+            // 2) fallback: pega últimos e filtra por data flexível
+            const lastRows = await tryLastRowsQuery(table, dateCol);
+            const filtered = lastRows
+              .map(r => ({ r, d: parseDateFlexible(r[dateCol] ?? r.data ?? r.created_at ?? r.data_hora) }))
+              .filter(x => x.d && x.d >= startDate && x.d < endDate)
+              .sort((a,b)=> a.d - b.d)
+              .map(x => x.r);
+
+            return { rows: filtered, usedTable: table, usedDateCol: dateCol };
+          }catch(e){
+            lastErr = e;
+          }
+        }
+      }
+
+      throw lastErr || new Error("Falha ao consultar CAIXA.");
+    }
+
+    /**********************
+     * Render + cálculo saldo
+     **********************/
+    function calcAndRender(rows, usedDateCol){
+      const sample = rows[0] || {};
+      const descrKey = findFirstKey(sample, COL_DESCR_TRIES) || "descricao";
+      const tipoKey  = findFirstKey(sample, COL_TIPO_TRIES)  || "tipo";
+      const valorKey = findFirstKey(sample, COL_VALOR_TRIES) || "valor";
+
+      // ordem ASC para saldo correto
+      const asc = rows.slice().sort((a,b)=> {
+        const da = parseDateFlexible(a[usedDateCol] ?? a.data ?? a.created_at) || new Date(0);
+        const db = parseDateFlexible(b[usedDateCol] ?? b.data ?? b.created_at) || new Date(0);
+        return da - db;
+      });
+
+      let saldo = 0;
+      let totalReceita = 0;
+      let totalDespesa = 0;
+
+      const computed = asc.map(r => {
+        const tipoRaw = (r[tipoKey] ?? "").toString().trim();
+        const tipoUp  = tipoRaw.toUpperCase();
+
+        let valor = Number(r[valorKey] ?? 0);
+        let delta = valor;
+
+        if (tipoUp.includes("DESP") && delta > 0) delta = -delta;
+        if (tipoUp.includes("RECE") && delta < 0) delta = Math.abs(delta);
+
+        saldo += delta;
+        if (delta >= 0) totalReceita += delta;
+        else totalDespesa += Math.abs(delta);
+
+        const dateAny = r[usedDateCol] ?? r.data ?? r.created_at ?? r.data_hora;
+        return { raw:r, date: dateAny, descr: r[descrKey] ?? "", tipo: tipoRaw || "-", delta, saldo };
+      });
+
+      // exibição DESC (últimos movimentos)
+      const show = computed.slice().sort((a,b)=>{
+        const da = parseDateFlexible(a.date) || new Date(0);
+        const db = parseDateFlexible(b.date) || new Date(0);
+        return db - da;
+      });
+
+      const tbody = el("tbody");
+
+      if(!show.length){
+        tbody.innerHTML = `<tr><td colspan="6" class="muted">Sem lançamentos neste mês.</td></tr>`;
+      } else {
+        tbody.innerHTML = show.map(item => {
+          const locked = guessLocked(item.raw);
+          const deltaClass = item.delta >= 0 ? "pos" : "neg";
+          const tipoUp = String(item.tipo).toUpperCase();
+          const tipoLabel = tipoUp.includes("DESP") ? "DESPESA" : (tipoUp.includes("RECE") ? "RECEITA" : item.tipo);
+
+          const safeDesc = String(item.descr || "").replaceAll("<","&lt;").replaceAll(">","&gt;");
+
+          const id = item.raw.id ?? "";
+          return `
+            <tr>
+              <td class="mono">${fmtDateBR(item.date)}</td>
+              <td>${safeDesc}</td>
+              <td class="mono">${tipoLabel}</td>
+              <td class="${deltaClass} mono">${brl(item.delta)}</td>
+              <td class="mono">${brl(item.saldo)}</td>
+              <td>
+                <div class="actions">
+                  ${locked
+                    ? `<span class="muted">Bloqueado</span>`
+                    : `<button class="btn-mini danger" data-del="${id}">Excluir</button>`
+                  }
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+        // excluir (somente lançamentos manuais)
+        tbody.querySelectorAll("button[data-del]").forEach(btn=>{
+          btn.onclick = async () => {
+            const id = btn.getAttribute("data-del");
+            if(!id) return;
+
+            if(!confirm("Excluir este lançamento do CAIXA?")) return;
+
+            try{
+              el("pillStatus").textContent = "Excluindo…";
+              const { error } = await sbClient.from(TABLE_TRIES[0]).delete().eq("id", id);
+              // Se a tabela real não for TABLE_TRIES[0], tenta pelas outras
+              if (error){
+                let ok = false;
+                for (const t of TABLE_TRIES){
+                  const r = await sbClient.from(t).delete().eq("id", id);
+                  if (!r.error){ ok = true; break; }
+                }
+                if(!ok) throw error;
+              }
+              el("pillStatus").textContent = "Conectado";
+              await loadCurrentMonth();
+            }catch(e){
+              el("pillStatus").textContent = "Erro";
+              setMsg("warn", "Falha ao excluir (se veio do Mensalidade, é bloqueado). Detalhe: " + (e?.message || e));
+            }
+          };
+        });
+      }
+
+      el("pillCount").textContent = `${show.length} lançamentos`;
+      el("totals").textContent = `Receitas: ${brl(totalReceita)} • Despesas: ${brl(totalDespesa)} • Saldo: ${brl(totalReceita - totalDespesa)}`;
+      el("lastUpdate").textContent = `Atualizado: ${new Date().toLocaleString("pt-BR")}`;
+    }
+
+    async function loadCurrentMonth(){
+      setMsg("", "");
+      const { now, start, end } = getCurrentMonthRange();
+
+      el("pillPeriod").textContent = `Mês corrente: ${monthNamePT(now.getMonth())}/${now.getFullYear()}`;
+      el("pillNow").textContent = `Visualizando: ${monthNamePT(now.getMonth())}/${now.getFullYear()} (1 → 1)`;
+      el("tbody").innerHTML = `<tr><td colspan="6" class="muted">Carregando…</td></tr>`;
+
+      try{
+        el("pillStatus").textContent = "Carregando…";
+        const res = await fetchRowsForRange(start, end);
+        el("pillStatus").textContent = "Conectado";
+
+        // dica silenciosa para debug (se quiser ver depois)
+        // console.log("CAIXA:", res.usedTable, res.usedDateCol, res.rows.length);
+
+        calcAndRender(res.rows, res.usedDateCol);
+      }catch(e){
+        el("pillStatus").textContent = "Erro";
+        el("tbody").innerHTML = `<tr><td colspan="6" class="muted">Erro ao carregar.</td></tr>`;
+        setMsg("warn", "Erro ao carregar CAIXA. Detalhe: " + (e?.message || e));
+      }
+    }
+
+    /**********************
+     * PDF (ano/mês) — não muda a tela
+     **********************/
+    function fillPdfSelectors(){
+      const y = el("pdfYear");
+      const m = el("pdfMonth");
+
+      const now = new Date();
+      const curYear = now.getFullYear();
+      const curMonth = now.getMonth();
+
+      y.innerHTML = "";
+      for(let year = curYear - 3; year <= curYear + 1; year++){
+        const opt = document.createElement("option");
+        opt.value = String(year);
+        opt.textContent = String(year);
+        if(year === curYear) opt.selected = true;
+        y.appendChild(opt);
+      }
+
+      m.innerHTML = "";
+      for(let i=0;i<12;i++){
+        const opt = document.createElement("option");
+        opt.value = String(i);
+        opt.textContent = monthNamePT(i);
+        if(i === curMonth) opt.selected = true;
+        m.appendChild(opt);
+      }
+    }
+
+    function buildPrintHtml(title, periodText, rows, usedDateCol){
+      const sample = rows[0] || {};
+      const descrKey = findFirstKey(sample, COL_DESCR_TRIES) || "descricao";
+      const tipoKey  = findFirstKey(sample, COL_TIPO_TRIES)  || "tipo";
+      const valorKey = findFirstKey(sample, COL_VALOR_TRIES) || "valor";
+
+      // saldo em ordem ASC
+      const asc = rows.slice().sort((a,b)=>{
+        const da = parseDateFlexible(a[usedDateCol] ?? a.data ?? a.created_at) || new Date(0);
+        const db = parseDateFlexible(b[usedDateCol] ?? b.data ?? b.created_at) || new Date(0);
+        return da - db;
+      });
+
+      let saldo = 0;
+      let totalReceita = 0;
+      let totalDespesa = 0;
+
+      const trs = asc.map(r=>{
+        const tipoRaw = (r[tipoKey] ?? "").toString().trim();
+        const tipoUp  = tipoRaw.toUpperCase();
+        let valor = Number(r[valorKey] ?? 0);
+        let delta = valor;
+
+        if (tipoUp.includes("DESP") && delta > 0) delta = -delta;
+        if (tipoUp.includes("RECE") && delta < 0) delta = Math.abs(delta);
+
+        saldo += delta;
+        if (delta >= 0) totalReceita += delta;
+        else totalDespesa += Math.abs(delta);
+
+        const tipoLabel = tipoUp.includes("DESP") ? "DESPESA" : (tipoUp.includes("RECE") ? "RECEITA" : (tipoRaw || "-"));
+        const safeDesc = String(r[descrKey] ?? "").replaceAll("<","&lt;").replaceAll(">","&gt;");
+        const dateAny = r[usedDateCol] ?? r.data ?? r.created_at ?? r.data_hora;
+
+        const deltaStyle = delta >= 0 ? "color:#0f9d58;font-weight:700;" : "color:#d93025;font-weight:700;";
+        return `
+          <tr>
+            <td>${fmtDateBR(dateAny)}</td>
+            <td>${safeDesc}</td>
+            <td>${tipoLabel}</td>
+            <td style="${deltaStyle}">${brl(delta)}</td>
+            <td>${brl(saldo)}</td>
+          </tr>
+        `;
+      }).join("");
+
+      return `
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>${title}</title>
+  <style>
+    body{ font-family: Arial, sans-serif; margin:24px; color:#111; }
+    h1{ margin:0 0 6px; font-size:18px; }
+    .sub{ color:#444; margin:0 0 14px; font-size:12px; }
+    table{ width:100%; border-collapse: collapse; font-size:12px; }
+    th, td{ border:1px solid #ddd; padding:8px; text-align:left; vertical-align:top; }
+    th{ background:#f4f4f4; }
+    .tot{ margin-top:12px; font-size:12px; }
+    @media print{ button{ display:none; } }
+  </style>
+</head>
+<body>
+  <h1>${title}</h1>
+  <p class="sub">${periodText}</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:110px;">DATA</th>
+        <th>DESCRIÇÃO</th>
+        <th style="width:90px;">TIPO</th>
+        <th style="width:110px;">VALOR</th>
+        <th style="width:110px;">SALDO</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${trs || `<tr><td colspan="5">Sem lançamentos.</td></tr>`}
+    </tbody>
+  </table>
+
+  <div class="tot">
+    <b>Receitas:</b> ${brl(totalReceita)} &nbsp;&nbsp;
+    <b>Despesas:</b> ${brl(totalDespesa)} &nbsp;&nbsp;
+    <b>Saldo:</b> ${brl(totalReceita - totalDespesa)}
+  </div>
+</body>
+</html>
+      `;
+    }
+
+    async function handlePdf(){
+      setMsg("", "");
+      const year = Number(el("pdfYear").value);
+      const monthIndex = Number(el("pdfMonth").value);
+
+      try{
+        el("btnPdf").disabled = true;
+        el("pillStatus").textContent = "Preparando PDF…";
+
+        const { start, end } = getMonthRange(year, monthIndex);
+        const res = await fetchRowsForRange(start, end);
+
+        el("pillStatus").textContent = "Conectado";
+        el("btnPdf").disabled = false;
+
+        // NÃO muda a tela: só abre uma janela de impressão
+        const title = `CAIXA - ${monthNamePT(monthIndex)}/${year}`;
+        const periodText = `Período do arquivo: dia 1 até dia 1 do mês seguinte.`;
+
+        const html = buildPrintHtml(title, periodText, res.rows, res.usedDateCol);
+
+        const w = window.open("", "_blank");
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
+
+        // imprime sem precisar colocar <script> dentro do HTML (evita vazamento)
+        setTimeout(() => {
+          try{ w.focus(); w.print(); } catch(e){}
+        }, 400);
+
+        setMsg("ok", `PDF pronto: ${monthNamePT(monthIndex)}/${year}. (A tela continua no mês corrente.)`);
+      }catch(e){
+        el("btnPdf").disabled = false;
+        el("pillStatus").textContent = "Erro";
+        setMsg("warn", "Falha ao preparar PDF. Detalhe: " + (e?.message || e));
+      }
+    }
+
+    /**********************
+     * START (idempotente)
+     **********************/
+    function start(){
+      fillPdfSelectors();
+
+      const ok = initSupabase();
+      if(ok) loadCurrentMonth();
+
+      // evita duplicar listener se o painel for carregado mais de 1x
+      el("btnPdf").onclick = handlePdf;
+      el("btnReload").onclick = loadCurrentMonth;
+    }
+
+    start();
+  })();
+  </script>
+</body>
+</html>
