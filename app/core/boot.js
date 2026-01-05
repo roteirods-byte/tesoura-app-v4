@@ -3,6 +3,15 @@
   const $ = (id)=>document.getElementById(id);
   const qs = (s)=>document.querySelector(s);
 
+  // Navegação do iframe: token para evitar corrida (cliques rápidos)
+  let NAV_TOKEN = 0;
+
+  function showFrameLoader(on){
+    const l = $("frameLoader") || qs(".frameLoader");
+    if(!l) return;
+    l.classList.toggle("on", !!on);
+  }
+
   function setTopMsg(txt){
     const el = $("msg") || $("loginMsg") || $("msgTelaInicial");
     if(el) el.textContent = txt || "";
@@ -36,18 +45,35 @@
     const frame = $("frame");
     if(!frame) return setTopMsg("ERRO: iframe #frame não encontrado.");
 
-
-      // ANTI-PISCA: esconde o quadro antes de trocar a página
-      frame.style.visibility = "hidden";
-      frame.onload = () => { frame.style.visibility = "visible"; };
     const url = map[tabId];
     if(!url) return setTopMsg("ERRO: aba sem página: " + tabId);
+
+    // ANTI-FLASH (definitivo):
+    // 1) esconde o iframe imediatamente
+    // 2) limpa o conteúdo para about:blank
+    // 3) só depois aponta para o painel real e mostra no onload
+    const token = ++NAV_TOKEN;
+    showFrameLoader(true);
+    frame.onload = null;
+    frame.style.visibility = "hidden";
+    try{ frame.src = "about:blank"; }catch(e){}
 
     activeTab(tabId);
 
     // cache-buster
     const sep = url.includes("?") ? "&" : "?";
-    frame.src = url + sep + "v=" + Date.now();
+    const finalUrl = url + sep + "v=" + Date.now();
+
+    // Troca em próximo tick para garantir que o 'about:blank' aplique antes
+    setTimeout(()=>{
+      if(token !== NAV_TOKEN) return;
+      frame.onload = () => {
+        if(token !== NAV_TOKEN) return;
+        frame.style.visibility = "visible";
+        showFrameLoader(false);
+      };
+      frame.src = finalUrl;
+    }, 0);
 
     setTopMsg("");
   }
