@@ -1,807 +1,766 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Tesoura - Caixa</title>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tesoura - CAIXA</title>
+
+  <!-- Anti-cache leve (não mexe em service-worker) -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
   <style>
     :root{
-      --bg:#050a14;
-      --panel:#0b1220;
-      --panel2:#0a1020;
-      --line:#18233a;
-      --text:#e7eefc;
-      --muted:#9fb2d7;
+      --bg:#061a3a;
+      --card:#081f45;
+      --line:#123a70;
+      --text:#ffffff;
+      --muted:#b9c7e6;
       --orange:#ff8a2a;
-      --blue:#12b5ea;
-      --green:#18d37b;
-      --red:#ff3b3b;
+      --green:#34d399;
+      --red:#fb7185;
+      --blueBtn:#2b76ff;
+      --blueBtn2:#1f5fe0;
+      --shadow: 0 10px 25px rgba(0,0,0,.25);
+      --radius:18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
     }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    \.wrap{max-width:1400px;margin:0 auto;padding:18px}
-    .card{background:linear-gradient(180deg,rgba(18,24,45,.92),rgba(10,16,32,.92));border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
-    .title{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:2px solid rgba(255,138,42,.55)}
-    .title h1{margin:0;font-size:18px;letter-spacing:.4px;color:var(--orange)}
-    .title small{color:var(--muted)}
-    .section{padding:16px 18px}
-    .section h2{margin:0 0 10px 0;color:var(--orange);font-size:14px;letter-spacing:.4px}
-    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-    .field{display:flex;flex-direction:column;gap:6px}
-    label{font-size:12px;color:var(--muted)}
-    select,input{height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.10);background:#0a1020;color:#fff;padding:0 10px;outline:none}
-    input::placeholder{color:#5f6f93}
-    .btn{height:36px;border-radius:10px;border:0;padding:0 14px;font-weight:700;cursor:pointer}
-    .btn.blue{background:var(--blue);color:#00111a}
-    .btn.orange{background:var(--orange);color:#1a0a00}
-    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.14);color:#fff}
-    .meta{margin-top:8px;color:var(--muted);font-size:12px}
-    .stats{display:flex;gap:14px;flex-wrap:wrap;color:var(--text);font-size:12px;margin-top:8px}
-    .stats b{color:#fff}
-    .table-wrap{margin-top:10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);overflow:hidden}
-    table{width:100%;border-collapse:collapse;table-layout:fixed}
-    thead th{background:var(--orange);color:#fff;font-size:12px;padding:10px;border-right:1px solid rgba(0,0,0,.18)}
-    thead th:last-child{border-right:0}
-    tbody td{padding:10px;border-top:1px solid rgba(255,255,255,.08);vertical-align:middle;font-size:12px;color:#e9f1ff}
-    tbody tr:nth-child(even){background:rgba(255,255,255,.02)}
-    .col-date{width:110px}
-    .col-desc{width:280px}
-    .col-obs{width:140px}
-    .col-money{width:120px;text-align:right}
-    .col-actions{width:260px;text-align:center}
 
-    td.col-desc, td.col-obs{white-space:normal;}
-    td.col-desc{text-align:left;}
-    td.col-obs{text-align:left;}
-    .money.pos{color:var(--green);font-weight:800}
-    .money.neg{color:var(--red);font-weight:800}
-    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;border:1px solid rgba(255,255,255,.14);color:#dbe7ff;background:rgba(0,0,0,.18)}
-    .badge.lock{border-color:rgba(255,138,42,.55);color:#ffd9b5}
-    .actions{display:flex;gap:10px;justify-content:center;align-items:center}
-    .btnSmall{height:30px;border-radius:10px;border:0;padding:0 12px;font-weight:800;cursor:pointer;font-size:12px}
-    .btnEdit{background:var(--green);color:#02140b}
-    .btnDel{background:var(--red);color:#1a0000}
-    .btnDisabled{opacity:.55;cursor:not-allowed}
-    .readonly{opacity:.75}
-    .line{height:1px;background:rgba(255,255,255,.08);margin:10px 0}
-    /* impressão */
-    @media print{
-      body{background:#fff;color:#000}
-      .wrap{max-width:none;padding:0}
-      .card{box-shadow:none;border:0;border-radius:0;background:#fff}
-      .title,.section h2,.row,.meta,.stats,.actions,.btn{display:none !important}
-      .table-wrap{border:0}
-      table{table-layout:auto;width:100%}
-      thead th{position:static}
+    body{
+      margin:0;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
     }
-    @page{size:A4 landscape;margin:10mm}
+
+    .wrap{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .title{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:16px;
+      margin: 10px 0 14px;
+    }
+    .title h1{
+      margin:0;
+      font-size: 22px;
+      letter-spacing:.5px;
+      color: var(--orange);
+    }
+    .subtitle{
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    .row{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 10px 12px;
+      align-items:end;
+      justify-content:space-between;
+    }
+
+    .left, .right{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 10px;
+      align-items:end;
+    }
+
+    label{
+      display:block;
+      font-size: 11px;
+      color: var(--muted);
+      margin: 0 0 6px;
+      letter-spacing:.4px;
+    }
+
+    select, input{
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+      min-width: 140px;
+    }
+
+    button{
+      cursor:pointer;
+      border:0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight:700;
+      font-size: 13px;
+      color: #fff;
+      background: var(--blueBtn);
+      box-shadow: 0 8px 18px rgba(43,118,255,.25);
+      transition: .15s;
+    }
+    button:hover{ background: var(--blueBtn2); transform: translateY(-1px); }
+    button:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.08);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .warn{
+      background: rgba(251,113,133,.10);
+      border: 1px solid rgba(251,113,133,.25);
+      padding: 10px 12px;
+      border-radius: 14px;
+      color: #ffd1d9;
+      font-size: 13px;
+      margin-top: 10px;
+      line-height: 1.35;
+    }
+    .ok{
+      background: rgba(52,211,153,.10);
+      border: 1px solid rgba(52,211,153,.25);
+      padding: 10px 12px;
+      border-radius: 14px;
+      color: #d7fff1;
+      font-size: 13px;
+      margin-top: 10px;
+      line-height: 1.35;
+    }
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      overflow:hidden;
+      border-radius: 14px;
+    }
+    thead th{
+      text-align:left;
+      font-size: 12px;
+      padding: 12px;
+      color: var(--orange);
+      background: rgba(255,255,255,.04);
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      letter-spacing:.3px;
+    }
+    tbody td{
+      padding: 11px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      font-size: 14px;
+      color: #fff;
+      vertical-align: top;
+    }
+    tbody tr:hover td{
+      background: rgba(255,255,255,.03);
+    }
+
+    .mono{ font-family: var(--mono); font-size: 13px; color: #e7efff; }
+    .muted{ color: var(--muted); font-size: 12px; }
+    .pos{ color: var(--green); font-weight: 800; }
+    .neg{ color: var(--red); font-weight: 800; }
+
+    .actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .btn-mini{
+      padding: 7px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      background: rgba(255,255,255,.08);
+      box-shadow:none;
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    .btn-mini:hover{ background: rgba(255,255,255,.12); transform:none; }
+    .btn-mini.danger{ border-color: rgba(251,113,133,.35); background: rgba(251,113,133,.12); }
+    .btn-mini.danger:hover{ background: rgba(251,113,133,.18); }
+
+    .footerline{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 10px 14px;
+      justify-content: space-between;
+      align-items:center;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
   </style>
+
+  <!-- Supabase JS (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
   <div class="wrap">
-    <div class="card">
-      <div class="title">
-        <h1>TESOURA - CAIXA</h1>
-        <small>(auto-save)</small>
+    <div class="title">
+      <div>
+        <h1>CAIXA</h1>
+        <div class="subtitle">Tela fixa no mês corrente (dia 1 → dia 1 do próximo mês). Filtro abaixo só serve para BAIXAR PDF.</div>
+      </div>
+      <div class="pill" id="pillPeriod">Carregando…</div>
+    </div>
+
+    <div class="grid">
+      <!-- Filtro PDF (não muda a tela) -->
+      <div class="card">
+        <div class="row">
+          <div class="left">
+            <div>
+              <label>ANO (PDF)</label>
+              <select id="pdfYear"></select>
+            </div>
+
+            <div>
+              <label>MÊS (PDF)</label>
+              <select id="pdfMonth"></select>
+            </div>
+
+            <div>
+              <button id="btnPdf">BAIXAR PDF</button>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="pill" id="pillStatus">Inicializando…</div>
+          </div>
+        </div>
+
+        <div id="msgArea"></div>
       </div>
 
-      <div class="section">
-        <h2>FILTRO</h2>
-        <div class="row">
-          <div class="field">
-            <label>ANO:</label>
-            <select id="selAno"></select>
+      <!-- Tabela do mês corrente -->
+      <div class="card">
+        <div class="row" style="align-items:center;">
+          <div class="left">
+            <div class="pill" id="pillNow">Mês corrente: …</div>
+            <div class="pill" id="pillCount">0 lançamentos</div>
           </div>
-          <div class="field">
-            <label>MÊS:</label>
-            <select id="selMes"></select>
+          <div class="right">
+            <button id="btnReload" class="btn-mini">ATUALIZAR</button>
           </div>
-          <div class="field">
-            <label>PERÍODO:</label>
-            <select id="selPeriodo">
-              <option value="SEMANAL">SEMANAL</option>
-              <option value="MENSAL">MENSAL</option>
-              <option value="ANUAL">ANUAL</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>SEMANA:</label>
-            <select id="selSemana"></select>
-          </div>
-
-          <div style="flex:1"></div>
-
-          <button class="btn blue" id="btnConsultar">CONSULTAR</button>
-          <button class="btn orange" id="btnPdf">BAIXAR PDF</button>
         </div>
 
-        <div class="meta" id="status">Carregando...</div>
-        <div class="stats">
-          <div><b>SALDO ANTERIOR:</b> <span id="sAnterior">R$ 0,00</span></div>
-          <div><b>SALDO NO PERÍODO:</b> <span id="sPeriodo">R$ 0,00</span></div>
-          <div><b>SALDO FINAL:</b> <span id="sFinal">R$ 0,00</span></div>
-        </div>
-      </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:120px;">DATA</th>
+              <th>DESCRIÇÃO</th>
+              <th style="width:120px;">TIPO</th>
+              <th style="width:140px;">VALOR</th>
+              <th style="width:140px;">SALDO</th>
+              <th style="width:140px;">AÇÕES</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="6" class="muted">Carregando…</td></tr>
+          </tbody>
+        </table>
 
-      <div class="section">
-        <h2>LANÇAMENTOS</h2>
-        <div class="row">
-          <input id="inData" type="date" style="width:160px"/>
-          <select id="inTipo" style="width:140px">
-            <option value="RECEITA">RECEITA</option>
-            <option value="DESPESA">DESPESA</option>
-          </select>
-          <input id="inDesc" placeholder="DESCRIÇÃO" style="flex:1;min-width:220px"/>
-          <input id="inObs" placeholder="OBS" style="width:220px"/>
-          <input id="inValor" placeholder="VALOR (R$)" inputmode="decimal" style="width:160px"/>
-          <button class="btn blue" id="btnSalvar">SALVAR</button>
-          <button class="btn ghost" id="btnCancelar" style="display:none">CANCELAR</button>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th class="col-date">DATA</th>
-                <th class="col-desc">DESCRIÇÃO</th>
-                <th class="col-obs">OBS</th>
-                <th class="col-money">RECEITA (R$)</th>
-                <th class="col-money">DESPESA (R$)</th>
-                <th class="col-money">SALDO (R$)</th>
-                <th class="col-actions">AÇÕES</th>
-              </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
-          </table>
+        <div class="footerline">
+          <div id="totals" class="mono">Receitas: R$ 0,00 • Despesas: R$ 0,00 • Saldo: R$ 0,00</div>
+          <div class="muted" id="lastUpdate">—</div>
         </div>
       </div>
     </div>
   </div>
 
-<script>
-/* ===== SUPABASE ===== */
-const CFG = window.TESOURA_CONFIG || {};
-const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
-const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || CFG.SUPABASE_ANON || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-const sb = window.supabase.createClient(SB_URL, SB_KEY);
+  <script>
+    "use strict";
 
-/* ===== elementos ===== */
-const selAno = document.getElementById("selAno");
-const selMes = document.getElementById("selMes");
-const selPeriodo = document.getElementById("selPeriodo");
-const selSemana = document.getElementById("selSemana");
-const btnConsultar = document.getElementById("btnConsultar");
-const btnPdf = document.getElementById("btnPdf");
+    /******************************************************************
+     * CONFIG (mantém compatível com o resto do app, sem mexer nos outros painéis)
+     ******************************************************************/
+    const TABLE_CAIXA = "caixa";
 
-const inData = document.getElementById("inData");
-const inTipo = document.getElementById("inTipo");
-const inDesc = document.getElementById("inDesc");
-const inObs = document.getElementById("inObs");
-const inValor = document.getElementById("inValor");
-const btnSalvar = document.getElementById("btnSalvar");
-const btnCancelar = document.getElementById("btnCancelar");
+    // Tentativas de coluna de data (a query vai tentar nesta ordem)
+    const DATE_COL_TRIES = ["data", "created_at", "data_hora", "timestamp"];
 
-const tbody = document.getElementById("tbody");
-const statusEl = document.getElementById("status");
+    // Campos comuns (se existirem)
+    const COL_DESCR_TRIES = ["descricao", "descrição", "descricao_texto", "texto", "obs", "observacao"];
+    const COL_TIPO_TRIES  = ["tipo", "categoria"];
+    const COL_VALOR_TRIES = ["valor", "amount", "quantia"];
 
-const sAnterior = document.getElementById("sAnterior");
-const sPeriodo = document.getElementById("sPeriodo");
-const sFinal = document.getElementById("sFinal");
+    // Regra de bloqueio de mensalidade: tenta detectar por campos OU texto
+    const MENSALIDADE_TEXT_PREFIX = "MENSALIDADE - ";
 
-/* ===== util ===== */
-function pad2(n){ return String(n).padStart(2,"0"); }
-function isoDate(d){ return d.toISOString().slice(0,10); }
-function parseMoneyBR(v){
-  const s = String(v||"").trim().replaceAll(".","").replace(",",".");
-  const num = Number(s);
-  return isFinite(num) ? num : NaN;
-}
-function money(n){
-  const v = Number(n||0);
-  return v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
-}
-function pickCol(row, candidates){
-  if(!row) return null;
-  const keys = Object.keys(row);
-  const low = keys.map(k=>k.toLowerCase());
-  for(const c of candidates){
-    const i = low.indexOf(String(c).toLowerCase());
-    if(i>=0) return keys[i];
-  }
-  return null;
-}
-function isMensalidadeRow(r){
-  const obs = String(r.obs||"").toUpperCase();
-  const desc = String(r.descricao||r.desc||"").toUpperCase();
-  if (obs.includes("MENSALIDADE")) return true;
-  if (desc.startsWith("MENSALIDADE")) return true;
-  if (String(r._src||"") === "MENSALIDADE") return true;
-  return false;
-}
-function weekStartMonday(d){
-  const x = new Date(d);
-  const day = (x.getDay()+6)%7; // 0=Mon
-  x.setDate(x.getDate()-day);
-  x.setHours(0,0,0,0);
-  return x;
-}
-function weekEndExclusive(d){
-  const s = weekStartMonday(d);
-  const e = new Date(s);
-  e.setDate(e.getDate()+7);
-  return e;
-}
-function buildWeeksForYear(year){
-  // gera semanas do ano (segunda->segunda)
-  const weeks = [];
-  let d = new Date(year,0,1);
-  d = weekStartMonday(d);
-  // até início do ano seguinte + 1 semana
-  const end = new Date(year+1,0,15);
-  while(d < end){
-    const s = new Date(d);
-    const e = weekEndExclusive(s);
-    const label = `${pad2(s.getDate())}/${pad2(s.getMonth()+1)}/${s.getFullYear()} → ${pad2(new Date(e-1).getDate())}/${pad2(new Date(e-1).getMonth()+1)}/${new Date(e-1).getFullYear()}`;
-    weeks.push({ ini: isoDate(s), fim: isoDate(e), label });
-    d = e;
-  }
-  return weeks;
-}
-let WEEKS = [];
+    /******************************************************************
+     * HELPERS
+     ******************************************************************/
+    const el = (id) => document.getElementById(id);
 
-/* ===== estado ===== */
-let editingId = null;
-let editingPayloadBase = null; // guarda colunas detectadas
-let lastLoadedRows = []; // já com mensalidades mescladas
+    function pad2(n){ return String(n).padStart(2, "0"); }
 
-// modo download (arquivo antigo): não muda o visor, só prepara BAIXAR PDF
-let downloadMode = null; // { ini, fim, label, p }
-
-// helper: compara ranges
-function sameRange(a,b){
-  return a && b && a.ini===b.ini && a.fim===b.fim;
-}
-
-/* ===== UI builders ===== */
-function buildAno(){
-  selAno.innerHTML = "";
-  const nowY = new Date().getFullYear();
-  const anos = [nowY-1, nowY, nowY+1];
-  anos.forEach(y=>{
-    const opt = document.createElement("option");
-    opt.value = String(y);
-    opt.textContent = String(y);
-    selAno.appendChild(opt);
-  });
-}
-function buildMes(){
-  selMes.innerHTML = "";
-  const meses = [
-    ["01","JAN"],["02","FEV"],["03","MAR"],["04","ABR"],["05","MAI"],["06","JUN"],
-    ["07","JUL"],["08","AGO"],["09","SET"],["10","OUT"],["11","NOV"],["12","DEZ"]
-  ];
-  meses.forEach(([v,n])=>{
-    const opt = document.createElement("option");
-    opt.value = String(Number(v));
-    opt.textContent = `${v} - ${n}`;
-    selMes.appendChild(opt);
-  });
-}
-function buildSemanas(){
-  const year = Number(selAno.value);
-  WEEKS = buildWeeksForYear(year);
-  selSemana.innerHTML = "";
-  WEEKS.forEach((w, idx)=>{
-    const opt = document.createElement("option");
-    opt.value = String(idx);
-    opt.textContent = w.label;
-    selSemana.appendChild(opt);
-  });
-  // semana atual
-  const now = new Date();
-  const idxNow = WEEKS.findIndex(w => isoDate(now) >= w.ini && isoDate(now) < w.fim);
-  selSemana.value = String(Math.max(0, idxNow));
-}
-function updateUIByPeriodo(){
-  const p = selPeriodo.value;
-  // SEMANAL desativado (visor é sempre mês corrente)
-  selSemana.disabled = true;
-  selMes.disabled = (p === "ANUAL");
-}
-function setStatus(msg){ statusEl.textContent = msg; }
-
-/* ===== datas do filtro ===== */
-function addDaysISO(iso, days){
-  const [y,m,d] = iso.split("-").map(Number);
-  const dt = new Date(Date.UTC(y, m-1, d));
-  dt.setUTCDate(dt.getUTCDate() + Number(days||0));
-  return isoDate(dt);
-}
-
-// Regra oficial:
-// - Visor do CAIXA: sempre MÊS CORRENTE (01 até 01 do mês seguinte, INCLUSIVO)
-// - Para ficar inclusivo no "dia 01" do mês seguinte, usamos fimExclusivo = dia 02 do mês seguinte.
-function getCurrentRange(){
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth() + 1; // 1-12
-  const ini = `${y}-${pad2(m)}-01`;
-  const next = (m===12) ? { y:y+1, m:1 } : { y:y, m:m+1 };
-  const fimFirst = `${next.y}-${pad2(next.m)}-01`;
-  const fim = addDaysISO(fimFirst, 1); // inclui o dia 01 do mês seguinte
-  return { ini, fim, y, m };
-}
-
-// Filtro (para ARQUIVO/BAIXAR, não para trocar o visor)
-function getRange(){
-  const p = selPeriodo.value;
-  const year = Number(selAno.value);
-  const month = Number(selMes.value); // 1-12
-
-  if (p === "ANUAL"){
-    const ini = `${year}-01-01`;
-    const fimFirst = `${year+1}-01-01`;
-    const fim = addDaysISO(fimFirst, 1); // inclui 01/01 do ano seguinte
-    return { ini, fim, label: String(year), p };
-  }
-
-  // MENSAL (padrão)
-  const ini = `${year}-${pad2(month)}-01`;
-  const next = (month===12) ? { y:year+1, m:1 } : { y:year, m:month+1 };
-  const fimFirst = `${next.y}-${pad2(next.m)}-01`;
-  const fim = addDaysISO(fimFirst, 1); // inclui o dia 01 do mês seguinte
-  return { ini, fim, label: `${pad2(month)}/${year}`, p: "MENSAL" };
-}
-
-/* ===== SUPABASE: CAIXA (manual) ===== */
-async function detectCols(){
-  // tenta descobrir nomes de coluna com base em 1 registro existente
-  const { data, error } = await sb.from("caixa").select("*").limit(1);
-  if (error) throw error;
-  const row = (data && data.length) ? data[0] : null;
-
-  return {
-    idCol: pickCol(row, ["id","uuid"]),
-    dateCol: pickCol(row, ["data","data_lancamento","data_mov","dia"]),
-    descCol: pickCol(row, ["descricao","descrição","desc","descricao_lancamento"]),
-    obsCol: pickCol(row, ["obs","observacao","observação","observacao_lancamento"]),
-    tipoCol: pickCol(row, ["tipo","categoria"]),
-    valorCol: pickCol(row, ["valor","valor_rs","valor_r$"]),
-    receitaCol: pickCol(row, ["receita","entrada"]),
-    despesaCol: pickCol(row, ["despesa","saida","saída"]),
-    createdCol: pickCol(row, ["created_at","criado_em","createdAt"])
-  };
-}
-
-async function fetchCaixaManual(ini, fim){
-  // usa select('*') e filtra por data se existir; se não, por created_at (quando existir)
-  const cols = await detectCols();
-
-  let q = sb.from("caixa").select("*");
-  if (cols.dateCol){
-    q = q.gte(cols.dateCol, ini).lt(cols.dateCol, fim).order(cols.dateCol, {ascending:true});
-  } else if (cols.createdCol){
-    q = q.gte(cols.createdCol, ini).lt(cols.createdCol, fim).order(cols.createdCol, {ascending:true});
-  } else {
-    q = q.order("id", {ascending:true});
-  }
-
-  const { data, error } = await q;
-  if (error) throw error;
-
-  const rows = (data||[]).map(r=>{
-    const d = cols.dateCol ? r[cols.dateCol] : (r.data || r.data_lancamento || r.dia || "");
-    const descricao = (cols.descCol ? r[cols.descCol] : (r.descricao || r.desc || "")) || "";
-    const obs = (cols.obsCol ? r[cols.obsCol] : (r.obs || r.observacao || "")) || "";
-    const tipo = (cols.tipoCol ? r[cols.tipoCol] : r.tipo) || "";
-    const valor = cols.valorCol ? r[cols.valorCol] : r.valor;
-    const receita = cols.receitaCol ? r[cols.receitaCol] : r.receita;
-    const despesa = cols.despesaCol ? r[cols.despesaCol] : r.despesa;
-
-    let signed = 0;
-    if (typeof receita === "number" || typeof despesa === "number"){
-      signed = Number(receita||0) - Number(despesa||0);
-    } else if (typeof valor === "number"){
-      signed = Number(valor||0);
-    } else {
-      signed = Number(valor||0);
+    function brl(v){
+      const num = Number(v || 0);
+      return num.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
     }
 
-    const isR = (tipo||"").toUpperCase()==="RECEITA" || signed > 0;
-    const isD = (tipo||"").toUpperCase()==="DESPESA" || signed < 0;
-
-    const rec = isR ? Math.abs(signed) : (signed>0?Math.abs(signed):0);
-    const des = isD ? Math.abs(signed) : (signed<0?Math.abs(signed):0);
-
-    return {
-      _src:"CAIXA",
-      _raw:r,
-      id: r[cols.idCol] ?? r.id ?? null,
-      data: String(d||"").slice(0,10),
-      descricao,
-      obs,
-      receita: rec,
-      despesa: des,
-      locked: isMensalidadeRow({obs,descricao}) // se já tiver mensalidade antiga gravada, trava
-    };
-  });
-
-  return { rows, cols };
-}
-
-/* ===== SUPABASE: MENSALIDADES (auto) ===== */
-async function fetchMensalidadesPago(ini, fim){
-  // busca pagamentos dentro do intervalo
-  // coluna data_pagamento é usada no painel mensalidade
-  const { data, error } = await sb
-    .from("mensalidades")
-    .select("*")
-    .eq("pago", true)
-    .gte("data_pagamento", ini)
-    .lt("data_pagamento", fim);
-
-  if (error) throw error;
-
-  return (data||[]).map(r=>{
-    const dt = String(r.data_pagamento||"").slice(0,10);
-    const ano = r.ano;
-    const mes = r.mes;
-    const mm = pad2(mes);
-    const marker = `MENSALIDADE (${mm}/${ano})`;
-    return {
-      _src:"MENSALIDADE",
-      id: `MENSALIDADE:${String(r.apelido||"").toUpperCase()}:${ano}-${mm}`,
-      data: dt,
-      descricao: String(r.apelido||"").toUpperCase(),
-      obs: marker,
-      receita: Math.abs(Number(r.valor||0)) || 0,
-      despesa: 0,
-      locked: true,
-      _mens: r
-    };
-  }).filter(x => x.data); // só com data válida
-}
-
-/* ===== render ===== */
-function render(rows){
-  tbody.innerHTML = "";
-  let saldo = 0;
-
-  rows.forEach((r, idx)=>{
-    saldo += (Number(r.receita||0) - Number(r.despesa||0));
-    const tr = document.createElement("tr");
-
-    const tdD = document.createElement("td");
-    tdD.textContent = r.data ? r.data.split("-").reverse().join("/") : "";
-    tr.appendChild(tdD);
-
-    const tdDesc = document.createElement("td");
-    tdDesc.textContent = r.descricao || "";
-    tr.appendChild(tdDesc);
-
-    const tdObs = document.createElement("td");
-    tdObs.textContent = r.obs || "";
-    tr.appendChild(tdObs);
-
-    const tdR = document.createElement("td");
-    tdR.className = "col-money";
-    tdR.innerHTML = r.receita ? `<span class="money pos">${money(r.receita)}</span>` : "";
-    tr.appendChild(tdR);
-
-    const tdE = document.createElement("td");
-    tdE.className = "col-money";
-    tdE.innerHTML = r.despesa ? `<span class="money neg">${money(r.despesa)}</span>` : "";
-    tr.appendChild(tdE);
-
-    const tdS = document.createElement("td");
-    tdS.className = "col-money";
-    tdS.innerHTML = saldo >= 0
-      ? `<span class="money pos">${money(saldo)}</span>`
-      : `<span class="money neg">${money(saldo)}</span>`;
-    tr.appendChild(tdS);
-
-    const tdA = document.createElement("td");
-    tdA.className = "col-actions";
-    const box = document.createElement("div");
-    box.className = "actions";
-
-    if (r.locked){
-      const b = document.createElement("span");
-      b.className = "badge lock";
-      b.textContent = "AUTO";
-      box.appendChild(b);
-    } else {
-      const btE = document.createElement("button");
-      btE.className = "btnSmall btnEdit";
-      btE.textContent = "EDITAR";
-      btE.addEventListener("click", ()=>startEdit(r));
-      box.appendChild(btE);
-
-      const btD = document.createElement("button");
-      btD.className = "btnSmall btnDel";
-      btD.textContent = "EXCLUIR";
-      btD.addEventListener("click", ()=>doDelete(r));
-      box.appendChild(btD);
+    function fmtDateBR(d){
+      const dt = (d instanceof Date) ? d : new Date(d);
+      if (isNaN(dt.getTime())) return "-";
+      return `${pad2(dt.getDate())}/${pad2(dt.getMonth()+1)}/${dt.getFullYear()}`;
     }
 
-    tdA.appendChild(box);
-    tr.appendChild(tdA);
-
-    tbody.appendChild(tr);
-  });
-
-  // saldos
-  sPeriodo.textContent = `R$ ${money(rows.reduce((acc,r)=>acc + (Number(r.receita||0)-Number(r.despesa||0)),0))}`;
-  sFinal.textContent = `R$ ${money(saldo)}`;
-}
-
-/* ===== carregar ===== */
-async function mergedRows(ini, fim){
-  const manual = await fetchCaixaManual(ini, fim);
-  // remove mensalidade gravada na tabela caixa (se existir) para evitar duplicar
-  let rows = (manual.rows || []).filter(r => !isMensalidadeRow(r));
-
-  // mensalidades pagas no intervalo (auto)
-  let mens = [];
-  try{
-    mens = await fetchMensalidadesPago(ini, fim);
-  }catch(e){
-    console.warn("Aviso: não foi possível buscar mensalidades (auto).", e);
-    mens = [];
-  }
-
-  rows = rows.concat(mens);
-
-  // ordena por data; em empate, CAIXA antes de MENSALIDADE
-  rows.sort((a,b)=>{
-    const da = String(a.data||"");
-    const db = String(b.data||"");
-    if (da !== db) return da.localeCompare(db);
-    if (a._src === b._src) return 0;
-    return (a._src === "CAIXA") ? -1 : 1;
-  });
-
-  return rows;
-}
-
-/* ===== carregar (VISOR SEMPRE MÊS CORRENTE) ===== */
-async function carregar(){
-  try{
-    setStatus("Carregando...");
-    const cur = getCurrentRange();
-    const { ini, fim } = cur;
-
-    const rows = await mergedRows(ini, fim);
-
-    lastLoadedRows = rows;
-    const curLabel = `${pad2(cur.m)}/${cur.y}`;
-    setStatus(`MÊS CORRENTE (${curLabel}) carregado. Registros: ${rows.length}`);
-
-    // saldo anterior: mantém como estava (0)
-    sAnterior.textContent = "R$ 0,00";
-    render(rows);
-  }catch(e){
-    console.error(e);
-    setStatus("ERRO ao buscar CAIXA (ver console).");
-    alert("ERRO ao buscar CAIXA (ver console).");
-  }
-}
-
-async function addOrUpdate(){
-  const data = String(inData.value||"").slice(0,10);
-  const tipo = String(inTipo.value||"").toUpperCase();
-  const desc = String(inDesc.value||"").trim();
-  const obs = String(inObs.value||"").trim();
-  const val = parseMoneyBR(inValor.value);
-
-  if (!data){ alert("Preencha a DATA."); return; }
-  if (!desc){ alert("Preencha a DESCRIÇÃO."); return; }
-  if (!isFinite(val) || val <= 0){ alert("Preencha um VALOR válido."); return; }
-
-  // mensalidade é só automática
-  if (String(obs).toUpperCase().includes("MENSALIDADE")){
-    alert("Mensalidade é automática (não edita no Caixa).");
-    return;
-  }
-
-  const signed = (tipo==="DESPESA") ? -Math.abs(val) : Math.abs(val);
-
-  // tenta payloads diferentes para compatibilidade de colunas
-  const payloads = [
-    { data, tipo, descricao: desc, obs, valor: signed },
-    { data_lancamento: data, tipo, descricao: desc, obs, valor: signed },
-    { data, tipo, desc, obs, valor: signed },
-    { data, tipo, descricao: desc, obs, receita: (tipo==="RECEITA")?Math.abs(val):0, despesa: (tipo==="DESPESA")?Math.abs(val):0 },
-    { data_lancamento: data, tipo, descricao: desc, obs, receita: (tipo==="RECEITA")?Math.abs(val):0, despesa: (tipo==="DESPESA")?Math.abs(val):0 }
-  ];
-
-  if (!editingId){
-    let ok=false, lastErr=null;
-    for (const p of payloads){
-      const { error } = await sb.from("caixa").insert(p);
-      if (!error){ ok=true; break; }
-      lastErr = error;
+    function monthNamePT(mIndex){
+      const names = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+      return names[mIndex] || "-";
     }
-    if (!ok){
-      console.error(lastErr);
-      alert("ERRO ao criar (ver console).");
-      return;
+
+    // Mês corrente (dia 1 → dia 1 do próximo)
+    function getCurrentMonthRange(){
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      const end   = new Date(now.getFullYear(), now.getMonth()+1, 1, 0, 0, 0, 0);
+      return { now, start, end };
     }
-    resetForm();
-    carregar();
-    return;
-  }
 
-  // update
-  // descobre coluna id (se existir)
-  const cols = await detectCols();
-  const idCol = cols.idCol || "id";
-  let ok=false, lastErr=null;
+    function getMonthRange(year, monthIndex){
+      const start = new Date(year, monthIndex, 1, 0, 0, 0, 0);
+      const end   = new Date(year, monthIndex+1, 1, 0, 0, 0, 0);
+      return { start, end };
+    }
 
-  for (const p of payloads){
-    const q = sb.from("caixa").update(p).eq(idCol, editingId);
-    const { error } = await q;
-    if (!error){ ok=true; break; }
-    lastErr = error;
-  }
-  if (!ok){
-    console.error(lastErr);
-    alert("ERRO ao editar (ver console).");
-    return;
-  }
-  resetForm();
-  carregar();
-}
+    function setMsg(type, text){
+      const area = el("msgArea");
+      if(!text){
+        area.innerHTML = "";
+        return;
+      }
+      const cls = (type === "ok") ? "ok" : "warn";
+      area.innerHTML = `<div class="${cls}">${text}</div>`;
+    }
 
-async function doDelete(r){
-  if (!r || r.locked) return;
-  if (!confirm("Excluir este lançamento?")) return;
-  const cols = await detectCols();
-  const idCol = cols.idCol || "id";
-  const { error } = await sb.from("caixa").delete().eq(idCol, r.id);
-  if (error){
-    console.error(error);
-    alert("ERRO ao excluir (ver console).");
-    return;
-  }
-  carregar();
-}
+    function findFirstKey(obj, keys){
+      for(const k of keys){
+        if(obj && Object.prototype.hasOwnProperty.call(obj, k) && obj[k] != null) return k;
+      }
+      return null;
+    }
 
+    function guessLocked(row){
+      // 1) campos típicos
+      if (row && (row.mensalidade_id || row.mensalidadeId || row.id_mensalidade)) return true;
+      if (row && (row.locked === true || row.bloqueado === true)) return true;
+      // 2) origem/tipo_registro
+      const origemKey = findFirstKey(row, ["origem","source","fonte","tipo_registro"]);
+      if (origemKey && String(row[origemKey]).toUpperCase().includes("MENSAL")) return true;
+      // 3) texto padrão
+      const descrKey = findFirstKey(row, COL_DESCR_TRIES);
+      if (descrKey && String(row[descrKey]).toUpperCase().startsWith(MENSALIDADE_TEXT_PREFIX)) return true;
+      return false;
+    }
 
-async function printRowsToPdf(title, rows){
-  // imprime SEM alterar o visor: usa iframe invisível (não abre popup)
-  const esc = (x)=>String(x??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+    function getSupabaseCreds(){
+      // 1) globais diretos
+      if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+        return { url: window.SUPABASE_URL, key: window.SUPABASE_ANON_KEY };
+      }
+      // 2) globais alternativos
+      if (window.__SUPABASE_URL__ && window.__SUPABASE_ANON_KEY__) {
+        return { url: window.__SUPABASE_URL__, key: window.__SUPABASE_ANON_KEY__ };
+      }
+      // 3) localStorage
+      try{
+        const url = localStorage.getItem("SUPABASE_URL");
+        const key = localStorage.getItem("SUPABASE_ANON_KEY");
+        if (url && key) return { url, key };
+      }catch(e){}
+      return null;
+    }
 
-  let saldo = 0;
-  const trs = rows.map(r=>{
-    saldo += (Number(r.receita||0) - Number(r.despesa||0));
-    const dataBr = r.data ? r.data.split("-").reverse().join("/") : "";
-    const receita = r.receita ? money(r.receita) : "";
-    const despesa = r.despesa ? money(r.despesa) : "";
-    const saldoTxt = money(saldo);
-    return `<tr>
-      <td>${esc(dataBr)}</td>
-      <td>${esc(r.descricao||"")}</td>
-      <td>${esc(r.obs||"")}</td>
-      <td style="text-align:right">${esc(receita)}</td>
-      <td style="text-align:right">${esc(despesa)}</td>
-      <td style="text-align:right">${esc(saldoTxt)}</td>
-    </tr>`;
-  }).join("");
+    function isoLocal(d){
+      // ISO sem depender de timezone externo (usa horário local)
+      // Para filtro por timestamp no Supabase, ISO padrão funciona bem.
+      return new Date(d).toISOString();
+    }
 
-  const html = `<!doctype html><html lang="pt-BR"><head>
-    <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>${esc(title)}</title>
-    <style>
-      body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;padding:10px}
-      h1{font-size:16px;margin:0 0 8px 0}
-      table{width:100%;border-collapse:collapse;font-size:12px}
-      th,td{border:1px solid #999;padding:6px;vertical-align:top}
-      th{background:#f2f2f2}
-      @page{size:A4 landscape;margin:10mm}
-    </style></head><body>
-    <h1>${esc(title)}</h1>
-    <table>
-      <thead><tr>
-        <th>DATA</th><th>DESCRIÇÃO</th><th>OBS</th>
-        <th>RECEITA (R$)</th><th>DESPESA (R$)</th><th>SALDO (R$)</th>
-      </tr></thead>
-      <tbody>${trs}</tbody>
-    </table>
-    <script>
-      window.onload = () => { setTimeout(()=>{ window.print(); }, 50); };
-      window.onafterprint = () => { setTimeout(()=>{ window.close?.(); }, 50); };
-    </script>
-  </body></html>`;
+    /******************************************************************
+     * SUPABASE INIT
+     ******************************************************************/
+    let supabase = null;
 
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  document.body.appendChild(iframe);
+    function initSupabase(){
+      const creds = getSupabaseCreds();
+      if(!creds){
+        el("pillStatus").textContent = "Supabase não encontrado";
+        setMsg("warn",
+          "Não achei as credenciais do Supabase neste painel. " +
+          "Se os outros painéis funcionam, me envie o início do arquivo do painel JOGADORES (onde cria o Supabase) que eu adapto aqui sem você editar nada."
+        );
+        return false;
+      }
+      supabase = window.supabase.createClient(creds.url, creds.key);
+      el("pillStatus").textContent = "Conectado";
+      return true;
+    }
 
-  const doc = iframe.contentWindow.document;
-  doc.open(); doc.write(html); doc.close();
+    /******************************************************************
+     * DATA LOADING (mês corrente fixo)
+     ******************************************************************/
+    async function fetchCaixaByRange(startDate, endDate){
+      if(!supabase) throw new Error("Supabase não inicializado.");
 
-  // remove depois (para não acumular)
-  setTimeout(()=>{ try{ iframe.remove(); }catch(e){} }, 5000);
-}
+      // tenta query com diferentes colunas de data, para não depender do que foi usado no passado
+      let lastErr = null;
 
-async function onConsultar(){
-  // filtro serve só para preparar DOWNLOAD (não muda o visor)
-  const cur = getCurrentRange();
-  const curLabel = `${pad2(cur.m)}/${cur.y}`;
-  const sel = getRange(); // range do filtro
-  const same = (sel.p==="MENSAL" && sel.label===curLabel);
-  downloadMode = same ? null : sel;
+      for(const dateCol of DATE_COL_TRIES){
+        try{
+          const { data, error } = await supabase
+            .from(TABLE_CAIXA)
+            .select("*")
+            .gte(dateCol, isoLocal(startDate))
+            .lt(dateCol, isoLocal(endDate))
+            .order(dateCol, { ascending: true }); // asc para calcular saldo correto
 
-  await carregar();
+          if(error) throw error;
 
-  if (downloadMode){
-    setStatus(`MÊS CORRENTE (${curLabel}) carregado. Arquivo ${downloadMode.label} pronto para BAIXAR PDF.`);
-  }
-}
+          // marca qual coluna foi usada (útil para debug)
+          return { rows: Array.isArray(data) ? data : [], usedDateCol: dateCol };
+        }catch(err){
+          lastErr = err;
+        }
+      }
 
-async function onPdf(){
-  // sem downloadMode: baixa exatamente o que está vendo (visor = mês corrente)
-  if (!downloadMode){
-    window.print();
-    return;
-  }
+      throw lastErr || new Error("Não foi possível consultar o CAIXA.");
+    }
 
-  // download de arquivo antigo: imprime em iframe sem alterar o visor
-  try{
-    setStatus(`Preparando PDF do arquivo ${downloadMode.label}...`);
-    const rows = await mergedRows(downloadMode.ini, downloadMode.fim);
-    await printRowsToPdf(`TESOURA - CAIXA (${downloadMode.label})`, rows);
-    const cur = getCurrentRange();
-    setStatus(`MÊS CORRENTE (${pad2(cur.m)}/${cur.y}) carregado. PDF do arquivo ${downloadMode.label} gerado.`);
-  }catch(e){
-    console.error(e);
-    setStatus("ERRO ao gerar PDF (ver console).");
-    alert("ERRO ao gerar PDF (ver console).");
-  }
-}
+    function calcAndRender(rows, usedDateCol){
+      // Descobre campos por amostra
+      const sample = rows[0] || {};
+      const descrKey = findFirstKey(sample, COL_DESCR_TRIES) || "descricao";
+      const tipoKey  = findFirstKey(sample, COL_TIPO_TRIES)  || "tipo";
+      const valorKey = findFirstKey(sample, COL_VALOR_TRIES) || "valor";
 
-/* ===== eventos ===== */
-btnPdf.addEventListener("click", onPdf);
-btnConsultar.addEventListener("click", onConsultar);
-btnSalvar.addEventListener("click", addOrUpdate);
-btnCancelar.addEventListener("click", ()=>{ resetForm(); });
+      // Calcula saldo acumulado (em ordem ascendente)
+      let saldo = 0;
+      let totalReceita = 0;
+      let totalDespesa = 0;
 
-selPeriodo.addEventListener("change", ()=>{ updateUIByPeriodo(); });
-selAno.addEventListener("change", ()=>{ updateUIByPeriodo(); });
-selMes.addEventListener("change", ()=>{ /* filtro para download */ });
+      const computed = rows.map(r => {
+        const tipoRaw = (r[tipoKey] ?? "").toString().trim();
+        const tipoUp  = tipoRaw.toUpperCase();
 
-/* ===== init ===== */
-(function init(){
-  buildAno();
-  buildMes();
+        let valor = Number(r[valorKey] ?? 0);
 
-  // remove SEMANAL do seletor e esconde SEMANA (não muda layout geral)
-  try{
-    const opt = Array.from(selPeriodo.options).find(o=>o.value==="SEMANAL");
-    if (opt) opt.remove();
-    const fieldSemana = selSemana.closest(".field");
-    if (fieldSemana) fieldSemana.style.display = "none";
-    selSemana.disabled = true;
-  }catch(e){}
+        // Normalização simples:
+        // - Se for "DESPESA" e vier positivo, transforma em negativo na conta
+        // - Se for "RECEITA" e vier negativo, transforma em positivo na conta
+        let delta = valor;
+        if (tipoUp.includes("DESP") && delta > 0) delta = -delta;
+        if (tipoUp.includes("RECE") && delta < 0) delta = Math.abs(delta);
 
-  const now = new Date();
-  selAno.value = String(now.getFullYear());
-  selMes.value = String(now.getMonth()+1);
-  selPeriodo.value = "MENSAL";
-  updateUIByPeriodo();
+        saldo += delta;
 
-  inData.value = isoDate(now);
-  resetForm();
+        if (delta >= 0) totalReceita += delta;
+        else totalDespesa += Math.abs(delta);
 
-  downloadMode = null;
-  carregar();
-})();</script>
+        return {
+          raw: r,
+          date: r[usedDateCol] || r.data || r.created_at,
+          descr: r[descrKey] ?? "",
+          tipo: tipoRaw || "-",
+          delta,
+          saldo
+        };
+      });
+
+      // Para exibir “últimos movimentos”, mostramos desc, mas mantendo saldo calculado certo
+      const toShow = computed.slice().sort((a,b)=> new Date(b.date) - new Date(a.date));
+
+      // Render
+      const tbody = el("tbody");
+      if(!toShow.length){
+        tbody.innerHTML = `<tr><td colspan="6" class="muted">Sem lançamentos neste mês.</td></tr>`;
+      }else{
+        tbody.innerHTML = toShow.map(item => {
+          const locked = guessLocked(item.raw);
+          const deltaClass = item.delta >= 0 ? "pos" : "neg";
+          const tipoUp = String(item.tipo).toUpperCase();
+          const tipoLabel = tipoUp.includes("DESP") ? "DESPESA" : (tipoUp.includes("RECE") ? "RECEITA" : item.tipo);
+
+          return `
+            <tr>
+              <td class="mono">${fmtDateBR(item.date)}</td>
+              <td>${String(item.descr || "").replaceAll("<","&lt;").replaceAll(">","&gt;")}</td>
+              <td class="mono">${tipoLabel}</td>
+              <td class="${deltaClass} mono">${brl(item.delta)}</td>
+              <td class="mono">${brl(item.saldo)}</td>
+              <td>
+                <div class="actions">
+                  ${locked
+                    ? `<span class="muted">Bloqueado</span>`
+                    : `<button class="btn-mini danger" data-del="${item.raw.id ?? ""}">Excluir</button>`
+                  }
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+        // bind excluir (somente manual)
+        tbody.querySelectorAll("button[data-del]").forEach(btn=>{
+          btn.addEventListener("click", async ()=>{
+            const id = btn.getAttribute("data-del");
+            if(!id) return;
+            const ok = confirm("Excluir este lançamento do CAIXA?");
+            if(!ok) return;
+
+            try{
+              el("pillStatus").textContent = "Excluindo…";
+              const { error } = await supabase.from(TABLE_CAIXA).delete().eq("id", id);
+              if(error) throw error;
+              el("pillStatus").textContent = "Conectado";
+              await loadCurrentMonth(); // recarrega mês corrente
+            }catch(e){
+              el("pillStatus").textContent = "Erro";
+              setMsg("warn", "Falha ao excluir. Se este lançamento veio do Mensalidade, ele é bloqueado. Detalhe: " + (e?.message || e));
+            }
+          });
+        });
+      }
+
+      el("pillCount").textContent = `${toShow.length} lançamentos`;
+      el("totals").textContent = `Receitas: ${brl(totalReceita)} • Despesas: ${brl(totalDespesa)} • Saldo: ${brl(totalReceita - totalDespesa)}`;
+      el("lastUpdate").textContent = `Atualizado: ${new Date().toLocaleString("pt-BR")}`;
+    }
+
+    async function loadCurrentMonth(){
+      setMsg("", "");
+      const { now, start, end } = getCurrentMonthRange();
+
+      el("pillPeriod").textContent = `Mês corrente: ${monthNamePT(now.getMonth())}/${now.getFullYear()}`;
+      el("pillNow").textContent = `Visualizando: ${monthNamePT(now.getMonth())}/${now.getFullYear()} (1 → 1)`;
+
+      el("tbody").innerHTML = `<tr><td colspan="6" class="muted">Carregando…</td></tr>`;
+
+      try{
+        el("pillStatus").textContent = "Carregando…";
+        const res = await fetchCaixaByRange(start, end);
+        el("pillStatus").textContent = "Conectado";
+        calcAndRender(res.rows, res.usedDateCol);
+      }catch(e){
+        el("pillStatus").textContent = "Erro";
+        el("tbody").innerHTML = `<tr><td colspan="6" class="muted">Erro ao carregar.</td></tr>`;
+        setMsg("warn",
+          "Não consegui carregar os lançamentos do CAIXA. " +
+          "Me envie um print do console (F12 → Console) e o nome das colunas da tabela CAIXA no Supabase. " +
+          "Detalhe: " + (e?.message || e)
+        );
+      }
+    }
+
+    /******************************************************************
+     * PDF (ano/mês selecionado) — NÃO MUDA A TELA
+     ******************************************************************/
+    function fillPdfSelectors(){
+      const y = el("pdfYear");
+      const m = el("pdfMonth");
+
+      const now = new Date();
+      const curYear = now.getFullYear();
+      const curMonth = now.getMonth();
+
+      // anos: curYear-3 até curYear+1
+      y.innerHTML = "";
+      for(let year = curYear - 3; year <= curYear + 1; year++){
+        const opt = document.createElement("option");
+        opt.value = String(year);
+        opt.textContent = String(year);
+        if(year === curYear) opt.selected = true;
+        y.appendChild(opt);
+      }
+
+      m.innerHTML = "";
+      for(let i=0;i<12;i++){
+        const opt = document.createElement("option");
+        opt.value = String(i);
+        opt.textContent = monthNamePT(i);
+        if(i === curMonth) opt.selected = true;
+        m.appendChild(opt);
+      }
+    }
+
+    async function buildPdfData(year, monthIndex){
+      const { start, end } = getMonthRange(year, monthIndex);
+      const res = await fetchCaixaByRange(start, end);
+      return { start, end, usedDateCol: res.usedDateCol, rows: res.rows };
+    }
+
+    function openPrintWindow({ year, monthIndex, rows, usedDateCol }){
+      // calcula saldo igual a tela
+      // (reusa parte da lógica de cálculo)
+      const sample = rows[0] || {};
+      const descrKey = findFirstKey(sample, COL_DESCR_TRIES) || "descricao";
+      const tipoKey  = findFirstKey(sample, COL_TIPO_TRIES)  || "tipo";
+      const valorKey = findFirstKey(sample, COL_VALOR_TRIES) || "valor";
+
+      let saldo = 0;
+      let totalReceita = 0;
+      let totalDespesa = 0;
+
+      const computedAsc = rows.slice().sort((a,b)=> new Date(a[usedDateCol]) - new Date(b[usedDateCol])).map(r=>{
+        const tipoRaw = (r[tipoKey] ?? "").toString().trim();
+        const tipoUp  = tipoRaw.toUpperCase();
+        let valor = Number(r[valorKey] ?? 0);
+
+        let delta = valor;
+        if (tipoUp.includes("DESP") && delta > 0) delta = -delta;
+        if (tipoUp.includes("RECE") && delta < 0) delta = Math.abs(delta);
+
+        saldo += delta;
+
+        if (delta >= 0) totalReceita += delta;
+        else totalDespesa += Math.abs(delta);
+
+        return {
+          date: r[usedDateCol],
+          descr: r[descrKey] ?? "",
+          tipo: tipoUp.includes("DESP") ? "DESPESA" : (tipoUp.includes("RECE") ? "RECEITA" : (tipoRaw || "-")),
+          delta,
+          saldo
+        };
+      });
+
+      const rowsHtml = computedAsc.map(it=>{
+        const deltaStyle = it.delta >= 0 ? "color:#0f9d58;font-weight:700;" : "color:#d93025;font-weight:700;";
+        return `
+          <tr>
+            <td>${fmtDateBR(it.date)}</td>
+            <td>${String(it.descr||"").replaceAll("<","&lt;").replaceAll(">","&gt;")}</td>
+            <td>${it.tipo}</td>
+            <td style="${deltaStyle}">${brl(it.delta)}</td>
+            <td>${brl(it.saldo)}</td>
+          </tr>
+        `;
+      }).join("");
+
+      const html = `
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>CAIXA - ${monthNamePT(monthIndex)}/${year}</title>
+  <style>
+    body{ font-family: Arial, sans-serif; margin:24px; color:#111; }
+    h1{ margin:0 0 6px; font-size:18px; }
+    .sub{ color:#444; margin:0 0 14px; font-size:12px; }
+    table{ width:100%; border-collapse: collapse; font-size:12px; }
+    th, td{ border:1px solid #ddd; padding:8px; text-align:left; vertical-align:top; }
+    th{ background:#f4f4f4; }
+    .tot{ margin-top:12px; font-size:12px; }
+    @media print{ button{ display:none; } }
+  </style>
+</head>
+<body>
+  <h1>CAIXA - ${monthNamePT(monthIndex)}/${year}</h1>
+  <p class="sub">Período do arquivo: dia 1 até dia 1 do mês seguinte.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:110px;">DATA</th>
+        <th>DESCRIÇÃO</th>
+        <th style="width:90px;">TIPO</th>
+        <th style="width:110px;">VALOR</th>
+        <th style="width:110px;">SALDO</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsHtml || `<tr><td colspan="5">Sem lançamentos.</td></tr>`}
+    </tbody>
+  </table>
+
+  <div class="tot">
+    <b>Receitas:</b> ${brl(totalReceita)} &nbsp;&nbsp;
+    <b>Despesas:</b> ${brl(totalDespesa)} &nbsp;&nbsp;
+    <b>Saldo:</b> ${brl(totalReceita - totalDespesa)}
+  </div>
+
+  <script>
+    // abre o diálogo de impressão (usuário salva como PDF)
+    window.onload = () => setTimeout(() => window.print(), 350);
+  </script>
+</body>
+</html>
+      `;
+
+      const w = window.open("", "_blank");
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+    }
+
+    async function handlePdf(){
+      setMsg("", "");
+      const year = Number(el("pdfYear").value);
+      const monthIndex = Number(el("pdfMonth").value);
+
+      try{
+        el("btnPdf").disabled = true;
+        el("pillStatus").textContent = "Preparando PDF…";
+
+        const data = await buildPdfData(year, monthIndex);
+
+        el("pillStatus").textContent = "Conectado";
+        el("btnPdf").disabled = false;
+
+        // IMPORTANTE: não mexe na tela — só abre janela do PDF
+        openPrintWindow({ year, monthIndex, rows: data.rows, usedDateCol: data.usedDateCol });
+
+        setMsg("ok", `PDF pronto: ${monthNamePT(monthIndex)}/${year}. (A tela continua no mês corrente.)`);
+      }catch(e){
+        el("btnPdf").disabled = false;
+        el("pillStatus").textContent = "Erro";
+        setMsg("warn", "Falha ao preparar PDF. Detalhe: " + (e?.message || e));
+      }
+    }
+
+    /******************************************************************
+     * START
+     ******************************************************************/
+    (function start(){
+      fillPdfSelectors();
+
+      const ok = initSupabase();
+      if(ok){
+        loadCurrentMonth();
+      }
+
+      el("btnPdf").addEventListener("click", handlePdf);
+      el("btnReload").addEventListener("click", loadCurrentMonth);
+    })();
+  </script>
 </body>
 </html>
