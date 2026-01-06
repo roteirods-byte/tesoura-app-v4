@@ -158,20 +158,43 @@
 <script src="app/core/config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const CFG = window.TESOURA_CONFIG || {};
-  const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
-  const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+  var CAIXA_CFG = window.TESOURA_CONFIG || {};
+  const SB_URL = CAIXA_CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
+  const SB_KEY = CAIXA_CFG.SUPABASE_KEY || CAIXA_CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
   
 /* ===== SUPABASE (ROBUSTO) ===== */
-const CFG = (window.TESOURA_CONFIG || (window.parent && window.parent.TESOURA_CONFIG) || {});
-const SB_URL = CFG.SUPABASE_URL;
-const SB_KEY = CFG.SUPABASE_ANON_KEY || CFG.SUPABASE_KEY;
+const CAIXA_CFG = (window.TESOURA_CONFIG || (window.parent && window.parent.TESOURA_CONFIG) || {});
+const SB_URL = CAIXA_CFG.SUPABASE_URL;
+const SB_KEY = CAIXA_CFG.SUPABASE_ANON_KEY || CAIXA_CFG.SUPABASE_KEY;
 
 if(!SB_URL || !SB_KEY){
-  console.error("CAIXA: Supabase config ausente em TESOURA_CONFIG", CFG);
+  console.error("CAIXA: Supabase config ausente em TESOURA_CONFIG", CAIXA_CFG);
   try{ document.getElementById("status").textContent = "ERRO: Supabase não configurado."; }catch(e){}
 } else {
-  window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SB_URL, SB_KEY);
+  window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || (function(){
+  try{
+    // tenta pegar do iframe primeiro, depois do index.html (parent)
+    var url =
+      (typeof SB_URL !== "undefined" && SB_URL) ||
+      window.SB_URL || window.SUPABASE_URL ||
+      (window.parent && (window.parent.SB_URL || window.parent.SUPABASE_URL));
+
+    var key =
+      (typeof SB_KEY !== "undefined" && SB_KEY) ||
+      window.SB_KEY || window.SUPABASE_ANON_KEY || window.SUPABASE_KEY ||
+      (window.parent && (window.parent.SB_KEY || window.parent.SUPABASE_ANON_KEY || window.parent.SUPABASE_KEY));
+
+    if(!url || !key) throw new Error("Supabase config ausente (SB_URL/SB_KEY)");
+
+    // client único (evita duplicar)
+    window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(url, key);
+    return window.__TESOURA_SUPABASE__;
+  }catch(e){
+    console.error(e);
+    try{ alert("CAIXA: Supabase não configurado (ver Console)."); }catch(_){}
+    return null;
+  }
+})()
 }
 const sb = window.__TESOURA_SUPABASE__;
 
