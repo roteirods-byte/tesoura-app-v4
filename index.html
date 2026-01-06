@@ -194,6 +194,19 @@ try{
 }catch(e){}
 </script>
 
+
+<script>
+// ===== ANTI-CACHE (SW + CacheStorage) =====
+try{
+  if ("serviceWorker" in navigator){
+    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+  }
+  if (window.caches){
+    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+  }
+}catch(e){}
+</script>
+
 </head>
 
 <body>
