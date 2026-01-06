@@ -131,6 +131,7 @@
 
   <!-- TESOURA CORE (central) -->
   <script src="app/core/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // Evita o site "travar" em versões antigas (Service Worker/caches antigos)
   (function(){
@@ -148,25 +149,7 @@
     } catch(e){}
   })();
 </script>
-<script>
-// ===== HOTFIX CAIXA (DIRETORIA) =====
-try{
-  function __forceCaixaDiretoria__(){
-    if(window.TESOURA_ROLE === "diretoria"){
-      window.TESOURA_CAN_CAIXA = true;
-      var b = document.getElementById("aba-caixa");
-      if(b){ b.style.display = ""; b.disabled = false; }
-    }
-  }
-  __forceCaixaDiretoria__();
-  window.addEventListener("DOMContentLoaded", __forceCaixaDiretoria__);
-  window.addEventListener("load", __forceCaixaDiretoria__);
-  setTimeout(__forceCaixaDiretoria__, 400);
-  setTimeout(__forceCaixaDiretoria__, 1500);
-}catch(e){}
-// ===== FIM HOTFIX CAIXA =====
-</script>
-  <script src="app/core/session.js"></script>
+<script src="app/core/session.js"></script>
   <script src="app/core/supabase.js"></script>
   <script src="app/core/override.js"></script>
 
@@ -245,50 +228,6 @@ try{
       <div id="loginMsg" class="loginMsg"></div>
     </div>
   </div>
-
-<script>
-/* Anti-flash: evita aparecer o painel anterior enquanto o iframe carrega o novo */
-(function(){
-  const frame = document.getElementById("frame");
-  if(!frame) return;
-
-  const hide = () => {
-    frame.style.visibility = "hidden";
-    frame.style.opacity = "0";
-    frame.style.pointerEvents = "none";
-  };
-  const show = () => {
-    frame.style.visibility = "visible";
-    frame.style.opacity = "1";
-    frame.style.pointerEvents = "auto";
-  };
-
-  // Sempre começa escondido; só mostra quando carregar.
-  hide();
-
-  // Ao carregar um novo painel, mostra.
-  frame.addEventListener("load", () => {
-    // não mostra o about:blank
-    try {
-      const href = frame.contentWindow.location.href || "";
-      if (href.includes("about:blank")) return;
-    } catch (e) {}
-    show();
-  });
-
-  // Clique em qualquer aba: esconde na hora (para não mostrar o painel antigo)
-  document.addEventListener("click", (ev) => {
-    const tab = ev.target && ev.target.closest && ev.target.closest(".tab");
-    if (tab) hide();
-  }, true);
-
-  // Se o navegador voltar do cache (bfcache), força recarregar
-  window.addEventListener("pageshow", (e) => {
-    if (e && e.persisted) location.reload();
-  });
-})();
-</script>
-
 </body>
 </html>
 

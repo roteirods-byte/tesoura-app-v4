@@ -210,6 +210,17 @@
       margin-top:6px;
     }
   </style>
+
+<style>
+#tesouraFileBadge{
+  position:fixed; right:10px; bottom:10px; z-index:99999;
+  font: 11px/1.2 Arial, sans-serif;
+  background: rgba(0,0,0,.55);
+  color:#fff; padding:6px 8px; border-radius:10px;
+  border:1px solid rgba(255,255,255,.15);
+}
+</style>
+
 </head>
 <body>
   <div class="wrap">
@@ -361,7 +372,7 @@
 
   // ========= Supabase Config =========
   function getConfig(){
-    // prioridade: TESOURA_CONFIG (index/boot) -> parent -> globals
+    // prioridade: TESOURA_CONFIG (index/boot) -> parent -> globals -> fallback hardcoded
     const cfg =
       (window.TESOURA_CONFIG && window.TESOURA_CONFIG.SUPABASE) ||
       (window.parent && window.parent.TESOURA_CONFIG && window.parent.TESOURA_CONFIG.SUPABASE) ||
@@ -370,12 +381,14 @@
     const url =
       (cfg && cfg.url) ||
       window.SB_URL || window.SUPABASE_URL ||
-      (window.parent && (window.parent.SB_URL || window.parent.SUPABASE_URL));
+      (window.parent && (window.parent.SB_URL || window.parent.SUPABASE_URL)) ||
+      "https://xuplzpispukvtggjasxx.supabase.co";
 
     const key =
       (cfg && (cfg.anonKey || cfg.key)) ||
       window.SB_KEY || window.SUPABASE_ANON_KEY || window.SUPABASE_KEY ||
-      (window.parent && (window.parent.SB_KEY || window.parent.SUPABASE_ANON_KEY || window.parent.SUPABASE_KEY));
+      (window.parent && (window.parent.SB_KEY || window.parent.SUPABASE_ANON_KEY || window.parent.SUPABASE_KEY)) ||
+      "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
 
     return { url, key, cfg };
   }
@@ -397,34 +410,25 @@
   }
 
   // ========= Schema detect =========
-  let HAS_HORA = true;
+  let HAS_HORA = false;
   let KEY_FIELD = "id";
   async function detectarSchema(){
-    HAS_HORA = true;
+    // Default seguro: assume SEM "hora" até provar que existe
+    HAS_HORA = false;
     if(!sb) return;
-    try{
-      const { data, error } = await sb.from("caixa").select("*").limit(1);
-      if(error) throw error;
 
-      const row = (data && data[0]) ? data[0] : null;
-      const cols = row ? Object.keys(row) : [];
-      HAS_HORA = cols.includes("hora");
-      // chave primária
-      if(cols.includes("id")) KEY_FIELD = "id";
-      else if(cols.includes("uuid")) KEY_FIELD = "uuid";
-      else KEY_FIELD = "id";
-    }catch(e){
-      // se falhar, assume que NÃO tem hora (evita quebrar)
-      console.warn("CAIXA: não consegui detectar schema, assumindo sem hora.", e);
+    try{
+      // se a coluna "hora" existir, esta query funciona mesmo com tabela vazia
+      const { error } = await sb.from("caixa").select("hora").limit(1);
+      if(!error) HAS_HORA = true;
+    }catch(_){
       HAS_HORA = false;
     }
 
     // Ajusta UI conforme schema
     if(!HAS_HORA){
-      try{
-        $("wrapHora").style.display = "none";
-        $("thHora").style.display = "none";
-      }catch(_){}
+      try{ $("wrapHora").style.display = "none"; }catch(_a){}
+      try{ $("thHora").style.display = "none"; }catch(_b){}
     }
   }
 
@@ -694,5 +698,6 @@
 })();
 </script>
 
+<div id="tesouraFileBadge">ARQUIVO: tesoura_caixa_teste.html</div>
 </body>
 </html>

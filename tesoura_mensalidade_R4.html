@@ -71,6 +71,17 @@
       .no-print, button{ display:none !important; }
     }
   </style>
+
+<style>
+#tesouraFileBadge{
+  position:fixed; right:10px; bottom:10px; z-index:99999;
+  font: 11px/1.2 Arial, sans-serif;
+  background: rgba(0,0,0,.55);
+  color:#fff; padding:6px 8px; border-radius:10px;
+  border:1px solid rgba(255,255,255,.15);
+}
+</style>
+
 </head>
 <body>
 
@@ -130,10 +141,9 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="app/js/config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const CFG = window.TESOURA_CONFIG || {};
+  const CFG = window.TESOURA_CONFIG || (window.parent && window.parent.TESOURA_CONFIG) || {};
   const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
   const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
@@ -157,6 +167,7 @@ if (!pago) return; // desmarcou ou excluiu: só remove
 
       const base = {
         data: data_pagamento || null,
+        // "hora" pode não existir no Supabase (dependendo do schema)
         hora: "00:00",
         tipo: "RECEITA",
         descricao: apelido,
@@ -568,5 +579,6 @@ if (!pago) return; // desmarcou ou excluiu: só remove
   window.addEventListener("load", load);
 </script>
 
+<div id="tesouraFileBadge">ARQUIVO: tesoura_mensalidade_R4.html</div>
 </body>
 </html>

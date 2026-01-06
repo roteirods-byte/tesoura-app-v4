@@ -222,6 +222,17 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
 
 
   </style>
+
+<style>
+#tesouraFileBadge{
+  position:fixed; right:10px; bottom:10px; z-index:99999;
+  font: 11px/1.2 Arial, sans-serif;
+  background: rgba(0,0,0,.55);
+  color:#fff; padding:6px 8px; border-radius:10px;
+  border:1px solid rgba(255,255,255,.15);
+}
+</style>
+
 </head>
 <body>
   <header>TESOURA - PRESENÇA / ESCALAÇÃO</header>
@@ -364,8 +375,8 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
 // ===== SUPABASE =====
-    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+    const SUPABASE_URL = (window.parent && window.parent.TESOURA_CONFIG && window.parent.TESOURA_CONFIG.SUPABASE_URL) || "https://xuplzpispukvtggjasxx.supabase.co";
+    const SUPABASE_KEY = (window.parent && window.parent.TESOURA_CONFIG && (window.parent.TESOURA_CONFIG.SUPABASE_KEY || window.parent.TESOURA_CONFIG.SUPABASE_ANON_KEY)) || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
     window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var supabase = window.__TESOURA_SUPABASE__;
     // ===== ESTADO =====
@@ -1564,4 +1575,4 @@ function calcularTotalPontos(lista){
             const tbody = rows.map(r=>"<tr>" + r.map(v=>"<td>"+escapeHtml(v)+"</td>").join("") + "</tr>").join("");
 
             const htmlDoc =
-`
+`<div id="tesouraFileBadge">ARQUIVO: tesoura_presenca_escala_R5.html</div>
