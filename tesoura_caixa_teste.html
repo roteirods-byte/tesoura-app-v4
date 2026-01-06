@@ -420,7 +420,13 @@
 
     try{
       // se a coluna "hora" existir, esta query funciona mesmo com tabela vazia
-      const { error } = await sb.from("caixa").select("hora").limit(1);
+async function detectHora(){
+  // FIX: no seu Supabase não existe coluna "hora".
+  // Então CAIXA deve operar SEM "hora" e guardar a hora dentro do OBS (já faz isso).
+  HAS_HORA = false;
+  return false;
+}
+      
       if(!error) HAS_HORA = true;
     }catch(_){
       HAS_HORA = false;
