@@ -149,34 +149,6 @@ try{
 // ===== FIM HOTFIX CAIXA =====
 
 </script>
-  <script>
-    // Compat: garante nomes de config esperados pelos painéis (sem mexer no config.js)
-    (function () {
-      const w = window;
-
-      // URL
-      w.SUPABASE_URL =
-        w.SUPABASE_URL ||
-        w.supabaseUrl ||
-        w.SUPABASEURL ||
-        w.urlSupabase ||
-        w.SUPABASE_URL_V2;
-
-      // KEY
-      w.SUPABASE_ANON_KEY =
-        w.SUPABASE_ANON_KEY ||
-        w.SUPABASE_KEY ||
-        w.supabaseKey ||
-        w.anonKeySupabase ||
-        w.SUPABASE_ANON ||
-        w.SUPABASE_ANONKEY;
-
-      // Espelha também nos nomes alternativos (caso algum painel use eles)
-      if (!w.supabaseUrl && w.SUPABASE_URL) w.supabaseUrl = w.SUPABASE_URL;
-      if (!w.supabaseKey && w.SUPABASE_ANON_KEY) w.supabaseKey = w.SUPABASE_ANON_KEY;
-    })();
-  </script>
-
   <script src="app/core/session.js"></script>
   <script src="app/core/supabase.js"></script>
   <script src="app/core/override.js"></script>
@@ -222,50 +194,6 @@ try{
 
       <!-- CONTROLE GERAL SEMPRE VISÍVEL POR TRÁS -->
       <iframe id="frame" src="about:blank" style="width:100%;height:100%;border:0;visibility:hidden;opacity:0;pointer-events:none"></iframe>
-  <script>
-    // Anti-flash do iframe: esconde conteúdo antigo imediatamente e só mostra após carregar.
-    (function () {
-      const frame = document.getElementById("frame") || document.getElementById("conteudo");
-      if (!frame) return;
-
-      function hideFrame() {
-        frame.style.visibility = "hidden";
-        frame.style.opacity = "0";
-        frame.style.pointerEvents = "none";
-      }
-      function showFrame() {
-        frame.style.visibility = "visible";
-        frame.style.opacity = "1";
-        frame.style.pointerEvents = "auto";
-      }
-
-      // Estado inicial
-      hideFrame();
-
-      // Mostra somente depois do load (2 RAFs evita “piscada”)
-      frame.addEventListener("load", () => {
-        requestAnimationFrame(() => requestAnimationFrame(showFrame));
-      });
-
-      // Ao clicar nas abas (menu superior), esconde imediatamente e limpa o iframe.
-      document.addEventListener("click", (ev) => {
-        const tabBtn = ev.target && ev.target.closest ? ev.target.closest(".tabs .tab") : null;
-        if (!tabBtn) return;
-
-        hideFrame();
-        try { frame.src = "about:blank"; } catch (e) {}
-      }, true);
-
-      // BFCache: se o navegador voltar “instantâneo”, força recarregar para não mostrar painel velho.
-      window.addEventListener("pageshow", (e) => {
-        if (e && e.persisted) {
-          try { frame.src = "about:blank"; } catch (err) {}
-          location.reload();
-        }
-      });
-    })();
-  </script>
-
     </div>
 
     <div id="msg" class="msg"></div>
@@ -300,6 +228,50 @@ try{
       <div id="loginMsg" class="loginMsg"></div>
     </div>
   </div>
+
+<script>
+/* Anti-flash: evita aparecer o painel anterior enquanto o iframe carrega o novo */
+(function(){
+  const frame = document.getElementById("frame");
+  if(!frame) return;
+
+  const hide = () => {
+    frame.style.visibility = "hidden";
+    frame.style.opacity = "0";
+    frame.style.pointerEvents = "none";
+  };
+  const show = () => {
+    frame.style.visibility = "visible";
+    frame.style.opacity = "1";
+    frame.style.pointerEvents = "auto";
+  };
+
+  // Sempre começa escondido; só mostra quando carregar.
+  hide();
+
+  // Ao carregar um novo painel, mostra.
+  frame.addEventListener("load", () => {
+    // não mostra o about:blank
+    try {
+      const href = frame.contentWindow.location.href || "";
+      if (href.includes("about:blank")) return;
+    } catch (e) {}
+    show();
+  });
+
+  // Clique em qualquer aba: esconde na hora (para não mostrar o painel antigo)
+  document.addEventListener("click", (ev) => {
+    const tab = ev.target && ev.target.closest && ev.target.closest(".tab");
+    if (tab) hide();
+  }, true);
+
+  // Se o navegador voltar do cache (bfcache), força recarregar
+  window.addEventListener("pageshow", (e) => {
+    if (e && e.persisted) location.reload();
+  });
+})();
+</script>
+
 </body>
 </html>
 
