@@ -1,22 +1,15 @@
-// SW DESATIVADO (anti-cache definitivo)
-self.addEventListener("install", () => self.skipWaiting());
+// Service Worker "seguro": não cacheia HTML/JS/CSS para evitar painel/versão errada.
+// Mantém só o básico e sempre busca do servidor.
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil((async () => {
-    try {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((k) => caches.delete(k)));
-    } catch (e) {}
-
-    try { await self.clients.claim(); } catch (e) {}
-    try { await self.registration.unregister(); } catch (e) {}
-
-    try {
-      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-      clients.forEach((c) => { try { c.navigate(c.url); } catch(e) {} });
-    } catch (e) {}
-  })());
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
 });
 
-// não intercepta nada
-self.addEventListener("fetch", () => {});
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+// Network-first, sem cache persistente
+self.addEventListener("fetch", (event) => {
+  event.respondWith(fetch(event.request));
+});
