@@ -1,10 +1,10 @@
-
 <!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>TESOURA - CAIXA (TESTE)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tesoura - Caixa</title>
+
   <style>
     body{ margin:0; font-family:Arial,sans-serif; background:#0b1220; color:#fff; }
     header{
@@ -80,598 +80,665 @@
       .money-neg{ color:#000 !important; }
       .fechamento td{ background:#fff !important; }
     }
-  </style>
+  
+/* ===== extras (CAIXA corrigido) ===== */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin:14px 0 18px 0}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;border-radius:10px;background:#ff8c00;display:flex;align-items:center;justify-content:center;font-weight:800;color:#111}
+.title{font-weight:800}
+.subtitle{opacity:.8;font-size:12px}
+.top-actions{display:flex;align-items:center;gap:10px}
+.badge{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:999px;background:#0b1626;border:1px solid rgba(255,255,255,.08);color:#fff;font-size:12px;font-weight:700}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;background:#0b1626;border:1px solid rgba(255,255,255,.08);color:#fff;font-size:12px}
+.note{opacity:.85;font-size:12px}
+.form-grid{display:grid;grid-template-columns: 160px 120px 160px 1fr 1fr 160px; gap:10px}
+.field label{display:block;font-size:12px;opacity:.8;margin:0 0 6px 2px}
+.field input,.field select{width:100%}
+.actions{display:flex;gap:10px;align-items:center}
+.status{font-size:12px;opacity:.85}
+.status.err{color:#ff6b6b;opacity:1}
+.warn{background:#25130f;border:1px solid rgba(255,107,107,.35);color:#ffd1d1;padding:10px;border-radius:12px;font-size:12px}
+.table-wrap{overflow:auto;border-radius:14px;border:1px solid rgba(255,255,255,.08)}
+.table{width:100%;border-collapse:separate;border-spacing:0}
+.table th{position:sticky;top:0;background:rgba(255,140,0,.9);color:#111;padding:10px;font-size:12px;text-align:left}
+.table td{padding:9px 10px;border-top:1px solid rgba(255,255,255,.06);font-size:12px}
+.btn{cursor:pointer}
+.btn-secondary{background:#283548}
+.btn-primary{background:#2da8ff}
+.btn-success{background:#16c172}
+.btn-danger{background:#e74c3c}
+.btn-mini{padding:6px 8px;font-size:11px;border-radius:10px}
+.inp{width:100%;padding:8px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#0b1626;color:#fff}
+@media(max-width:1100px){
+  .form-grid{grid-template-columns: 1fr 1fr;}
+}
+
+</style>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">T</div>
+        <div>
+          <div class="title">Tesoura — Controle do Futebol</div>
+          <div class="subtitle">CAIXA</div>
+        </div>
+      </div>
 
-<header>
-  <h1>TESOURA - CAIXA</h1>
-  <div style="font-size:12px;color:#9ca3af;">(auto-save)</div>
-</header>
+      <div class="top-actions">
+        <span id="roleBadge" class="badge">—</span>
+        <button id="btnRefresh" class="btn btn-secondary">ATUALIZAR</button>
+      </div>
+    </div>
 
-<div class="wrap">
+    <div class="painel">
+      <div class="painel-title">CAIXA</div>
+      <div class="note">
+        Tela fixa no <b>mês corrente</b>. O filtro abaixo é <b>apenas</b> para <b>BAIXAR PDF</b> de meses anteriores.
+      </div>
 
-  <div class="painel no-print">
-    <h2>FILTRO</h2>
-    <div class="row" style="justify-content:space-between; width:100%;">
-      <div class="row">
-        <div class="row" style="gap:8px;">
-          <label>ANO:</label>
-          <select id="selAno"></select>
+      <div class="row" style="margin-top:12px">
+        <div class="pill">Mês corrente: <b id="mesCorrenteLbl">—</b></div>
+        <div class="pill">Visualizando: <b id="visualizandoLbl">—</b></div>
+        <div class="pill">Total: <b id="totaisLbl">—</b></div>
+      </div>
+    </div>
+
+    <div class="painel">
+      <div class="painel-title">LANÇAMENTOS (mês corrente)</div>
+
+      <div id="modoAviso" class="warn" style="display:none;margin-bottom:10px"></div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>DATA</label>
+          <input id="fData" type="date" />
         </div>
 
-        <div class="row" style="gap:8px;">
-          <label>MÊS:</label>
-          <select id="selMes"></select>
+        <div class="field">
+          <label>HORA</label>
+          <input id="fHora" type="time" />
         </div>
 
-        <div class="row" style="gap:8px;">
-          <label>PERÍODO:</label>
-          <select id="selPeriodo">
-            <option value="SEMANAL">SEMANAL</option>
-            <option value="MENSAL">MENSAL</option>
-            <option value="ANUAL">ANUAL</option>
+        <div class="field">
+          <label>TIPO</label>
+          <select id="fTipo">
+            <option value="RECEITA">RECEITA</option>
+            <option value="DESPESA">DESPESA</option>
           </select>
         </div>
 
-        <div class="row" style="gap:8px;" id="wrapSemana">
-          <label>SEMANA:</label>
-          <select id="selSemana"></select>
+        <div class="field" style="grid-column: 1 / span 2;">
+          <label>DESCRIÇÃO</label>
+          <input id="fDesc" type="text" placeholder="Descrição" />
         </div>
 
-        <button id="btnConsultar" class="btn btn-azul">CONSULTAR</button>
+        <div class="field" style="grid-column: 3 / span 2;">
+          <label>OBS</label>
+          <input id="fObs" type="text" placeholder="Opcional" />
+        </div>
+
+        <div class="field">
+          <label>VALOR (R$)</label>
+          <input id="fValor" type="number" step="0.01" min="0" placeholder="0,00" />
+        </div>
+
+        <div class="actions" style="grid-column: 1 / -1;">
+          <button id="btnSalvar" class="btn btn-success">SALVAR</button>
+          <button id="btnLimpar" class="btn btn-danger">LIMPAR</button>
+          <span id="status" class="status"></span>
+        </div>
       </div>
 
-      <div class="row">
-        <button id="btnNovo" class="btn btn-azul" title="Criar lançamento">NOVO</button>
-        <button id="btnPdf" class="btn btn-laranja" title="Salvar em PDF">BAIXAR PDF</button>
+      <div class="table-wrap" style="margin-top:14px">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:110px">DATA</th>
+              <th style="width:90px">HORA</th>
+              <th style="width:90px">TIPO</th>
+              <th>DESCRIÇÃO</th>
+              <th>OBS</th>
+              <th style="width:120px;text-align:right">RECEITA (R$)</th>
+              <th style="width:120px;text-align:right">DESPESA (R$)</th>
+              <th style="width:120px;text-align:right">SALDO (R$)</th>
+              <th style="width:140px;text-align:center">AÇÕES</th>
+            </tr>
+          </thead>
+          <tbody id="tb"></tbody>
+        </table>
       </div>
     </div>
 
-    <div class="status" id="status">Carrega automaticamente.</div>
-  </div>
+    <div class="painel">
+      <div class="painel-title">PDF (ARQUIVO MENSAL)</div>
 
-  <div class="painel">
-    <h2>LANÇAMENTOS</h2>
-    <div class="table-wrap" id="wrapTabela">
-      <table>
-        <thead>
-          <tr>
-            <th>DATA</th>
-            <th>HORA</th>
-            <th>TIPO</th>
-            <th>DESCRIÇÃO</th>
-            <th>OBS</th>
-            <th>RECEITA (R$)</th>
-            <th>DESPESA (R$)</th>
-            <th>SALDO (R$)</th>
-            <th class="no-print">AÇÕES</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
+      <div class="form-grid" style="grid-template-columns: 160px 220px 1fr;">
+        <div class="field">
+          <label>ANO (PDF)</label>
+          <select id="pdfAno"></select>
+        </div>
+        <div class="field">
+          <label>MÊS (PDF)</label>
+          <select id="pdfMes"></select>
+        </div>
+        <div class="actions" style="align-items:end">
+          <button id="btnPdf" class="btn btn-primary">BAIXAR PDF</button>
+          <span id="statusPdf" class="status"></span>
+        </div>
+      </div>
+
+      <div class="note" style="margin-top:10px">
+        Dica: o PDF abre no navegador. Depois clique em <b>Imprimir</b> e salve como PDF.
+      </div>
     </div>
   </div>
 
-</div>
-
-<script src="app/core/config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // ===== SUPABASE (ÚNICO / SEM DUPLICAR VARIÁVEIS) =====
-(function(){
-  const CFG =
-    (window.parent && window.parent.TESOURA_CONFIG) ? window.parent.TESOURA_CONFIG :
-    (window.TESOURA_CONFIG || window.CAIXA_CFG || {});
-  const SB_URL =
-    CFG.SUPABASE_URL || CFG.SB_URL || window.SUPABASE_URL || window.SB_URL;
-  const SB_KEY =
-    CFG.SUPABASE_ANON_KEY || CFG.SUPABASE_KEY || CFG.SB_KEY ||
-    window.SUPABASE_ANON_KEY || window.SUPABASE_KEY || window.SB_KEY;
+(() => {
+  if (window.__TESOURA_CAIXA_INIT__) return;
+  window.__TESOURA_CAIXA_INIT__ = true;
 
-  if(!SB_URL || !SB_KEY){
-    console.error("CAIXA: Supabase config ausente", {SB_URL, hasKey: !!SB_KEY, CFG});
-    const st = document.getElementById("status");
-    if(st) st.textContent = "ERRO: Supabase não configurado.";
-    return;
+  // ===== CONFIG / SUPABASE (mesmo padrão do Mensalidade) =====
+  const CFG = (window.parent && window.parent.TESOURA_CONFIG) || window.TESOURA_CONFIG || {};
+
+  const SB_URL = (CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co");
+  const SB_KEY = (CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg");
+
+  let sb = null;
+  try {
+    if(!SB_URL || !SB_KEY) throw new Error("CAIXA: Supabase não configurado (SB_URL/SB_KEY)");
+    sb = window.supabase.createClient(SB_URL, SB_KEY);
+  } catch(e) {
+    console.error(e);
+    showStatus("CAIXA: Supabase não configurado (ver Console).", true);
   }
 
-  window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SB_URL, SB_KEY);
-})();
-const sb = window.__TESOURA_SUPABASE__;
+  // ===== PERMISSÃO =====
+  const role = (window.parent && window.parent.TESOURA_ROLE) || window.TESOURA_ROLE || "jogador";
+  document.getElementById("roleBadge").textContent = (role || "—").toUpperCase();
+  const podeEditar = (String(role).toLowerCase() === "diretoria");
 
+  if(!podeEditar) {
+    // jogador (visual): trava edição
+    document.getElementById("btnSalvar").disabled = true;
+    document.getElementById("btnLimpar").disabled = true;
+    document.getElementById("fData").disabled = true;
+    document.getElementById("fHora").disabled = true;
+    document.getElementById("fTipo").disabled = true;
+    document.getElementById("fDesc").disabled = true;
+    document.getElementById("fObs").disabled = true;
+    document.getElementById("fValor").disabled = true;
+    document.getElementById("modoAviso").style.display = "";
+    document.getElementById("modoAviso").textContent = "Modo JOGADOR (VISUAL): sem edição no CAIXA.";
+  }
 
-const $ = (id)=>document.getElementById(id);
+  // ===== HELPERS =====
+  const $ = (id) => document.getElementById(id);
 
-  const selAno = $("selAno");
-  const selMes = $("selMes");
-  const selPeriodo = $("selPeriodo");
-  const wrapSemana = $("wrapSemana");
-  const selSemana = $("selSemana");
+  function pad2(n) { return String(n).padStart(2, "0"); }
 
-  const btnConsultar = $("btnConsultar");
-  const btnNovo = $("btnNovo");
-  const btnPdf = $("btnPdf");
-
-  const statusEl = $("status");
-  const tbody = $("tbody");
-
-  function pad2(n){ return String(n).padStart(2,"0"); }
-
-  function hojeISO(){
+  function hojeISO() {
     const d = new Date();
     return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
   }
-  function horaHHMM(){
+
+  function agoraHora() {
     const d = new Date();
     return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
   }
-  function toBR(iso){
-    if(!iso) return "";
-    const s = String(iso).slice(0,10);
-    const [y,m,d] = s.split("-");
-    if(!y||!m||!d) return "";
-    return `${d}/${m}/${y}`;
-  }
-  function money(v){
-    const n = Number(v||0);
-    return n.toLocaleString("pt-BR",{minimumFractionDigits:2, maximumFractionDigits:2});
-  }
-  function isMensalidadeRow(row){
-    const desc = String(row.descricao||"");
-    const tipo = String(row.tipo||"");
-    return desc.toUpperCase().startsWith("MENSALIDADE -") || tipo.toUpperCase()==="MENSALIDADE";
-  }
-  function isFechamentoRow(row){
-    const tipo = String(row.tipo||"").toUpperCase();
-    const desc = String(row.descricao||"").toUpperCase();
-    return tipo==="FECHAMENTO" || desc.startsWith("FECHAMENTO SEMANAL");
+
+  function money(n) {
+    const v = Number(n || 0);
+    return v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  // ==== DATAS (semana segunda->segunda)
-  function getMonday00(d){
-    const x = new Date(d.getTime());
-    x.setHours(0,0,0,0);
-    const day = x.getDay(); // 0 dom .. 1 seg
-    const diff = (day===0 ? -6 : 1-day);
-    x.setDate(x.getDate()+diff);
-    return x;
+  function monthLabel(y, m0) {
+    const nomes = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    return `${nomes[m0]}/${y}`;
   }
-  function addDays(d,days){
-    const x = new Date(d.getTime());
-    x.setDate(x.getDate()+days);
-    return x;
+
+  function getRangeMesCorrente() {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth()+1, 1);
+    return { start, end };
   }
-  function isoDate(d){
+
+  function toISODate(d) {
     return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
   }
-  function labelSemana(start){
-    const end = addDays(start,7);
-    return `${toBR(isoDate(start))} → ${toBR(isoDate(end))}`;
+
+  function showStatus(msg, isErr=false) {
+    $("status").textContent = msg || "";
+    $("status").className = "status " + (isErr ? "err" : "");
   }
 
-  // monta seletor de semanas (últimas 14)
-  function buildSemanas(){
-    selSemana.innerHTML = "";
-    const now = new Date();
-    const monday = getMonday00(now);
-    for(let i=0;i<14;i++){
-      const start = addDays(monday, -7*i);
-      const opt = document.createElement("option");
-      opt.value = isoDate(start);
-      opt.textContent = labelSemana(start);
-      if(i===0) opt.selected = true;
-      selSemana.appendChild(opt);
+  function showStatusPdf(msg, isErr=false) {
+    $("statusPdf").textContent = msg || "";
+    $("statusPdf").className = "status " + (isErr ? "err" : "");
+  }
+
+  // ===== LOAD + RENDER =====
+  async function saldoAntesDe(dataISO) {
+    if(!sb) return 0;
+    const { data, error } = await sb.from("caixa")
+      .select("tipo,valor,data,hora")
+      .lt("data", dataISO)
+      .order("data", { ascending: true })
+      .order("hora", { ascending: true });
+    if(error) throw error;
+
+    let saldo = 0;
+    for(const r of (data || [])) {
+      const val = Number(r.valor || 0);
+      saldo += (String(r.tipo || "").toUpperCase() === "DESPESA") ? -val : val;
     }
+    return saldo;
   }
 
-  // anos/meses
-  (function initSelectors(){
+  async function carregarMesCorrente() {
+    if(!sb) return;
+    showStatus("Carregando...");
+    const { start, end } = getRangeMesCorrente();
+    const startISO = toISODate(start);
+    const endISO = toISODate(end);
+
+    $("mesCorrenteLbl").textContent = monthLabel(start.getFullYear(), start.getMonth());
+    $("visualizandoLbl").textContent = `${startISO} → ${endISO} (exclusive)`;
+
+    const saldoAnterior = await saldoAntesDe(startISO);
+
+    const { data, error } = await sb.from("caixa")
+      .select("id,data,hora,tipo,descricao,obs,valor,created_at")
+      .gte("data", startISO)
+      .lt("data", endISO)
+      .order("data", { ascending: true })
+      .order("hora", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if(error) throw error;
+
+    renderTabela(data || [], saldoAnterior);
+    showStatus("");
+  }
+
+  function renderTabela(rows, saldoAnterior) {
+    const tb = $("tb");
+    tb.innerHTML = "";
+
+    let saldo = Number(saldoAnterior || 0);
+    let totRec = 0, totDesp = 0;
+
+    // linha "Saldo anterior"
+    const tr0 = document.createElement("tr");
+    tr0.innerHTML = `
+      <td colspan="7" style="opacity:.85"><b>Saldo anterior</b></td>
+      <td style="text-align:right"><b>${money(saldo)}</b></td>
+      <td style="text-align:center;opacity:.6">—</td>
+    `;
+    tb.appendChild(tr0);
+
+    for(const r of rows) {
+      const tipo = String(r.tipo || "").toUpperCase();
+      const valor = Number(r.valor || 0);
+
+      if(tipo === "DESPESA") {
+        saldo -= valor;
+        totDesp += valor;
+      } else {
+        saldo += valor;
+        totRec += valor;
+      }
+
+      const tr = document.createElement("tr");
+      tr.dataset.id = r.id;
+
+      const receita = (tipo === "RECEITA") ? money(valor) : "";
+      const despesa = (tipo === "DESPESA") ? money(valor) : "";
+
+      tr.innerHTML = `
+        <td>${r.data || ""}</td>
+        <td>${(r.hora || "").slice(0,5)}</td>
+        <td>${tipo}</td>
+        <td>${escapeHtml(r.descricao || "")}</td>
+        <td>${escapeHtml(r.obs || "")}</td>
+        <td style="text-align:right">${receita}</td>
+        <td style="text-align:right">${despesa}</td>
+        <td style="text-align:right"><b>${money(saldo)}</b></td>
+        <td style="text-align:center">${podeEditar ? `
+          <button class="btn btn-mini" data-act="edit">EDITAR</button>
+          <button class="btn btn-mini btn-danger" data-act="del">EXCLUIR</button>
+        ` : `<span style="opacity:.6">—</span>`}</td>
+      `;
+      tb.appendChild(tr);
+    }
+
+    $("totaisLbl").textContent = `Receitas: R$ ${money(totRec)} • Despesas: R$ ${money(totDesp)} • Saldo: R$ ${money(saldo)}`;
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  // ===== CRUD =====
+  async function criar() {
+    if(!sb) return;
+    if(!podeEditar) return;
+
+    const data = $("fData").value || hojeISO();
+    const hora = ($("fHora").value || agoraHora()).slice(0,5);
+    const tipo = $("fTipo").value;
+    const desc = ($("fDesc").value || "").trim();
+    const obs = ($("fObs").value || "").trim();
+    const valor = Number(String($("fValor").value || "0").replace(",", "."));
+
+    if(!desc) return showStatus("Informe a DESCRIÇÃO.", true);
+    if(!valor || valor <= 0) return showStatus("Informe um VALOR maior que zero.", true);
+
+    showStatus("Salvando...");
+    const payload = {
+      data, hora, tipo,
+      descricao: desc,
+      obs: obs || null,
+      valor
+    };
+
+    const { error } = await sb.from("caixa").insert(payload);
+    if(error) {
+      console.error(error);
+      return showStatus("Erro ao salvar (ver Console).", true);
+    }
+
+    limpar();
+    await carregarMesCorrente();
+    showStatus("Salvo.");
+    setTimeout(()=>showStatus(""), 1200);
+  }
+
+  function limpar() {
+    $("fData").value = hojeISO();
+    $("fHora").value = agoraHora();
+    $("fTipo").value = "RECEITA";
+    $("fDesc").value = "";
+    $("fObs").value = "";
+    $("fValor").value = "";
+  }
+
+  async function excluir(id) {
+    if(!sb) return;
+    if(!podeEditar) return;
+    if(!id) return;
+    if(!confirm("Excluir este lançamento?")) return;
+
+    showStatus("Excluindo...");
+    const { error } = await sb.from("caixa").delete().eq("id", id);
+    if(error) {
+      console.error(error);
+      return showStatus("Erro ao excluir (ver Console).", true);
+    }
+    await carregarMesCorrente();
+    showStatus("Excluído.");
+    setTimeout(()=>showStatus(""), 1200);
+  }
+
+  function entrarModoEdicao(tr) {
+    if(!podeEditar) return;
+    const id = tr.dataset.id;
+    const tds = tr.querySelectorAll("td");
+    const data = tds[0].textContent.trim();
+    const hora = tds[1].textContent.trim();
+    const tipo = tds[2].textContent.trim();
+    const desc = tds[3].textContent.trim();
+    const obs = tds[4].textContent.trim();
+    const valor = (tipo === "DESPESA") ? tds[6].textContent.trim() : tds[5].textContent.trim();
+
+    tr.innerHTML = `
+      <td><input class="inp" type="date" value="${data}"></td>
+      <td><input class="inp" type="time" value="${hora}"></td>
+      <td>
+        <select class="inp">
+          <option value="RECEITA" ${tipo==="RECEITA"?"selected":""}>RECEITA</option>
+          <option value="DESPESA" ${tipo==="DESPESA"?"selected":""}>DESPESA</option>
+        </select>
+      </td>
+      <td><input class="inp" type="text" value="${escapeAttr(desc)}"></td>
+      <td><input class="inp" type="text" value="${escapeAttr(obs)}"></td>
+      <td style="text-align:right"><span style="opacity:.5">—</span></td>
+      <td style="text-align:right"><span style="opacity:.5">—</span></td>
+      <td style="text-align:right"><span style="opacity:.5">—</span></td>
+      <td style="text-align:center">
+        <button class="btn btn-mini" data-act="save">SALVAR</button>
+        <button class="btn btn-mini btn-secondary" data-act="cancel">CANCELAR</button>
+      </td>
+    `;
+
+    // guarda valor em um input invisível (colocando no OBS)
+    const inpObs = tr.querySelectorAll(".inp")[4];
+    inpObs.dataset.valor = String(valor).replace(".", "").replace(",", ".") || "0";
+  }
+
+  function escapeAttr(s) {
+    return String(s).replaceAll('"', "&quot;");
+  }
+
+  async function salvarEdicao(tr) {
+    if(!sb) return;
+    const id = tr.dataset.id;
+    const inputs = tr.querySelectorAll(".inp");
+    const data = inputs[0].value;
+    const hora = (inputs[1].value || "00:00").slice(0,5);
+    const tipo = inputs[2].value;
+    const desc = (inputs[3].value || "").trim();
+    const obs = (inputs[4].value || "").trim();
+
+    // valor: tenta pegar do dataset; se estiver vazio, pede
+    let valor = Number(inputs[4].dataset.valor || 0);
+    if(!valor || valor<=0) {
+      const v = prompt("Valor (R$):", "");
+      valor = Number(String(v||"0").replace(",", "."));
+    }
+    if(!desc) return showStatus("Descrição vazia.", true);
+    if(!valor || valor<=0) return showStatus("Valor inválido.", true);
+
+    showStatus("Salvando edição...");
+    const { error } = await sb.from("caixa").update({
+      data, hora, tipo,
+      descricao: desc,
+      obs: obs || null,
+      valor
+    }).eq("id", id);
+
+    if(error) {
+      console.error(error);
+      return showStatus("Erro ao editar (ver Console).", true);
+    }
+
+    await carregarMesCorrente();
+    showStatus("Editado.");
+    setTimeout(()=>showStatus(""), 1200);
+  }
+
+  // ===== PDF =====
+  function fillPdfSelectors() {
+    const anoSel = $("pdfAno");
+    const mesSel = $("pdfMes");
+
     const now = new Date();
     const anoAtual = now.getFullYear();
-    for(let a=anoAtual-1; a<=anoAtual+1; a++){
-      const opt = document.createElement("option");
-      opt.value = a;
-      opt.textContent = a;
-      if(a===anoAtual) opt.selected = true;
-      selAno.appendChild(opt);
-    }
-    for(let m=1;m<=12;m++){
-      const opt = document.createElement("option");
-      opt.value = pad2(m);
-      opt.textContent = `${pad2(m)} - ${["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"][m-1]}`;
-      if(m===now.getMonth()+1) opt.selected = true;
-      selMes.appendChild(opt);
-    }
-    buildSemanas();
-    toggleSemana();
-  })();
 
-  function toggleSemana(){
-    const v = selPeriodo.value;
-    wrapSemana.style.display = (v==="SEMANAL") ? "flex" : "none";
-  }
-  selPeriodo.addEventListener("change", toggleSemana);
-
-  // ==== FECHAMENTO SEMANAL: cria linha toda segunda (se não existir)
-  async function garantirFechamentos(){
-    // cria fechamentos das últimas 26 semanas até a segunda atual
-    const now = new Date();
-    const monday = getMonday00(now);
-    const startRange = addDays(monday, -7*26);
-
-    // pega fechamentos já existentes no range
-    const { data: rows, error } = await sb
-      .from("caixa")
-      .select("id, data, hora, tipo, descricao")
-      .eq("tipo","FECHAMENTO")
-      .gte("data", isoDate(startRange))
-      .lte("data", isoDate(monday));
-
-    if(error){
-      console.warn("Aviso: não consegui listar fechamentos.", error);
-      return;
+    for(let a = anoAtual - 2; a <= anoAtual + 1; a++) {
+      const op = document.createElement("option");
+      op.value = String(a);
+      op.textContent = String(a);
+      if(a === anoAtual) op.selected = true;
+      anoSel.appendChild(op);
     }
 
-    const set = new Set();
-    (rows||[]).forEach(r=>{
-      const d = String(r.data||"").slice(0,10);
-      const h = String(r.hora||"");
-      set.add(`${d}::${h}`);
-    });
-
-    // monta todas as segundas no range
-    let cur = new Date(startRange.getTime());
-    cur = getMonday00(cur);
-
-    const inserts = [];
-    while(cur <= monday){
-      const dIso = isoDate(cur);
-      const key = `${dIso}::00:00`;
-      if(!set.has(key)){
-        inserts.push({
-          data: dIso,
-          hora: "00:00",
-          tipo: "FECHAMENTO",
-          descricao: `FECHAMENTO SEMANAL (${toBR(dIso)})`,
-          obs: "",
-          valor: 0
-        });
-      }
-      cur = addDays(cur, 7);
-    }
-
-    if(inserts.length){
-      const ins = await sb.from("caixa").insert(inserts);
-      if(ins.error){
-        console.warn("Aviso: falhou inserir fechamentos.", ins.error);
-      }
+    const nomes = ["01 - JAN","02 - FEV","03 - MAR","04 - ABR","05 - MAI","06 - JUN","07 - JUL","08 - AGO","09 - SET","10 - OUT","11 - NOV","12 - DEZ"];
+    for(let i=0;i<12;i++) {
+      const op = document.createElement("option");
+      op.value = String(i+1);
+      op.textContent = nomes[i];
+      if(i === now.getMonth()) op.selected = true;
+      mesSel.appendChild(op);
     }
   }
 
-  function getRangeSelecionado(){
-    const ano = Number(selAno.value);
-    const mes = Number(selMes.value);
-    const periodo = selPeriodo.value;
+  async function baixarPdf() {
+    if(!sb) return;
+    showStatusPdf("Gerando...");
 
-    if(periodo==="SEMANAL"){
-      const startIso = selSemana.value; // segunda
-      const start = new Date(startIso+"T00:00:00");
-      const end = addDays(start, 7);
-      return { startIso: isoDate(start), endIso: isoDate(end), label: `SEMANA ${toBR(isoDate(start))} → ${toBR(isoDate(end))}` };
-    }
+    const ano = Number($("pdfAno").value);
+    const mes = Number($("pdfMes").value) - 1;
 
-    if(periodo==="MENSAL"){
-      const startIso = `${ano}-${pad2(mes)}-01`;
-      const last = new Date(ano, mes, 0).getDate();
-      const endIso = `${ano}-${pad2(mes)}-${pad2(last)}`;
-      // endExclusive = +1 dia
-      const endEx = new Date(endIso+"T00:00:00"); endEx.setDate(endEx.getDate()+1);
-      return { startIso, endIso: isoDate(endEx), label: `MÊS ${pad2(mes)}/${ano}` };
-    }
+    const start = new Date(ano, mes, 1);
+    const end = new Date(ano, mes+1, 1);
 
-    // ANUAL
-    const startIso = `${ano}-01-01`;
-    const endEx = `${ano+1}-01-01`; // exclusivo
-    return { startIso, endIso: endEx, label: `ANO ${ano}` };
-  }
+    const startISO = toISODate(start);
+    const endISO = toISODate(end);
 
-  async function somarSaldoAnterior(startIso){
-    // soma tudo antes do startIso (data < startIso) + também (data=startIso e hora<00:00) que é nada
-    const { data, error } = await sb
-      .from("caixa")
-      .select("valor, data, hora")
-      .lt("data", startIso);
+    try {
+      const saldoAnterior = await saldoAntesDe(startISO);
 
-    if(error){
-      console.warn("Aviso: não consegui calcular saldo anterior.", error);
-      return 0;
-    }
-    let sum = 0;
-    (data||[]).forEach(r=>{
-      sum += Number(r.valor||0);
-    });
-    return sum;
-  }
+      const { data, error } = await sb.from("caixa")
+        .select("data,hora,tipo,descricao,obs,valor,created_at")
+        .gte("data", startISO)
+        .lt("data", endISO)
+        .order("data", { ascending: true })
+        .order("hora", { ascending: true })
+        .order("created_at", { ascending: true });
 
-  function rowToValor(row){
-    // DB: guarda "valor" (positivo receita / negativo despesa)
-    return Number(row.valor||0);
-  }
+      if(error) throw error;
 
-  let saving = new Map(); // debounce por id
-
-  async function salvarRow(id, patch){
-    if(!id) return;
-
-    // debounce simples
-    if(saving.has(id)) clearTimeout(saving.get(id));
-    const t = setTimeout(async ()=>{
-      statusEl.textContent = "SALVANDO...";
-      const { error } = await sb.from("caixa").update(patch).eq("id", id);
-      if(error){
-        console.error(error);
-        alert("ERRO ao salvar: " + (error.message || "ver console"));
-        statusEl.textContent = "ERRO ao salvar.";
-      }else{
-        statusEl.textContent = "SALVO.";
-      }
-    }, 250);
-    saving.set(id, t);
-  }
-
-  async function excluirRow(id){
-    if(!id) return;
-    if(!confirm("EXCLUIR este lançamento?")) return;
-    statusEl.textContent = "EXCLUINDO...";
-    const { error } = await sb.from("caixa").delete().eq("id", id);
-    if(error){
-      console.error(error);
-      alert("ERRO ao excluir: " + (error.message || "ver console"));
-      statusEl.textContent = "ERRO ao excluir.";
-      return;
-    }
-    await carregar();
-  }
-
-  function render(rows, saldoInicial){
-    tbody.innerHTML = "";
-
-    let saldo = Number(saldoInicial||0);
-
-    rows.forEach(row=>{
-      const tr = document.createElement("tr");
-      if(isFechamentoRow(row)) tr.classList.add("fechamento");
-
-      const d = String(row.data||"").slice(0,10);
-      const h = String(row.hora||"");
-      const tipo = String(row.tipo||"RECEITA").toUpperCase();
-      const descricao = String(row.descricao||"");
-      const obs = String(row.obs||"");
-
-      const valor = rowToValor(row);
-      const receita = (valor>0) ? valor : 0;
-      const despesa = (valor<0) ? Math.abs(valor) : 0;
-
-      saldo += valor;
-
-      // DATA
-      tr.appendChild(tdInputDate(row, d));
-      // HORA
-      tr.appendChild(tdInputTime(row, h));
-      // TIPO
-      tr.appendChild(tdSelectTipo(row, tipo));
-      // DESCRIÇÃO
-      tr.appendChild(tdInputText(row, "descricao", descricao, true));
-      // OBS
-      tr.appendChild(tdInputText(row, "obs", obs, true));
-      // RECEITA
-      tr.appendChild(tdValor(row, "RECEITA", receita));
-      // DESPESA
-      tr.appendChild(tdValor(row, "DESPESA", despesa));
-      // SALDO
-      const tdSaldo = document.createElement("td");
-      tdSaldo.className = "saldo";
-      tdSaldo.textContent = "R$ " + money(saldo);
-      tr.appendChild(tdSaldo);
-
-      // AÇÕES
-      const tdA = document.createElement("td");
-      tdA.className = "no-print";
-
-      const bloqueado = isMensalidadeRow(row) || isFechamentoRow(row);
-
-      const bDel = document.createElement("button");
-      bDel.className = "btn btn-vermelho";
-      bDel.textContent = "EXCLUIR";
-      bDel.disabled = bloqueado;
-      bDel.addEventListener("click", ()=>excluirRow(row.id));
-      tdA.appendChild(bDel);
-
-      tr.appendChild(tdA);
-
-      tbody.appendChild(tr);
-    });
-  }
-
-  function tdInputDate(row, iso){
-    const td = document.createElement("td");
-    const input = document.createElement("input");
-    input.type = "date";
-    input.value = iso || "";
-    input.addEventListener("change", ()=>{
-      salvarRow(row.id, { data: input.value });
-    });
-    td.appendChild(input);
-    return td;
-  }
-
-  function tdInputTime(row, hhmm){
-    const td = document.createElement("td");
-    const input = document.createElement("input");
-    input.type = "time";
-    input.value = hhmm || "00:00";
-    input.step = 60;
-    input.addEventListener("change", ()=>{
-      salvarRow(row.id, { hora: input.value });
-    });
-    td.appendChild(input);
-    return td;
-  }
-
-  function tdSelectTipo(row, tipo){
-    const td = document.createElement("td");
-    const sel = document.createElement("select");
-
-    ["RECEITA","DESPESA","MENSALIDADE","FECHAMENTO"].forEach(v=>{
-      const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
-      sel.appendChild(opt);
-    });
-
-    sel.value = tipo || "RECEITA";
-    sel.addEventListener("change", ()=>{
-      const v = sel.value;
-      // se trocar tipo, ajusta valor (mantém magnitude)
-      const cur = Number(row.valor||0);
-      let novo = cur;
-      if(v==="RECEITA") novo = Math.abs(cur||0);
-      if(v==="DESPESA") novo = -Math.abs(cur||0);
-      if(v==="FECHAMENTO") novo = 0;
-      salvarRow(row.id, { tipo: v, valor: novo });
-      carregar(); // re-render rápido (saldo/cores)
-    });
-
-    // bloqueia edição do tipo se for mensalidade/fechamento
-    if(isMensalidadeRow(row) || isFechamentoRow(row)){
-      sel.disabled = true;
-    }
-
-    td.appendChild(sel);
-    return td;
-  }
-
-  function tdInputText(row, field, val, upper){
-    const td = document.createElement("td");
-    td.className = "td-left";
-    const input = document.createElement("input");
-    input.type = "text";
-    input.value = val || "";
-    input.style.width = (field==="descricao") ? "320px" : "240px";
-    if(upper) input.style.textTransform = "uppercase";
-
-    const bloqueado = isMensalidadeRow(row) || isFechamentoRow(row);
-    input.disabled = bloqueado;
-
-    input.addEventListener("change", ()=>{
-      const patch = {};
-      patch[field] = input.value;
-      salvarRow(row.id, patch);
-    });
-    td.appendChild(input);
-    return td;
-  }
-
-  function tdValor(row, modo, v){
-    const td = document.createElement("td");
-
-    const input = document.createElement("input");
-    input.type = "number";
-    input.step = "0.01";
-    input.min = "0";
-    input.value = (v>0) ? String(v) : "";
-
-    const bloqueado = isMensalidadeRow(row) || isFechamentoRow(row);
-    input.disabled = bloqueado;
-
-    input.addEventListener("change", ()=>{
-      const n = Number(input.value||0);
-      let novoValor = Number(row.valor||0);
-
-      if(modo==="RECEITA"){
-        novoValor = Math.abs(n);
-        salvarRow(row.id, { tipo: "RECEITA", valor: novoValor });
-      }else{
-        novoValor = -Math.abs(n);
-        salvarRow(row.id, { tipo: "DESPESA", valor: novoValor });
-      }
-      carregar();
-    });
-
-    // cor
-    if(modo==="RECEITA") td.className = "money-pos";
-    if(modo==="DESPESA") td.className = "money-neg";
-
-    td.appendChild(input);
-    return td;
-  }
-
-  async function criarNovo(){
-    statusEl.textContent = "CRIANDO...";
-    const payload = {
-      data: hojeISO(),
-      hora: horaHHMM(),
-      tipo: "RECEITA",
-      descricao: "",
-      obs: "",
-      valor: 0
-    };
-    const { data, error } = await sb.from("caixa").insert([payload]).select("*").single();
-    if(error){
-      console.error(error);
-      alert("ERRO ao criar: " + (error.message || "ver console"));
-      statusEl.textContent = "ERRO ao criar.";
-      return;
-    }
-    await carregar();
-    statusEl.textContent = "CRIADO.";
-  }
-
-  async function carregar(){
-    try{
-      statusEl.textContent = "CARREGANDO...";
-
-      // garante fechamentos antes de listar
-      await garantirFechamentos();
-
-      const range = getRangeSelecionado();
-
-      // saldo anterior (acumulado)
-      const saldoAnterior = await somarSaldoAnterior(range.startIso);
-
-      // lista do período (endIso é exclusivo para semanal/mensal/anual)
-      const { data: rows, error } = await sb
-        .from("caixa")
-        .select("id, data, hora, tipo, descricao, obs, valor")
-        .gte("data", range.startIso)
-        .lt("data", range.endIso)
-        .order("data", { ascending:true })
-        .order("hora", { ascending:true });
-
-      if(error){
-        console.error(error);
-        statusEl.textContent = "ERRO ao buscar CAIXA (ver console).";
+      const html = buildPdfHtml(monthLabel(ano, mes), startISO, endISO, data||[], saldoAnterior);
+      const w = window.open("", "_blank");
+      if(!w) {
+        showStatusPdf("Pop-up bloqueado. Libere pop-ups e tente de novo.", true);
         return;
       }
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      setTimeout(()=>w.print(), 400);
 
-      // se o período estiver vazio, ainda mostra saldo anterior no status
-      render(rows || [], saldoAnterior);
-
-      statusEl.textContent = `OK: ${range.label} | Registros: ${(rows||[]).length} | Saldo anterior: R$ ${money(saldoAnterior)}`;
-    }catch(e){
+      showStatusPdf("PDF aberto.");
+      setTimeout(()=>showStatusPdf(""), 1500);
+    } catch(e) {
       console.error(e);
-      statusEl.textContent = "ERRO (ver console).";
+      showStatusPdf("Erro ao gerar PDF (ver Console).", true);
     }
   }
 
-  btnConsultar.addEventListener("click", carregar);
-  btnNovo.addEventListener("click", criarNovo);
-  btnPdf.addEventListener("click", ()=>window.print());
+  function buildPdfHtml(titulo, startISO, endISO, rows, saldoAnterior) {
+    let saldo = Number(saldoAnterior||0);
+    let totRec=0, totDesp=0;
 
-  // auto-load
-  window.addEventListener("DOMContentLoaded", ()=> setTimeout(()=>{ if(window.__TESOURA_SUPABASE__) carregar(); }, 50));
+    let trs = `
+      <tr class="sa">
+        <td colspan="6"><b>Saldo anterior</b></td>
+        <td style="text-align:right"><b>R$ ${money(saldo)}</b></td>
+      </tr>
+    `;
+
+    for(const r of rows) {
+      const tipo = String(r.tipo||"").toUpperCase();
+      const valor = Number(r.valor||0);
+      if(tipo === "DESPESA") { saldo -= valor; totDesp += valor; } else { saldo += valor; totRec += valor; }
+
+      trs += `
+        <tr>
+          <td>${r.data||""}</td>
+          <td>${(r.hora||"").slice(0,5)}</td>
+          <td>${tipo}</td>
+          <td>${escapeHtml(r.descricao||"")}</td>
+          <td>${escapeHtml(r.obs||"")}</td>
+          <td style="text-align:right">${tipo==="RECEITA" ? money(valor) : ""}</td>
+          <td style="text-align:right">${tipo==="DESPESA" ? money(valor) : ""}</td>
+          <td style="text-align:right"><b>${money(saldo)}</b></td>
+        </tr>
+      `;
+    }
+
+    const resumo = `Receitas: R$ ${money(totRec)} • Despesas: R$ ${money(totDesp)} • Saldo: R$ ${money(saldo)}`;
+
+    return `<!doctype html>
+<html><head><meta charset="utf-8"/>
+<title>CAIXA - ${titulo}</title>
+<style>
+  body{font-family:Arial, sans-serif; padding:18px;}
+  h1{font-size:18px;margin:0 0 6px 0;}
+  .sub{font-size:12px;margin:0 0 14px 0;color:#333;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th,td{border:1px solid #ddd;padding:6px;vertical-align:top;}
+  th{background:#f1f1f1;text-align:left;}
+  .sa td{background:#fafafa;}
+  .res{margin-top:10px;font-size:12px;}
+</style>
+</head><body>
+  <h1>TESOURA - CAIXA (PDF)</h1>
+  <div class="sub"><b>${titulo}</b> • Período: ${startISO} → ${endISO} (exclusive)</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:90px">DATA</th>
+        <th style="width:70px">HORA</th>
+        <th style="width:70px">TIPO</th>
+        <th>DESCRIÇÃO</th>
+        <th>OBS</th>
+        <th style="width:90px;text-align:right">RECEITA</th>
+        <th style="width:90px;text-align:right">DESPESA</th>
+        <th style="width:90px;text-align:right">SALDO</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${trs}
+    </tbody>
+  </table>
+  <div class="res"><b>${resumo}</b></div>
+</body></html>`;
+  }
+
+  // ===== EVENTS =====
+  $("btnSalvar").addEventListener("click", (e) => { e.preventDefault(); criar(); });
+  $("btnLimpar").addEventListener("click", (e) => { e.preventDefault(); limpar(); showStatus(""); });
+  $("btnRefresh").addEventListener("click", (e) => { e.preventDefault(); carregarMesCorrente().catch(err => { console.error(err); showStatus("Erro ao carregar (ver Console).", true); }); });
+  $("btnPdf").addEventListener("click", (e) => { e.preventDefault(); baixarPdf(); });
+
+  $("tb").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-act]");
+    if(!btn) return;
+    const tr = btn.closest("tr");
+    if(!tr || !tr.dataset.id) return;
+
+    const act = btn.dataset.act;
+    if(act === "del") return excluir(tr.dataset.id).catch(err => { console.error(err); showStatus("Erro (ver Console).", true); });
+    if(act === "edit") return entrarModoEdicao(tr);
+    if(act === "cancel") return carregarMesCorrente().catch(err => { console.error(err); showStatus("Erro (ver Console).", true); });
+    if(act === "save") return salvarEdicao(tr).catch(err => { console.error(err); showStatus("Erro (ver Console).", true); });
+  });
+
+  // ===== INIT =====
+  fillPdfSelectors();
+  limpar();
+  if(sb) {
+    carregarMesCorrente().catch(err => {
+      console.error(err);
+      showStatus("Erro ao carregar (ver Console).", true);
+    });
+  }
+})();
 </script>
+
 </body>
 </html>
- 
