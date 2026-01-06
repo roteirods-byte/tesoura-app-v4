@@ -2,6 +2,9 @@
 window.TESOURA_CONFIG = {
   // Jogadores (visual)
   APP_PIN: "TESOURA2026",
+  // Supabase (cliente do app)
+  SUPABASE_URL: "COLE_AQUI_SUA_SUPABASE_URL",
+  SUPABASE_ANON_KEY: "COLE_AQUI_SUA_SUPABASE_ANON_KEY",
 
   // Diretoria (PIN -> permissões)
   DIRETORIA_PINS: {
