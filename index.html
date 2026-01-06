@@ -184,6 +184,16 @@ try{
 
   <!-- TESOURA BOOT (destrava) -->
 <script defer src="app/core/boot.js?v=1"></script>
+
+<script>
+// ===== SW OFF (anti-cache) =====
+try{
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+  }
+}catch(e){}
+</script>
+
 </head>
 
 <body>
