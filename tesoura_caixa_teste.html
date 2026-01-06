@@ -158,68 +158,28 @@
 <script src="app/core/config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.CAIXA_CFG = window.CAIXA_CFG || window.TESOURA_CONFIG || {};
-  const SB_URL = window.CAIXA_CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
-  const SB_KEY = window.CAIXA_CFG.SUPABASE_KEY || window.CAIXA_CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-  
-/* ===== SUPABASE (ROBUSTO) ===== */
-window.CAIXA_CFG = window.CAIXA_CFG || (window.TESOURA_CONFIG || (window.parent && window.parent.TESOURA_CONFIG) || {});
-const SB_URL = window.CAIXA_CFG.SUPABASE_URL;
-const SB_KEY = window.CAIXA_CFG.SUPABASE_ANON_KEY || window.CAIXA_CFG.SUPABASE_KEY;
+  // ===== SUPABASE (ÚNICO / SEM DUPLICAR VARIÁVEIS) =====
+(function(){
+  const CFG =
+    (window.parent && window.parent.TESOURA_CONFIG) ? window.parent.TESOURA_CONFIG :
+    (window.TESOURA_CONFIG || window.CAIXA_CFG || {});
+  const SB_URL =
+    CFG.SUPABASE_URL || CFG.SB_URL || window.SUPABASE_URL || window.SB_URL;
+  const SB_KEY =
+    CFG.SUPABASE_ANON_KEY || CFG.SUPABASE_KEY || CFG.SB_KEY ||
+    window.SUPABASE_ANON_KEY || window.SUPABASE_KEY || window.SB_KEY;
 
-if(!SB_URL || !SB_KEY){
-  console.error("CAIXA: Supabase config ausente em TESOURA_CONFIG", window.CAIXA_CFG);
-  try{ document.getElementById("status").textContent = "ERRO: Supabase não configurado."; }catch(e){}
-} else {
-  window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || (function(){
-  try{
-    // tenta pegar do iframe primeiro, depois do index.html (parent)
-    var url =
-      (typeof SB_URL !== "undefined" && SB_URL) ||
-      window.SB_URL || window.SUPABASE_URL ||
-      (window.parent && (window.parent.SB_URL || window.parent.SUPABASE_URL));
-
-    var key =
-      (typeof SB_KEY !== "undefined" && SB_KEY) ||
-      window.SB_KEY || window.SUPABASE_ANON_KEY || window.SUPABASE_KEY ||
-      (window.parent && (window.parent.SB_KEY || window.parent.SUPABASE_ANON_KEY || window.parent.SUPABASE_KEY));
-
-    if(!url || !key) throw new Error("Supabase config ausente (SB_URL/SB_KEY)");
-
-    // client único (evita duplicar)
-    window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || (function(){
-  try{
-    var cfg = (window.parent && window.parent.TESOURA_CONFIG) ? window.parent.TESOURA_CONFIG : (window.TESOURA_CONFIG || {});
-    var url =
-      (typeof SB_URL !== "undefined" && SB_URL) ||
-      window.SB_URL || window.SUPABASE_URL || cfg.SB_URL || cfg.SUPABASE_URL ||
-      (window.parent && (window.parent.SB_URL || window.parent.SUPABASE_URL));
-
-    var key =
-      (typeof SB_KEY !== "undefined" && SB_KEY) ||
-      window.SB_KEY || window.SUPABASE_ANON_KEY || window.SUPABASE_KEY ||
-      cfg.SB_KEY || cfg.SUPABASE_ANON_KEY || cfg.SUPABASE_KEY ||
-      (window.parent && (window.parent.SB_KEY || window.parent.SUPABASE_ANON_KEY || window.parent.SUPABASE_KEY));
-
-    if(!url || !key) throw new Error("Supabase config ausente (SB_URL/SB_KEY)");
-
-    window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(url, key);
-    return window.__TESOURA_SUPABASE__;
-  }catch(e){
-    console.error(e);
-    try{ alert("CAIXA: Supabase não configurado (ver Console)."); }catch(_){}
-    return null;
+  if(!SB_URL || !SB_KEY){
+    console.error("CAIXA: Supabase config ausente", {SB_URL, hasKey: !!SB_KEY, CFG});
+    const st = document.getElementById("status");
+    if(st) st.textContent = "ERRO: Supabase não configurado.";
+    return;
   }
-})()
-    return window.__TESOURA_SUPABASE__;
-  }catch(e){
-    console.error(e);
-    try{ alert("CAIXA: Supabase não configurado (ver Console)."); }catch(_){}
-    return null;
-  }
-})()
-}
+
+  window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SB_URL, SB_KEY);
+})();
 const sb = window.__TESOURA_SUPABASE__;
+
 
 const $ = (id)=>document.getElementById(id);
 
