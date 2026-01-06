@@ -130,7 +130,25 @@
 </style>
 
   <!-- TESOURA CORE (central) -->
-  <script src="app/core/config.js">
+  <script src="app/core/config.js"></script>
+<script>
+  // Evita o site "travar" em versões antigas (Service Worker/caches antigos)
+  (function(){
+    try{
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations()
+          .then(function(regs){ regs.forEach(function(r){ r.unregister(); }); })
+          .catch(function(){});
+      }
+      if (window.caches && caches.keys) {
+        caches.keys()
+          .then(function(keys){ keys.forEach(function(k){ caches.delete(k); }); })
+          .catch(function(){});
+      }
+    } catch(e){}
+  })();
+</script>
+<script>
 // ===== HOTFIX CAIXA (DIRETORIA) =====
 try{
   function __forceCaixaDiretoria__(){
@@ -147,7 +165,6 @@ try{
   setTimeout(__forceCaixaDiretoria__, 1500);
 }catch(e){}
 // ===== FIM HOTFIX CAIXA =====
-
 </script>
   <script src="app/core/session.js"></script>
   <script src="app/core/supabase.js"></script>

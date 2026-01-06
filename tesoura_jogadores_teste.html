@@ -158,7 +158,7 @@
 </header>
 
   <div class="container">
-    <div class="painel">
+    <div class="painel" id="editPanel">
       <h2>Cadastrar / Editar Jogador</h2>
       <div class="grid-form">
         <div>
@@ -210,6 +210,24 @@
       </div>
       <p id="status"></p>
     </div>
+
+    <div class="painel" id="birthdayPanel">
+  <h2>Aniversariantes do Mês</h2>
+  <div id="birthdayHint" style="color:#cfd6ff;font-weight:800;margin:6px 0 10px">Carregando...</div>
+  <div style="overflow-x:auto;">
+    <table id="birthdayTable" style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="background:#ff7a18;color:#0b1020;padding:10px;border:1px solid rgba(255,255,255,.15);text-align:left;">APELIDO</th>
+          <th style="background:#ff7a18;color:#0b1020;padding:10px;border:1px solid rgba(255,255,255,.15);text-align:left;">DATA</th>
+        </tr>
+      </thead>
+      <tbody id="birthdayBody">
+        <tr><td colspan="2" style="padding:10px;border:1px solid rgba(255,255,255,.12);">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
     <div class="painel" style="overflow-x:auto;">
       <h2>Lista de Jogadores</h2>
@@ -388,7 +406,7 @@ function el(id){ return document.getElementById(id); }
         btnE.style.padding = "6px 10px";
         btnE.style.fontSize = "11px";
         btnE.addEventListener("click", () => {
-          editId = j.id;
+          editId = Number(j.id);
           camisaInput.value = j.camisa ?? "";
           nomeInput.value = j.nome ?? "";
           apelidoInput.value = j.apelido ?? "";
@@ -498,7 +516,8 @@ function el(id){ return document.getElementById(id); }
 
       if (error) {
         console.error(error);
-        statusEl.textContent = "ERRO AO SALVAR JOGADOR.";
+        statusEl.textContent = "ERRO AO SALVAR JOGADOR: " + (error?.message || JSON.stringify(error) || "");
+      console.error("ERRO AO SALVAR JOGADOR:", error);
         return;
       }
 
