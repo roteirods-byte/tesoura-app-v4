@@ -421,12 +421,11 @@
     try{
       // se a coluna "hora" existir, esta query funciona mesmo com tabela vazia
 async function detectHora(){
-  // FIX: no seu Supabase não existe coluna "hora".
-  // Então CAIXA deve operar SEM "hora" e guardar a hora dentro do OBS (já faz isso).
+  // FIX DEFINITIVO: seu Supabase NÃO tem a coluna "hora".
+  // O CAIXA deve operar SEM "hora" e guardar a hora dentro do OBS.
   HAS_HORA = false;
   return false;
 }
-      
       if(!error) HAS_HORA = true;
     }catch(_){
       HAS_HORA = false;
