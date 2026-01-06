@@ -372,7 +372,9 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>if (!window.supabase && typeof supabase !== "undefined") window.supabase = supabase;</script>
+	
   <script>
 // ===== SUPABASE =====
     const SUPABASE_URL = (window.parent && window.parent.TESOURA_CONFIG && window.parent.TESOURA_CONFIG.SUPABASE_URL) || "https://xuplzpispukvtggjasxx.supabase.co";
