@@ -257,7 +257,25 @@
   const SB_URL = (window.SB_URL || window.SUPABASE_URL || "").trim();
   const SB_KEY = (window.SB_KEY || window.SUPABASE_KEY || window.SUPABASE_ANON_KEY || "").trim();
 
-  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+  // cria client (aceita config no iframe ou herdada do index.html)
+let sb = null;
+try{
+  const url =
+    (typeof SB_URL !== "undefined" && SB_URL) ||
+    window.SB_URL || window.SUPABASE_URL ||
+    (window.parent && (window.parent.SB_URL || window.parent.SUPABASE_URL));
+
+  const key =
+    (typeof SB_KEY !== "undefined" && SB_KEY) ||
+    window.SB_KEY || window.SUPABASE_ANON_KEY || window.SUPABASE_KEY ||
+    (window.parent && (window.parent.SB_KEY || window.parent.SUPABASE_ANON_KEY || window.parent.SUPABASE_KEY));
+
+  if(!url || !key) throw new Error("Supabase config ausente (SB_URL/SB_KEY)");
+  sb = window.supabase.createClient(url, key);
+}catch(e){
+  console.error(e);
+  setTimeout(()=>{ try{ alert("CAIXA: Supabase não configurado (ver Console)."); }catch(_){} }, 50);
+}
 
   // ====== DOM ======
   const inData = document.getElementById("inData");
@@ -598,7 +616,7 @@
   })();
 
   // auto-load
-  window.addEventListener("load", carregar);
+  window.addEventListener("DOMContentLoaded", ()=> setTimeout(()=>{ if(sb) carregar(); }, 50));
 </script>
 </body>
 </html>
