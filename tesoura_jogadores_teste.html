@@ -630,11 +630,15 @@ function shouldAutoSnapshotNearDay1(){
 }
 
 // ===== garante sb (supabase client) para snapshots =====
-const CFG = window.TESOURA_CONFIG || {};
-const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
-const SB_KEY = CFG.SUPABASE_ANON_KEY || CFG.SUPABASE_KEY || CFG.SUPABASE_ANON || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-const sb = window.supabase?.createClient ? window.supabase.createClient(SB_URL, SB_KEY) : null;
-      
+
+const cfg = window.TESOURA_CONFIG || window.CFG || {};
+const supabaseUrl = (cfg.SUPABASE_URL || cfg.supabaseUrl || "").trim();
+const supabaseKey = (cfg.SUPABASE_ANON_KEY || cfg.SUPABASE_KEY || cfg.supabaseKey || "").trim();
+
+if (!supabaseUrl || !supabaseKey) throw new Error("supabaseUrl is required.");
+
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
 async function salvarSnapshotJogadores(motivo){
   try{
     if(!sb || !sb.from) return;
