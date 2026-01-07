@@ -699,16 +699,9 @@ function shouldAutoSnapshotNearDay1(){
   return d>=1 && d<=3;
 }
 
-// ===== garante sb (supabase client) para snapshots =====
-
-const cfg = window.TESOURA_CONFIG || window.CFG || {};
-const supabaseUrl = (cfg.SUPABASE_URL || cfg.supabaseUrl || "").trim();
-const supabaseKey = (cfg.SUPABASE_ANON_KEY || cfg.SUPABASE_KEY || cfg.supabaseKey || "").trim();
-
-if (!supabaseUrl || !supabaseKey) throw new Error("supabaseUrl is required.");
-
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
+// Supabase (fonte única): já inicializado no topo do arquivo
+const supabase = window.__TESOURA_SUPABASE__;
+      
 async function salvarSnapshotJogadores(motivo){
   try{
     if(!sb || !sb.from) return;
