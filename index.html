@@ -138,6 +138,29 @@
     try{
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
+<script>
+  // Anti-travamento: limpa SW/cache 1x por dia (sem precisar ficar fazendo Ctrl+Shift+R)
+  (function(){
+    try{
+      const k="TESOURA_CACHE_CLEAN_DAY";
+      const today = new Date().toISOString().slice(0,10);
+      if(localStorage.getItem(k) === today) return;
+      localStorage.setItem(k, today);
+
+      if('serviceWorker' in navigator){
+        navigator.serviceWorker.getRegistrations()
+          .then(regs => Promise.all(regs.map(r => r.unregister())))
+          .catch(()=>{});
+      }
+      if(window.caches && caches.keys){
+        caches.keys()
+          .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+          .catch(()=>{});
+      }
+    }catch(e){}
+  })();
+</script>
+          
           .then(function(regs){ regs.forEach(function(r){ r.unregister(); }); })
           .catch(function(){});
       }
