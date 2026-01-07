@@ -25,7 +25,7 @@
       background: var(--bg);
       color: var(--txt);
     }
-    .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+    .container { max-width: 1600px; width: calc(100vw - 32px); margin: 0 auto; padding: 16px; }
     h1, h2 { margin: 0 0 10px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
     h1 { font-size: 28px; }
     h2 { font-size: 18px; color: var(--orange); }
@@ -73,7 +73,7 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
-      min-width: 980px;
+      /* min-width removido para evitar rolagem horizontal */
     }
     th, td {
       border: 1px solid #0f172a;
@@ -154,7 +154,7 @@
 /* R1 FIX: lista automática, sem botão recarregar */
 .btn-recarregar{display:none !important;}
 /* R1 FIX: aniversariantes menor */
-#birthdayPanel{max-height:120px; overflow-y:auto; overflow-x:hidden;}
+#birthdayPanel{max-height:none; overflow:visible;}
 
   /* Birthday table sizing */
   #birthdayTable{ table-layout:fixed; width:100%; }
@@ -163,6 +163,26 @@
   #birthdayTable .bd-col-data{ width:25%; }
   #birthdayTable .bd-col-idade{ width:25%; text-align:center; }
   #birthdayBody td.bd-idade{ text-align:center; }
+
+/* R3 FIX: evitar rolagem horizontal na LISTA DE JOGADORES */
+#jogadoresTable{ table-layout:fixed; width:100%; }
+#jogadoresTable th, #jogadoresTable td{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#jogadoresTable th:nth-child(1), #jogadoresTable td:nth-child(1){ width:50px; }   /* ORDEM */
+#jogadoresTable th:nth-child(2), #jogadoresTable td:nth-child(2){ width:60px; }   /* ID */
+#jogadoresTable th:nth-child(3), #jogadoresTable td:nth-child(3){ width:70px; }   /* CAMISA */
+#jogadoresTable th:nth-child(4), #jogadoresTable td:nth-child(4){ width:110px; }  /* APELIDO */
+#jogadoresTable th:nth-child(5), #jogadoresTable td:nth-child(5){ width:200px; }  /* NOME */
+#jogadoresTable th:nth-child(6), #jogadoresTable td:nth-child(6){ width:120px; }  /* DATA NASC. */
+#jogadoresTable th:nth-child(7), #jogadoresTable td:nth-child(7){ width:60px; }   /* IDADE */
+#jogadoresTable th:nth-child(8), #jogadoresTable td:nth-child(8){ width:140px; }  /* CELULAR */
+#jogadoresTable th:nth-child(9), #jogadoresTable td:nth-child(9){ width:70px; }   /* POSIÇÃO */
+#jogadoresTable th:nth-child(10), #jogadoresTable td:nth-child(10){ width:50px; } /* HAB */
+#jogadoresTable th:nth-child(11), #jogadoresTable td:nth-child(11){ width:50px; } /* VEL */
+#jogadoresTable th:nth-child(12), #jogadoresTable td:nth-child(12){ width:50px; } /* MOV */
+#jogadoresTable th:nth-child(13), #jogadoresTable td:nth-child(13){ width:70px; } /* PONTOS */
+#jogadoresTable th:nth-child(14), #jogadoresTable td:nth-child(14){ width:90px; } /* EDITAR */
+#jogadoresTable th:nth-child(15), #jogadoresTable td:nth-child(15){ width:90px; } /* EXCLUIR */
+
 
   /* Lista: não quebrar linhas em DATA NASC e CELULAR */
   #tbody-jogadores td:nth-child(6), #tbody-jogadores th:nth-child(6){ min-width:110px; white-space:nowrap; }
@@ -230,7 +250,7 @@
     <div class="painel" id="birthdayPanel">
   <h2>Aniversariantes do Mês</h2>
   <div id="birthdayHint" style="color:#cfd6ff;font-weight:800;margin:6px 0 10px">Carregando...</div>
-  <div style="overflow-x:auto;">
+  <div style="overflow-x:hidden;">
     <table id="birthdayTable" style="width:100%;border-collapse:collapse;">
       <thead>
         <tr>
@@ -246,7 +266,7 @@
   </div>
 </div>
 
-    <div class="painel" style="overflow-x:auto;">
+    <div class="painel" style="overflow-x:hidden;">
       <h2>Lista de Jogadores</h2>
       <div style="color:#cfd6ff;font-weight:800;margin:6px 0 10px">
   ZAGUEIRO = Z &nbsp;&nbsp; LATERAL = L &nbsp;&nbsp; MEIO = M &nbsp;&nbsp; ATAQUE = A
@@ -254,7 +274,7 @@
 <button class="btn btn-blue" id="btnPdfAtual" type="button">BAIXAR PDF (ATUAL)</button>
       <p style="font-size:12px;">ORDEM ALFABÉTICA POR APELIDO. COLUNA IDADE É CALCULADA AUTOMÁTICA.</p>
 
-      <table>
+      <table id="jogadoresTable">
         <thead>
           <tr>
             <th>ORDEM</th>
