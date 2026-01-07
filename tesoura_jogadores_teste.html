@@ -573,8 +573,8 @@ tbody.appendChild(tr);
 
     async function excluirJogador(id) {
       statusEl.textContent = "Excluindo jogador...";
-      const { error } = await supabase.from("jogadores").delete().eq("id", id);
-
+     const { data, error } = await supabase.from("vw_jogadores_painel").select("*").order("apelido", { ascending:true });
+      
       if (error) {
         console.error(error);
         statusEl.textContent =
