@@ -241,12 +241,65 @@
   </div>
 </div>
 
+function renderAniversariantes(lista) {
+  const body = document.getElementById("birthdayBody");
+  const hint = document.getElementById("birthdayHint");
+  if (!body) return;
+
+  const now = new Date();
+  const mes = now.getMonth() + 1;
+
+  const parseMesDia = (v) => {
+    if (!v) return null;
+
+    // aceita: YYYY-MM-DD
+    if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      const mm = Number(v.slice(5,7));
+      const dd = Number(v.slice(8,10));
+      return { mm, dd };
+    }
+
+    // aceita: DD/MM/AAAA
+    if (typeof v === "string" && /^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
+      const dd = Number(v.slice(0,2));
+      const mm = Number(v.slice(3,5));
+      return { mm, dd };
+    }
+
+    return null;
+  };
+
+  const anivers = (lista || [])
+    .map(j => {
+      const md = parseMesDia(j.data_nasc);
+      if (!md) return null;
+      return { apelido: (j.apelido || "").toUpperCase(), mm: md.mm, dd: md.dd };
+    })
+    .filter(x => x && x.mm === mes)
+    .sort((a,b) => a.dd - b.dd);
+
+  if (anivers.length === 0) {
+    body.innerHTML = `<tr><td colspan="2" style="text-align:center;opacity:.8">Nenhum aniversariante neste mês.</td></tr>`;
+    if (hint) hint.textContent = "";
+    return;
+  }
+
+  body.innerHTML = anivers.map(a => `
+    <tr>
+      <td>${a.apelido}</td>
+      <td>${String(a.dd).padStart(2,"0")}/${String(a.mm).padStart(2,"0")}</td>
+    </tr>
+  `).join("");
+
+  if (hint) hint.textContent = `Total: ${anivers.length}`;
+}
+    
     <div class="painel" style="overflow-x:auto;">
       <h2>Lista de Jogadores</h2>
       <div style="color:#cfd6ff;font-weight:800;margin:6px 0 10px">
   ZAGUEIRO = Z &nbsp;&nbsp; LATERAL = L &nbsp;&nbsp; MEIO = M &nbsp;&nbsp; ATAQUE = A
 </div>
-      <button class="btn-recarregar" id="btn-recarregar">RECARREGAR LISTA</button>
+<button id="btn-recarregar" style="display:none">RECARREGAR LISTA</button>
           <button class="btn btn-blue" id="btnPdfAtual" type="button">BAIXAR PDF (ATUAL)</button>
       <p style="font-size:12px;">ORDEM ALFABÉTICA POR APELIDO. COLUNA IDADE É CALCULADA AUTOMÁTICA.</p>
 
@@ -379,6 +432,9 @@ function el(id){ return document.getElementById(id); }
         .select("id,camisa,apelido,nome,data_nasc,celular,posicao,hab,vel,mov,pontos,ativo")
         .order("apelido", { ascending: true });
 
+JOGADORES_CACHE = data || [];
+renderAniversariantes(JOGADORES_CACHE);
+      
       if (error) {
         console.error(error);
         statusEl.textContent = "ERRO AO CARREGAR JOGADORES.";
@@ -416,6 +472,9 @@ function el(id){ return document.getElementById(id); }
         const tdEditar = document.createElement("td");
         const btnE = document.createElement("button");
         btnE.textContent = "EDITAR";
+        editApelidoOriginal = (j.apelido || "").toUpperCase();
+window.scrollTo({ top: 0, behavior: "smooth" });
+
         btnE.className = "btn btn-orange";
         btnE.style.padding = "6px 10px";
         btnE.style.fontSize = "11px";
@@ -474,19 +533,89 @@ try{
       statusEl.textContent = "JOGADOR EXCLUÍDO COM SUCESSO.";
       carregarJogadores();
     }
+async function salvarJogador() {
+  const novoApelido = (apelidoInput.value || "").trim().toUpperCase();
+  if (!novoApelido) {
+    alert("APELIDO é obrigatório.");
+    return;
+  }
 
-    async function salvarJogador() {
-      let camisa = camisaInput.value ? parseInt(camisaInput.value, 10) : null;
-      let nome = nomeInput.value.trim().toUpperCase();
-      let apelido = apelidoInput.value.trim().toUpperCase();
-      let data_nasc = dataNascInput.value || null;
-      let celular = celularInput.value.trim();
-      let posicao = posicaoInput.value.trim().toUpperCase().slice(0,1);
-      // compatibilidade: se digitar D, vira Z (Zagueiro)
-      if(posicao === "D") posicao = "Z";
-      if(posicao && !["Z","L","M","A"].includes(posicao)){
-        statusEl.textContent = "POSIÇÃO inválida. Use: Z (Zagueiro), L (Lateral), M (Meio), A (Ataque).";
-        return;
+  const payload = {
+    camisa: (camisaInput.value || "").trim() || null,
+    apelido: novoApelido,
+    nome: (nomeInput.value || "").trim() || null,
+    data_nasc: (dataNascInput.value || "").trim() || null,
+    celular: (celularInput.value || "").trim() || null,
+    posicao: (posicaoInput.value || "").trim().toUpperCase() || null,
+    hab: habInput.value ? Number(habInput.value) : null,
+    vel: velInput.value ? Number(velInput.value) : null,
+    mov: movInput.value ? Number(movInput.value) : null,
+    pontos: pontosInput.value ? Number(pontosInput.value) : null,
+    ativo: true,
+  };
+
+  try {
+    statusEl.textContent = "Salvando...";
+
+    // NOVO
+    if (!editId) {
+      const { error } = await supabase.from("jogadores").insert(payload);
+      if (error) throw error;
+      statusEl.textContent = "Jogador cadastrado.";
+      limparFormulario();
+      await carregarJogadores();
+      return;
+    }
+
+    // EDIÇÃO (sem trocar apelido)
+    const apelidoAntigo = (editApelidoOriginal || "").toUpperCase();
+    if (apelidoAntigo && novoApelido === apelidoAntigo) {
+      const { error } = await supabase.from("jogadores").update(payload).eq("id", editId);
+      if (error) throw error;
+      statusEl.textContent = "Alteração salva.";
+      limparFormulario();
+      await carregarJogadores();
+      return;
+    }
+
+    // EDIÇÃO (TROCANDO APELIDO) -> MIGRAÇÃO SEGURA
+    // 1) cria novo jogador
+    const { data: novoJog, error: eIns } = await supabase
+      .from("jogadores")
+      .insert(payload)
+      .select("id,apelido")
+      .single();
+
+    if (eIns) throw eIns;
+
+    // 2) migra tabelas que usam apelido
+    const migra = async (tabela) => {
+      const { error } = await supabase
+        .from(tabela)
+        .update({ apelido: novoApelido })
+        .eq("apelido", apelidoAntigo);
+      if (error) throw error;
+    };
+
+    await migra("mensalidades"); // resolve FK
+    await migra("presencas");
+    await migra("gols");
+
+    // 3) apaga jogador antigo
+    const { error: eDel } = await supabase.from("jogadores").delete().eq("id", editId);
+    if (eDel) throw eDel;
+
+    statusEl.textContent = `Apelido alterado: ${apelidoAntigo} → ${novoApelido}`;
+    limparFormulario();
+    await carregarJogadores();
+
+  } catch (err) {
+    console.error(err);
+    alert("ERRO AO SALVAR JOGADOR: " + (err.message || err));
+    statusEl.textContent = "Erro ao salvar.";
+  }
+}
+  
       }
       let hab = habInput.value ? parseInt(habInput.value, 10) : null;
       let vel = velInput.value ? parseInt(velInput.value, 10) : null;
