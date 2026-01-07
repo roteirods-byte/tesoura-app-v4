@@ -296,7 +296,7 @@ if (!pago) return; // desmarcou ou excluiu: só remove
 
   async function getExisting(apel, year, month){
     const { data, error } = await sb
-      .from("mensalidades")
+      .from("vw_mensalidades_painel")
       .select("*")
       .eq("apelido", apel)
       .eq("ano", year)
