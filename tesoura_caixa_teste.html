@@ -1,709 +1,580 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TESOURA - CAIXA</title>
-
-  <!-- Supabase (global window.supabase) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script>if (!window.supabase && typeof supabase !== "undefined") window.supabase = supabase;</script>
-
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Tesoura - Caixa</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <style>
     :root{
-      --bg:#061427;
-      --card:#0b223d;
-      --card2:#0a1d34;
-      --line:#133a60;
-      --text:#e8f0ff;
-      --muted:#9bb0c8;
-      --orange:#ff7a1a;
-      --btn:#12b6ff;
-      --green:#1fe08b;
-      --red:#ff4d4d;
-      --shadow:0 10px 30px rgba(0,0,0,.35);
-      --radius:18px;
-      --pad:18px;
-      font-synthesis-weight:none;
+      --bg:#050a14;
+      --panel:#0b1220;
+      --panel2:#0a1020;
+      --line:#18233a;
+      --text:#e7eefc;
+      --muted:#9fb2d7;
+      --orange:#ff8a2a;
+      --blue:#12b5ea;
+      --green:#18d37b;
+      --red:#ff3b3b;
     }
     *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1200px 600px at 50% 0%, rgba(18,182,255,.12), transparent 55%),
-                  radial-gradient(900px 600px at 80% 15%, rgba(255,122,26,.10), transparent 60%),
-                  var(--bg);
-      color:var(--text);
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .wrap{max-width:1400px;margin:0 auto;padding:18px}
+    .card{background:linear-gradient(180deg,rgba(18,24,45,.92),rgba(10,16,32,.92));border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+    .title{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:2px solid rgba(255,138,42,.55)}
+    .title h1{margin:0;font-size:18px;letter-spacing:.4px;color:var(--orange)}
+    .title small{color:var(--muted)}
+    .section{padding:16px 18px}
+    .section h2{margin:0 0 10px 0;color:var(--orange);font-size:14px;letter-spacing:.4px}
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .field{display:flex;flex-direction:column;gap:6px}
+    label{font-size:12px;color:var(--muted)}
+    select,input{height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.10);background:#0a1020;color:#fff;padding:0 10px;outline:none}
+    input::placeholder{color:#5f6f93}
+    .btn{height:36px;border-radius:10px;border:0;padding:0 14px;font-weight:800;cursor:pointer}
+    .btn.blue{background:var(--blue);color:#00111a}
+    .btn.orange{background:var(--orange);color:#1a0a00}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.14);color:#fff}
+    .meta{margin-top:8px;color:var(--muted);font-size:12px}
+    .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;border:1px solid rgba(255,255,255,.14);color:#dbe7ff;background:rgba(0,0,0,.18)}
+    .badge.lock{border-color:rgba(255,138,42,.55);color:#ffd9b5}
+    .table-wrap{margin-top:10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);overflow:hidden}
+    table{width:100%;border-collapse:collapse;table-layout:fixed}
+    thead th{background:var(--orange);color:#fff;font-size:12px;padding:10px;border-right:1px solid rgba(0,0,0,.18)}
+    thead th:last-child{border-right:0}
+    tbody td{padding:10px;border-top:1px solid rgba(255,255,255,.08);vertical-align:middle;font-size:12px;color:#e9f1ff}
+    tbody tr:nth-child(even){background:rgba(255,255,255,.02)}
+
+    .col-date{width:110px}
+    .col-desc{width:320px}
+    .col-obs{width:180px}
+    .col-money{width:130px;text-align:right}
+    .col-act{width:110px;text-align:center}
+
+    td.col-desc, td.col-obs{white-space:normal;text-align:left;}
+    .money.pos{color:var(--green);font-weight:900}
+    .money.neg{color:var(--red);font-weight:900}
+
+    .btnSmall{height:30px;border-radius:10px;border:0;padding:0 12px;font-weight:900;cursor:pointer;font-size:12px}
+    .btnEdit{background:var(--green);color:#02140b}
+    .btnDel{background:var(--red);color:#1a0000}
+    .btnDisabled{opacity:.55;cursor:not-allowed}
+
+    @media print{
+      body{background:#fff;color:#000}
+      .wrap{max-width:none;padding:0}
+      .card{box-shadow:none;border:0;border-radius:0;background:#fff}
+      .title .right-actions{display:none !important}
+      .no-print{display:none !important}
+      .table-wrap{border:0}
+      table{table-layout:auto;width:100%}
     }
-    .wrap{
-      max-width: 1180px;
-      margin: 18px auto;
-      padding: 0 14px;
-    }
-    .card{
-      background: linear-gradient(180deg, rgba(11,34,61,.95), rgba(8,22,41,.98));
-      border:1px solid rgba(19,58,96,.65);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .hdr{
-      padding: 18px 18px 10px 18px;
-      border-bottom: 1px solid rgba(19,58,96,.55);
-    }
-    .hdr .title{
-      font-weight: 800;
-      letter-spacing:.3px;
-      color: var(--orange);
-      font-size: 20px;
-    }
-    .hdr .sub{
-      margin-top:6px;
-      color: var(--muted);
-      font-size: 12.5px;
-      line-height: 1.4;
-    }
-    .pillrow{
-      padding: 10px 18px 16px 18px;
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      align-items:center;
-    }
-    .pill{
-      background: rgba(6,20,39,.55);
-      border:1px solid rgba(19,58,96,.7);
-      color: var(--text);
-      border-radius: 999px;
-      padding: 7px 10px;
-      font-size: 12.5px;
-      display:flex;
-      gap:8px;
-      align-items:center;
-      white-space:nowrap;
-    }
-    .pill b{color:#fff}
-    .grid{
-      display:grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap:14px;
-      padding: 0 18px 18px 18px;
-    }
-    @media (max-width: 980px){
-      .grid{grid-template-columns: 1fr;}
-    }
-    .panel{
-      background: rgba(6,20,39,.55);
-      border:1px solid rgba(19,58,96,.65);
-      border-radius: 16px;
-      padding: 14px;
-    }
-    .panel h3{
-      margin:0 0 10px 0;
-      font-size: 14px;
-      color: var(--orange);
-      letter-spacing:.2px;
-    }
-    .row{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    .row3{
-      display:grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    label{
-      display:block;
-      font-size:12px;
-      color: var(--muted);
-      margin-bottom:6px;
-    }
-    input, select{
-      width:100%;
-      height: 38px;
-      padding: 0 10px;
-      border-radius: 12px;
-      border:1px solid rgba(19,58,96,.75);
-      background: rgba(10,29,52,.75);
-      color: var(--text);
-      outline:none;
-    }
-    input::placeholder{color:#7f95b0}
-    .btnrow{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-      margin-top: 6px;
-    }
-    .btn{
-      height: 38px;
-      padding: 0 16px;
-      border-radius: 12px;
-      border:0;
-      cursor:pointer;
-      font-weight: 800;
-      letter-spacing:.3px;
-    }
-    .btn.save{background: var(--green); color:#052114;}
-    .btn.clear{background: var(--red); color:#210707;}
-    .btn.pdf{background: var(--btn); color:#041826;}
-    .btn.small{height:34px; padding:0 12px; font-weight:800}
-    .hint{
-      margin-left:auto;
-      color: var(--muted);
-      font-size: 12px;
-    }
-    .status{
-      margin-top: 10px;
-      font-size: 12.5px;
-      color: var(--muted);
-    }
-    .status.err{color: #ffb3b3}
-    .tablewrap{
-      margin-top: 12px;
-      border-radius: 14px;
-      border:1px solid rgba(19,58,96,.65);
-      overflow:hidden;
-      background: rgba(6,20,39,.45);
-    }
-    table{width:100%; border-collapse:collapse;}
-    thead th{
-      background: rgba(255,122,26,.95);
-      color:#111;
-      font-size: 12px;
-      padding: 10px 8px;
-      text-align:left;
-      white-space:nowrap;
-    }
-    tbody td{
-      padding: 9px 8px;
-      border-top:1px solid rgba(19,58,96,.35);
-      font-size: 12.5px;
-      color: var(--text);
-      vertical-align:top;
-    }
-    tbody tr:hover td{background: rgba(18,182,255,.05);}
-    .right{text-align:right}
-    .muted{color: var(--muted)}
-    .pos{color: var(--green); font-weight:800}
-    .neg{color: var(--red); font-weight:800}
-    .actions button{
-      height: 30px;
-      border-radius: 10px;
-      border:0;
-      padding: 0 10px;
-      cursor:pointer;
-      font-weight: 800;
-      background: rgba(255,77,77,.95);
-      color:#210707;
-    }
-    .sep{height:1px; background:rgba(19,58,96,.55); margin:12px 0;}
-    .note{
-      font-size:12px;
-      color: var(--muted);
-      line-height:1.35;
-      margin-top:6px;
-    }
+    @page{size:A4 landscape;margin:10mm}
   </style>
-
-<style>
-#tesouraFileBadge{
-  position:fixed; right:10px; bottom:10px; z-index:99999;
-  font: 11px/1.2 Arial, sans-serif;
-  background: rgba(0,0,0,.55);
-  color:#fff; padding:6px 8px; border-radius:10px;
-  border:1px solid rgba(255,255,255,.15);
-}
-</style>
-
 </head>
 <body>
   <div class="wrap">
     <div class="card">
-      <div class="hdr">
-        <div class="title">CAIXA</div>
-        <div class="sub">
-          Tela fixa no <b>mês corrente</b>. O filtro abaixo serve apenas para <b>baixar PDF</b> de meses anteriores.
-          <br/>Período do arquivo: <b>dia 1 → dia 1 do próximo mês</b> (exclusivo).
+      <div class="title">
+        <div>
+          <h1>TESOURA - CAIXA</h1>
+          <small>Arquivo mensal: dia 1 → dia 1 do próximo mês. Tela fica no mês corrente.</small>
+        </div>
+        <div class="right-actions no-print">
+          <span class="badge" id="badgeMes">Mês corrente</span>
         </div>
       </div>
 
-      <div class="pillrow">
-        <div class="pill">Mês corrente: <b id="mesCorrente">—</b></div>
-        <div class="pill">Visualizando: <b id="rangeVis">—</b></div>
-        <div class="pill">Total: <b id="totalVis">—</b></div>
-        <div class="pill" id="pillCfg" style="display:none">Config: <b id="cfgInfo">—</b></div>
-      </div>
-
-      <div class="grid">
-        <!-- Lançamentos -->
-        <div class="panel">
-          <h3>LANÇAMENTOS (mês corrente)</h3>
-
-          <div class="row3">
-            <div>
-              <label>DATA</label>
-              <input id="inData" type="date" />
-            </div>
-            <div id="wrapHora">
-              <label>HORA</label>
-              <input id="inHora" type="time" />
-            </div>
-            <div>
-              <label>TIPO</label>
-              <select id="inTipo">
-                <option value="RECEITA">RECEITA</option>
-                <option value="DESPESA">DESPESA</option>
-                <option value="OUTRO">OUTRO</option>
-              </select>
-            </div>
+      <div class="section no-print">
+        <h2>LANÇAMENTOS (mês corrente)</h2>
+        <div class="row">
+          <div class="field">
+            <label>DATA (automática):</label>
+            <input id="inData" type="date" style="width:170px" readonly />
+          </div>
+          <div class="field">
+            <label>TIPO:</label>
+            <select id="inTipo" style="width:150px">
+              <option value="RECEITA">RECEITA</option>
+              <option value="DESPESA">DESPESA</option>
+            </select>
+          </div>
+          <div class="field" style="flex:1;min-width:260px">
+            <label>DESCRIÇÃO:</label>
+            <input id="inDesc" placeholder="Descrição" />
+          </div>
+          <div class="field" style="min-width:220px">
+            <label>OBS:</label>
+            <input id="inObs" placeholder="Opcional" />
+          </div>
+          <div class="field" style="width:160px">
+            <label>VALOR (R$):</label>
+            <input id="inValor" placeholder="0,00" inputmode="decimal" />
           </div>
 
-          <div class="row">
-            <div>
-              <label>DESCRIÇÃO</label>
-              <input id="inDesc" placeholder="Descrição" />
-            </div>
-            <div>
-              <label>OBS</label>
-              <input id="inObs" placeholder="Opcional" />
-            </div>
-          </div>
-
-          <div class="row">
-            <div>
-              <label>VALOR (R$)</label>
-              <input id="inValor" inputmode="decimal" placeholder="0,00" />
-            </div>
-            <div class="btnrow" style="align-items:flex-end">
-              <button class="btn save" id="btnSalvar">SALVAR</button>
-              <button class="btn clear" id="btnLimpar">LIMPAR</button>
-              <div class="hint" id="saveHint"></div>
-            </div>
-          </div>
-
-          <div class="status" id="status">—</div>
-
-          <div class="tablewrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>DATA</th>
-                  <th id="thHora">HORA</th>
-                  <th>TIPO</th>
-                  <th>DESCRIÇÃO</th>
-                  <th>OBS</th>
-                  <th class="right">RECEITA (R$)</th>
-                  <th class="right">DESPESA (R$)</th>
-                  <th class="right">SALDO (R$)</th>
-                  <th>AÇÕES</th>
-                </tr>
-              </thead>
-              <tbody id="tbody">
-                <tr><td colspan="9" class="muted">Carregando…</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="note">
-            Receita = valor positivo. Despesa = valor negativo. Entradas criadas pela Mensalidade aparecem aqui automaticamente.
-          </div>
+          <button class="btn blue" id="btnSalvar">SALVAR</button>
+          <button class="btn ghost" id="btnCancelar" style="display:none">CANCELAR</button>
+          <button class="btn ghost" id="btnLimpar">LIMPAR</button>
         </div>
 
-        <!-- PDF -->
-        <div class="panel">
-          <h3>PDF (ARQUIVO MENSAL)</h3>
-          <div class="row">
-            <div>
-              <label>ANO (PDF)</label>
-              <select id="pdfAno"></select>
-            </div>
-            <div>
-              <label>MÊS (PDF)</label>
-              <select id="pdfMes"></select>
-            </div>
+        <div class="meta" id="status">Carregando...</div>
+      </div>
+
+      <div class="section no-print">
+        <h2>PDF (arquivo mensal)</h2>
+        <div class="row">
+          <div class="field">
+            <label>ANO:</label>
+            <select id="selAnoPdf"></select>
           </div>
-          <div class="btnrow">
-            <button class="btn pdf" id="btnPdf">BAIXAR PDF</button>
-            <div class="hint">Dica: o PDF abre no navegador. Depois clique em imprimir e salve como PDF.</div>
+          <div class="field">
+            <label>MÊS:</label>
+            <select id="selMesPdf"></select>
           </div>
-          <div class="sep"></div>
-          <div class="note" id="pdfInfo">—</div>
+          <button class="btn orange" id="btnPdf">BAIXAR PDF</button>
+          <div class="meta">Obs: o PDF abre no navegador. Depois clique em imprimir e salve como PDF.</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 id="h2Tabela">LANÇAMENTOS</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-date">DATA</th>
+                <th class="col-desc">DESCRIÇÃO</th>
+                <th class="col-obs">OBS</th>
+                <th class="col-money">RECEITA (R$)</th>
+                <th class="col-money">DESPESA (R$)</th>
+                <th class="col-money">SALDO (R$)</th>
+                <th class="col-act">EDITAR</th>
+                <th class="col-act">EXCLUIR</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
   </div>
 
 <script>
-(function(){
-  // ========= Helpers =========
-  const $ = (id)=>document.getElementById(id);
+/* ===== SUPABASE ===== */
+const CFG = window.TESOURA_CONFIG || {};
+const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
+const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || CFG.SUPABASE_ANON || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-  function pad2(n){ return String(n).padStart(2,"0"); }
-  function money(n){
-    try{
-      const v = Number(n||0);
-      return v.toLocaleString("pt-BR",{minimumFractionDigits:2, maximumFractionDigits:2});
-    }catch(_){ return "0,00"; }
-  }
-  function todayIso(){
-    const d=new Date();
-    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-  }
-  function nowHHMM(){
-    const d=new Date();
-    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-  }
-  function monthLabel(y,m){
-    const nomes=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-    return `${nomes[m-1]}/${y}`;
-  }
-  function monthStart(y,m){ return `${y}-${pad2(m)}-01`; }
-  function addMonthsStart(iso, delta){
-    const [Y,M]=iso.split("-").map(Number);
-    const d=new Date(Y, M-1+delta, 1);
-    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-01`;
-  }
+/* ===== elementos ===== */
+const inData = document.getElementById("inData");
+const inTipo = document.getElementById("inTipo");
+const inDesc = document.getElementById("inDesc");
+const inObs = document.getElementById("inObs");
+const inValor = document.getElementById("inValor");
+const btnSalvar = document.getElementById("btnSalvar");
+const btnCancelar = document.getElementById("btnCancelar");
+const btnLimpar = document.getElementById("btnLimpar");
+const btnPdf = document.getElementById("btnPdf");
 
-  // ========= Supabase Config =========
-  function getConfig(){
-    // prioridade: TESOURA_CONFIG (index/boot) -> parent -> globals -> fallback hardcoded
-    const cfg =
-      (window.TESOURA_CONFIG && window.TESOURA_CONFIG.SUPABASE) ||
-      (window.parent && window.parent.TESOURA_CONFIG && window.parent.TESOURA_CONFIG.SUPABASE) ||
-      null;
+const selAnoPdf = document.getElementById("selAnoPdf");
+const selMesPdf = document.getElementById("selMesPdf");
 
-    const url =
-      (cfg && cfg.url) ||
-      window.SB_URL || window.SUPABASE_URL ||
-      (window.parent && (window.parent.SB_URL || window.parent.SUPABASE_URL)) ||
-      "https://xuplzpispukvtggjasxx.supabase.co";
+const tbody = document.getElementById("tbody");
+const statusEl = document.getElementById("status");
+const badgeMes = document.getElementById("badgeMes");
+const h2Tabela = document.getElementById("h2Tabela");
 
-    const key =
-      (cfg && (cfg.anonKey || cfg.key)) ||
-      window.SB_KEY || window.SUPABASE_ANON_KEY || window.SUPABASE_KEY ||
-      (window.parent && (window.parent.SB_KEY || window.parent.SUPABASE_ANON_KEY || window.parent.SUPABASE_KEY)) ||
-      "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-
-    return { url, key, cfg };
-  }
-
-  const cfg = getConfig();
-  if(cfg.cfg){
-    $("pillCfg").style.display = "";
-    $("cfgInfo").textContent = (cfg.cfg.url ? "OK" : "—");
-  }
-
-  let sb = null;
-  try{
-    if(!cfg.url || !cfg.key) throw new Error("Supabase config ausente (SB_URL/SB_KEY ou TESOURA_CONFIG).");
-    sb = window.supabase.createClient(cfg.url, cfg.key);
-  }catch(e){
-    console.error("CAIXA: Supabase config ausente", e);
-    $("status").textContent = "ERRO: Supabase não configurado (ver Console).";
-    $("status").classList.add("err");
-  }
-
-  // ========= Schema detect =========
-  let HAS_HORA = false;
-  let KEY_FIELD = "id";
-  async function detectarSchema(){
-    // Default seguro: assume SEM "hora" até provar que existe
-    HAS_HORA = false;
-    if(!sb) return;
-
-    try{
-      // se a coluna "hora" existir, esta query funciona mesmo com tabela vazia
-async function detectHora(){
-  // FIX DEFINITIVO: seu Supabase NÃO tem a coluna "hora".
-  // O CAIXA deve operar SEM "hora" e guardar a hora dentro do OBS.
-  HAS_HORA = false;
+/* ===== util ===== */
+function pad2(n){ return String(n).padStart(2,"0"); }
+function isoDate(d){ return d.toISOString().slice(0,10); }
+function money(n){
+  const v = Number(n||0);
+  return v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function parseMoneyBR(v){
+  const s = String(v||"").trim().replaceAll(".","").replace(",",".");
+  const num = Number(s);
+  return isFinite(num) ? num : NaN;
+}
+function setStatus(msg){ if(statusEl) statusEl.textContent = msg; }
+function monthNamePT(m){
+  const nomes = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
+  return nomes[(m-1)] || "";
+}
+function rangeMonth(y,m){
+  const ini = `${y}-${pad2(m)}-01`;
+  const next = (m===12) ? { y:y+1, m:1 } : { y:y, m:m+1 };
+  const fim = `${next.y}-${pad2(next.m)}-01`;
+  return { ini, fim };
+}
+function isMensalidadeRow(r){
+  const obs = String(r.obs||"").toUpperCase();
+  const desc = String(r.descricao||"").toUpperCase();
+  const origem = String(r.origem||"").toUpperCase();
+  if (origem === "MENSALIDADE") return true;
+  if (r.mensalidade_id != null) return true;
+  if (obs.includes("MENSALIDADE")) return true;
+  if (desc.startsWith("MENSALIDADE")) return true;
   return false;
 }
-      if(!error) HAS_HORA = true;
-    }catch(_){
-      HAS_HORA = false;
-    }
 
-    // Ajusta UI conforme schema
-    if(!HAS_HORA){
-      try{ $("wrapHora").style.display = "none"; }catch(_a){}
-      try{ $("thHora").style.display = "none"; }catch(_b){}
+/* ===== estado ===== */
+let editingId = null;
+let currentMode = "CURRENT"; // CURRENT ou PDF
+
+/* ===== colunas (compat) ===== */
+async function detectCols(){
+  const { data, error } = await sb.from("caixa").select("*").limit(1);
+  if (error) throw error;
+  const row = (data && data.length) ? data[0] : null;
+  const keys = row ? Object.keys(row) : [];
+
+  function pick(cands){
+    const low = keys.map(k=>k.toLowerCase());
+    for (const c of cands){
+      const i = low.indexOf(String(c).toLowerCase());
+      if (i>=0) return keys[i];
     }
+    return null;
   }
 
-  // ========= Range mês corrente =========
-  function getRangeMesCorrente(){
+  return {
+    idCol: pick(["id"]),
+    dataCol: pick(["data"]),
+    dataLancCol: pick(["data_lancamento"]),
+    tipoCol: pick(["tipo"]),
+    descCol: pick(["descricao","descrição","desc"]),
+    obsCol: pick(["obs"]),
+    valorCol: pick(["valor"]),
+    origemCol: pick(["origem"]),
+    mensalidadeIdCol: pick(["mensalidade_id"]),
+  };
+}
+
+function normalizeRow(r, cols){
+  const dt = (cols.dataCol && r[cols.dataCol]) ? String(r[cols.dataCol]).slice(0,10)
+           : (cols.dataLancCol && r[cols.dataLancCol]) ? String(r[cols.dataLancCol]).slice(0,10)
+           : "";
+
+  const tipo = cols.tipoCol ? String(r[cols.tipoCol]||"") : "";
+  const descricao = cols.descCol ? String(r[cols.descCol]||"") : "";
+  const obs = cols.obsCol ? String(r[cols.obsCol]||"") : "";
+  const origem = cols.origemCol ? String(r[cols.origemCol]||"") : "";
+  const mensalidade_id = cols.mensalidadeIdCol ? r[cols.mensalidadeIdCol] : null;
+
+  let val = cols.valorCol ? Number(r[cols.valorCol]||0) : 0;
+  if (!isFinite(val)) val = 0;
+
+  // padroniza: RECEITA positiva, DESPESA negativa
+  const up = String(tipo||"").toUpperCase();
+  if (up === "DESPESA" && val > 0) val = -Math.abs(val);
+  if (up === "RECEITA" && val < 0) val = Math.abs(val);
+
+  const receita = val > 0 ? val : 0;
+  const despesa = val < 0 ? Math.abs(val) : 0;
+
+  const locked = isMensalidadeRow({ obs, descricao, origem, mensalidade_id });
+
+  return {
+    id: cols.idCol ? r[cols.idCol] : r.id,
+    data: dt,
+    tipo: up,
+    descricao,
+    obs,
+    origem,
+    mensalidade_id,
+    valor_signed: val,
+    receita,
+    despesa,
+    locked
+  };
+}
+
+/* ===== render ===== */
+function render(rows){
+  tbody.innerHTML = "";
+  let saldo = 0;
+
+  rows.forEach((r)=>{
+    saldo += (Number(r.receita||0) - Number(r.despesa||0));
+
+    const tr = document.createElement("tr");
+
+    const tdD = document.createElement("td");
+    tdD.textContent = r.data ? r.data.split("-").reverse().join("/") : "";
+    tr.appendChild(tdD);
+
+    const tdDesc = document.createElement("td");
+    tdDesc.className = "col-desc";
+    tdDesc.textContent = r.descricao || "";
+    tr.appendChild(tdDesc);
+
+    const tdObs = document.createElement("td");
+    tdObs.className = "col-obs";
+    tdObs.textContent = r.obs || "";
+    tr.appendChild(tdObs);
+
+    const tdR = document.createElement("td");
+    tdR.className = "col-money";
+    tdR.innerHTML = r.receita ? `<span class="money pos">${money(r.receita)}</span>` : "";
+    tr.appendChild(tdR);
+
+    const tdE = document.createElement("td");
+    tdE.className = "col-money";
+    tdE.innerHTML = r.despesa ? `<span class="money neg">${money(r.despesa)}</span>` : "";
+    tr.appendChild(tdE);
+
+    const tdS = document.createElement("td");
+    tdS.className = "col-money";
+    tdS.innerHTML = saldo >= 0
+      ? `<span class="money pos">${money(saldo)}</span>`
+      : `<span class="money neg">${money(saldo)}</span>`;
+    tr.appendChild(tdS);
+
+    const tdEdit = document.createElement("td");
+    tdEdit.className = "col-act";
+    const tdDel = document.createElement("td");
+    tdDel.className = "col-act";
+
+    if (r.locked){
+      tdEdit.innerHTML = `<span class="badge lock">AUTO</span>`;
+      tdDel.innerHTML = `<span class="badge lock">AUTO</span>`;
+    } else {
+      const bE = document.createElement("button");
+      bE.className = "btnSmall btnEdit";
+      bE.textContent = "EDITAR";
+      bE.addEventListener("click", ()=>startEdit(r));
+      tdEdit.appendChild(bE);
+
+      const bD = document.createElement("button");
+      bD.className = "btnSmall btnDel";
+      bD.textContent = "EXCLUIR";
+      bD.addEventListener("click", ()=>doDelete(r));
+      tdDel.appendChild(bD);
+    }
+
+    tr.appendChild(tdEdit);
+    tr.appendChild(tdDel);
+
+    tbody.appendChild(tr);
+  });
+}
+
+/* ===== carregar mês corrente ===== */
+async function loadCurrentMonth(){
+  try{
+    currentMode = "CURRENT";
     const now = new Date();
     const y = now.getFullYear();
     const m = now.getMonth()+1;
-    const startIso = monthStart(y,m);
-    const endIso = addMonthsStart(startIso, 1); // exclusivo
-    return { y, m, startIso, endIso, label: monthLabel(y,m) };
+    const { ini, fim } = rangeMonth(y,m);
+
+    badgeMes.textContent = `Mês corrente: ${monthNamePT(m)}/${y}`;
+    h2Tabela.textContent = `LANÇAMENTOS (mês corrente: ${monthNamePT(m)}/${y})`;
+
+    setStatus("Carregando mês corrente...");
+    const rows = await fetchCaixaRange(ini, fim);
+    setStatus(`LISTA CARREGADA. Registros: ${rows.length}`);
+    render(rows);
+  }catch(e){
+    console.error(e);
+    setStatus("ERRO ao buscar CAIXA (ver console).");
+    alert("ERRO ao buscar CAIXA (ver console).");
+  }
+}
+
+async function fetchCaixaRange(ini, fim){
+  const cols = await detectCols();
+
+  // preferir filtro por "data" (date)
+  let q = sb.from("caixa").select("*");
+  if (cols.dataCol){
+    q = q.gte(cols.dataCol, ini).lt(cols.dataCol, fim).order(cols.dataCol, {ascending:true}).order(cols.idCol || "id", {ascending:true});
+  } else if (cols.dataLancCol){
+    // fallback por timestamp
+    q = q.gte(cols.dataLancCol, ini).lt(cols.dataLancCol, fim).order(cols.dataLancCol, {ascending:true}).order(cols.idCol || "id", {ascending:true});
+  } else {
+    q = q.order(cols.idCol || "id", {ascending:true});
   }
 
-  // ========= Render =========
-  function render(rows){
-    let saldo = 0;
-    let total = 0;
+  const { data, error } = await q;
+  if (error) throw error;
 
-    const tb = $("tbody");
-    tb.innerHTML = "";
+  const rows = (data||[]).map(r => normalizeRow(r, cols));
 
-    if(!rows || rows.length === 0){
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="9" class="muted">0 lançamentos</td>`;
-      tb.appendChild(tr);
-      $("totalVis").textContent = "R$ 0,00";
+  // ordena por data (string ISO), depois id
+  rows.sort((a,b)=>{
+    const da = a.data || "0000-00-00";
+    const db = b.data || "0000-00-00";
+    if (da < db) return -1;
+    if (da > db) return 1;
+    return Number(a.id||0) - Number(b.id||0);
+  });
+
+  return rows;
+}
+
+/* ===== criar/editar/excluir ===== */
+function resetForm(){
+  editingId = null;
+  btnCancelar.style.display = "none";
+  btnSalvar.textContent = "SALVAR";
+  inTipo.value = "RECEITA";
+  inDesc.value = "";
+  inObs.value = "";
+  inValor.value = "";
+}
+
+function startEdit(r){
+  if (!r || r.locked) return;
+  editingId = r.id;
+
+  // data fica automática (não edita data no caixa)
+  inTipo.value = (r.valor_signed < 0) ? "DESPESA" : "RECEITA";
+  inDesc.value = r.descricao || "";
+  inObs.value = r.obs || "";
+  inValor.value = money(Math.abs(Number(r.valor_signed||0)));
+
+  btnCancelar.style.display = "inline-block";
+  btnSalvar.textContent = "ATUALIZAR";
+}
+
+async function addOrUpdate(){
+  try{
+    const tipo = String(inTipo.value||"").toUpperCase();
+    const desc = String(inDesc.value||"").trim();
+    const obs = String(inObs.value||"").trim();
+    const val = parseMoneyBR(inValor.value);
+
+    if (!desc){ alert("Preencha a DESCRIÇÃO."); return; }
+    if (!isFinite(val) || val <= 0){ alert("Preencha um VALOR válido."); return; }
+
+    // data automática (hoje)
+    const dataHoje = String(inData.value||"").slice(0,10);
+    if (!dataHoje){ alert("Data inválida."); return; }
+
+    // bloqueio mensalidade manual
+    if (String(obs).toUpperCase().includes("MENSALIDADE")){
+      alert("Mensalidade é automática (não criar/editar no Caixa).");
       return;
     }
 
-    for(const r of rows){
-      const val = Number(r.valor || 0);
-      saldo += val;
-      total += val;
-
-      const receita = val >= 0 ? val : 0;
-      const despesa = val < 0 ? Math.abs(val) : 0;
-
-      const tr = document.createElement("tr");
-
-      const horaTxt = HAS_HORA ? (r.hora || "") : "";
-      const tipoTxt = (r.tipo || "");
-
-      tr.innerHTML = `
-        <td>${(r.data || "")}</td>
-        <td>${HAS_HORA ? horaTxt : ""}</td>
-        <td>${tipoTxt}</td>
-        <td>${(r.descricao || "")}</td>
-        <td class="muted">${(r.obs || "")}</td>
-        <td class="right ${receita>0 ? "pos":""}">${receita>0 ? money(receita) : ""}</td>
-        <td class="right ${despesa>0 ? "neg":""}">${despesa>0 ? money(despesa) : ""}</td>
-        <td class="right"><b>${money(saldo)}</b></td>
-        <td class="actions"><button data-id="${r[KEY_FIELD] ?? ""}">EXCLUIR</button></td>
-      `;
-      tb.appendChild(tr);
-    }
-
-    $("totalVis").textContent = "R$ " + money(total);
-
-    // bind excluir
-    tb.querySelectorAll("button[data-id]").forEach(btn=>{
-      btn.addEventListener("click", async ()=>{
-        const id = btn.getAttribute("data-id");
-        if(!id) return;
-        if(!confirm("Excluir este lançamento?")) return;
-        await excluir(id);
-      });
-    });
-  }
-
-  // ========= Data load =========
-  async function carregar(){
-    if(!sb) return;
-
-    const range = getRangeMesCorrente();
-    $("mesCorrente").textContent = range.label;
-    $("rangeVis").textContent = `${range.startIso} → ${range.endIso} (exclusive)`;
-
-    try{
-      $("status").textContent = "Carregando…";
-      $("status").classList.remove("err");
-
-      let sel = [KEY_FIELD,"data","tipo","descricao","obs","valor"];
-      if(HAS_HORA) sel.splice(2,0,"hora");
-
-      const { data, error } = await sb
-        .from("caixa")
-        .select(sel.join(","))
-        .gte("data", range.startIso)
-        .lt("data", range.endIso)
-        .order("data", { ascending:true });
-
-      if(error){
-        // fallback: se deu erro por "hora", tenta sem hora
-        const msg = (error.message || "");
-        if(msg.includes("hora") || msg.includes("column")){
-          HAS_HORA = false;
-          try{
-            $("wrapHora").style.display = "none";
-            $("thHora").style.display = "none";
-          }catch(_){}
-          const { data: data2, error: error2 } = await sb
-           .from("vw_caixa_painel")
-            .select(`${KEY_FIELD},data,tipo,descricao,obs,valor`)
-            .gte("data", range.startIso)
-            .lt("data", range.endIso)
-            .order("data", { ascending:true });
-          if(error2) throw error2;
-          render(data2 || []);
-          $("status").textContent = "OK.";
-          return;
-        }
-        throw error;
-      }
-
-      // ordena por hora se existir
-      let rows = data || [];
-      if(HAS_HORA){
-        rows = rows.sort((a,b)=>{
-          if(a.data !== b.data) return String(a.data).localeCompare(String(b.data));
-          return String(a.hora||"").localeCompare(String(b.hora||""));
-        });
-      }
-
-      render(rows);
-      $("status").textContent = "OK.";
-    }catch(e){
-      console.error(e);
-      $("status").textContent = "Erro ao carregar (ver Console).";
-      $("status").classList.add("err");
-    }
-  }
-
-  // ========= Save / Delete =========
-  function parseValor(txt){
-    if(!txt) return 0;
-    const t = String(txt).trim().replace(/\./g,"").replace(",",".");
-    const v = Number(t);
-    return Number.isFinite(v) ? v : 0;
-  }
-
-  async function salvar(){
-    if(!sb) return;
-
-    const data = $("inData").value || todayIso();
-    const hora = $("inHora").value || nowHHMM();
-    let tipo = $("inTipo").value || "OUTRO";
-    const desc = ($("inDesc").value || "").trim();
-    let obs = ($("inObs").value || "").trim();
-    let valor = parseValor($("inValor").value);
-
-    if(!desc){
-      $("saveHint").textContent = "Digite a descrição.";
-      return;
-    }
-    if(!valor || valor === 0){
-      $("saveHint").textContent = "Digite um valor.";
-      return;
-    }
-
-    // normaliza: despesa negativa
-    if(tipo === "DESPESA" && valor > 0) valor = -Math.abs(valor);
-    if(tipo === "RECEITA" && valor < 0) valor = Math.abs(valor);
-
-    // se a tabela não tem "hora", guarda dentro do OBS
-    if(!HAS_HORA){
-      const tag = `Hora: ${hora}`;
-      obs = obs ? `${tag} | ${obs}` : tag;
-    }
+    const signed = (tipo === "DESPESA") ? -Math.abs(val) : Math.abs(val);
 
     const payload = {
-      data,
+      data: dataHoje,
       tipo,
       descricao: desc,
-      obs: obs || null,
-      valor
+      obs,
+      valor: signed
     };
-    if(HAS_HORA) payload.hora = hora;
 
-    try{
-      $("saveHint").textContent = "Salvando…";
-      const { error } = await sb.from("caixa").insert([payload]);
-      if(error) throw error;
-      $("saveHint").textContent = "";
-      limparCampos(false);
-      await carregar();
-    }catch(e){
-      console.error(e);
-      $("saveHint").textContent = "Erro ao salvar (ver Console).";
+    if (!editingId){
+      const { error } = await sb.from("caixa").insert(payload);
+      if (error) throw error;
+      resetForm();
+      await loadCurrentMonth();
+      return;
     }
+
+    // update
+    const cols = await detectCols();
+    const idCol = cols.idCol || "id";
+    const { error } = await sb.from("caixa").update(payload).eq(idCol, editingId);
+    if (error) throw error;
+
+    resetForm();
+    await loadCurrentMonth();
+  }catch(e){
+    console.error(e);
+    alert("ERRO ao salvar (ver console).");
   }
+}
 
-  async function excluir(id){
-    if(!sb) return;
-    try{
-      const { error } = await sb.from("caixa").delete().eq(KEY_FIELD, id);
-      if(error) throw error;
-      await carregar();
-    }catch(e){
-      console.error(e);
-      alert("Erro ao excluir (ver Console).");
-    }
+async function doDelete(r){
+  try{
+    if (!r || r.locked) return;
+    if (!confirm("Excluir este lançamento?")) return;
+
+    const cols = await detectCols();
+    const idCol = cols.idCol || "id";
+    const { error } = await sb.from("caixa").delete().eq(idCol, r.id);
+    if (error) throw error;
+
+    await loadCurrentMonth();
+  }catch(e){
+    console.error(e);
+    alert("ERRO ao excluir (ver console).");
   }
+}
 
-  function limparCampos(resetDataHora=true){
-    $("inDesc").value = "";
-    $("inObs").value = "";
-    $("inValor").value = "";
-    if(resetDataHora){
-      $("inData").value = todayIso();
-      $("inHora").value = nowHHMM();
-    }
-    $("inTipo").value = "RECEITA";
-    $("saveHint").textContent = "";
+/* ===== PDF mensal: imprime mês escolhido e volta pro mês corrente ===== */
+async function baixarPdfMensal(){
+  try{
+    const y = Number(selAnoPdf.value);
+    const m = Number(selMesPdf.value);
+    const { ini, fim } = rangeMonth(y,m);
+
+    currentMode = "PDF";
+    h2Tabela.textContent = `ARQUIVO MENSAL (PDF): ${monthNamePT(m)}/${y}`;
+
+    setStatus("Carregando mês para PDF...");
+    const rows = await fetchCaixaRange(ini, fim);
+    setStatus(`PDF pronto. Registros: ${rows.length}`);
+    render(rows);
+
+    window.print();
+
+    // volta pro mês corrente (evita “ficar preso” em mês antigo)
+    await loadCurrentMonth();
+  }catch(e){
+    console.error(e);
+    alert("ERRO ao gerar PDF (ver console).");
+    await loadCurrentMonth();
   }
+}
 
-  // ========= PDF =========
-  function fillPdf(){
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth()+1;
-
-    // anos: atual-2 até atual+1
-    const anos = [];
-    for(let yy=y-2; yy<=y+1; yy++) anos.push(yy);
-
-    $("pdfAno").innerHTML = anos.map(a=>`<option value="${a}">${a}</option>`).join("");
-    $("pdfAno").value = String(y);
-
-    const meses = [
-      ["01","JAN"],["02","FEV"],["03","MAR"],["04","ABR"],["05","MAI"],["06","JUN"],
-      ["07","JUL"],["08","AGO"],["09","SET"],["10","OUT"],["11","NOV"],["12","DEZ"],
-    ];
-    $("pdfMes").innerHTML = meses.map(([v,l])=>`<option value="${v}">${v} - ${l}</option>`).join("");
-    $("pdfMes").value = pad2(m);
-
-    $("pdfInfo").textContent = "Escolha o ano/mês e clique em BAIXAR PDF.";
-  }
-
-  function baixarPdf(){
-    // O PDF é a própria página com filtro temporário:
-    // Para simplificar e não quebrar, abrimos uma nova janela com parâmetros.
-    const ano = $("pdfAno").value;
-    const mes = $("pdfMes").value;
-    const url = new URL(location.href);
-    url.searchParams.set("pdfAno", ano);
-    url.searchParams.set("pdfMes", mes);
-    // abre em nova aba (imprimir)
-    window.open(url.toString(), "_blank");
-  }
-
-  // ========= Init =========
-  $("btnSalvar").addEventListener("click", salvar);
-  $("btnLimpar").addEventListener("click", ()=>limparCampos(true));
-  $("btnPdf").addEventListener("click", baixarPdf);
-
-  // set defaults
-  $("inData").value = todayIso();
-  $("inHora").value = nowHHMM();
-
-  fillPdf();
-
-  // start
-  window.addEventListener("DOMContentLoaded", async ()=>{
-    await detectarSchema();
-    await carregar();
+/* ===== montar selects PDF ===== */
+function buildAnoMesPdf(){
+  const now = new Date();
+  const y = now.getFullYear();
+  selAnoPdf.innerHTML = "";
+  [y-1,y,y+1].forEach(yy=>{
+    const opt = document.createElement("option");
+    opt.value = String(yy);
+    opt.textContent = String(yy);
+    selAnoPdf.appendChild(opt);
   });
-})();
-</script>
+  selAnoPdf.value = String(y);
 
-<div id="tesouraFileBadge">ARQUIVO: tesoura_caixa_teste.html</div>
+  selMesPdf.innerHTML = "";
+  for (let m=1;m<=12;m++){
+    const opt = document.createElement("option");
+    opt.value = String(m);
+    opt.textContent = `${pad2(m)} - ${monthNamePT(m)}`;
+    selMesPdf.appendChild(opt);
+  }
+  selMesPdf.value = String(now.getMonth()+1);
+}
+
+/* ===== init ===== */
+(function init(){
+  const now = new Date();
+  inData.value = isoDate(now);
+
+  buildAnoMesPdf();
+  resetForm();
+  loadCurrentMonth();
+})();
+
+/* ===== eventos ===== */
+btnSalvar.addEventListener("click", addOrUpdate);
+btnCancelar.addEventListener("click", ()=>{ resetForm(); });
+btnLimpar.addEventListener("click", ()=>{ resetForm(); });
+
+btnPdf.addEventListener("click", baixarPdfMensal);
+</script>
 </body>
 </html>
