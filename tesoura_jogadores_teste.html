@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <script src="app/core/config.js"></script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Tesoura - Jogadores</title>
@@ -151,22 +150,16 @@
   #printArea th{background:#eee !important; font-weight:700;}
 }
 
-</style>
 
-<style>
-#tesouraFileBadge{
-  position:fixed; right:10px; bottom:10px; z-index:99999;
-  font: 11px/1.2 Arial, sans-serif;
-  background: rgba(0,0,0,.55);
-  color:#fff; padding:6px 8px; border-radius:10px;
-  border:1px solid rgba(255,255,255,.15);
-}
+/* R1 FIX: lista automática, sem botão recarregar */
+.btn-recarregar{display:none !important;}
+/* R1 FIX: aniversariantes menor */
+#birthdayPanel{max-height:160px; overflow-y:auto;}
 </style>
-
 </head>
 <body>
   <header class="page-header">
-        <h1>TESOURA - JOGADORES</h1>
+        <h1 id="topoForm">TESOURA - JOGADORES</h1>
 </header>
 
   <div class="container">
@@ -241,65 +234,12 @@
   </div>
 </div>
 
-function renderAniversariantes(lista) {
-  const body = document.getElementById("birthdayBody");
-  const hint = document.getElementById("birthdayHint");
-  if (!body) return;
-
-  const now = new Date();
-  const mes = now.getMonth() + 1;
-
-  const parseMesDia = (v) => {
-    if (!v) return null;
-
-    // aceita: YYYY-MM-DD
-    if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
-      const mm = Number(v.slice(5,7));
-      const dd = Number(v.slice(8,10));
-      return { mm, dd };
-    }
-
-    // aceita: DD/MM/AAAA
-    if (typeof v === "string" && /^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
-      const dd = Number(v.slice(0,2));
-      const mm = Number(v.slice(3,5));
-      return { mm, dd };
-    }
-
-    return null;
-  };
-
-  const anivers = (lista || [])
-    .map(j => {
-      const md = parseMesDia(j.data_nasc);
-      if (!md) return null;
-      return { apelido: (j.apelido || "").toUpperCase(), mm: md.mm, dd: md.dd };
-    })
-    .filter(x => x && x.mm === mes)
-    .sort((a,b) => a.dd - b.dd);
-
-  if (anivers.length === 0) {
-    body.innerHTML = `<tr><td colspan="2" style="text-align:center;opacity:.8">Nenhum aniversariante neste mês.</td></tr>`;
-    if (hint) hint.textContent = "";
-    return;
-  }
-
-  body.innerHTML = anivers.map(a => `
-    <tr>
-      <td>${a.apelido}</td>
-      <td>${String(a.dd).padStart(2,"0")}/${String(a.mm).padStart(2,"0")}</td>
-    </tr>
-  `).join("");
-
-  if (hint) hint.textContent = `Total: ${anivers.length}`;
-}
-    
     <div class="painel" style="overflow-x:auto;">
       <h2>Lista de Jogadores</h2>
       <div style="color:#cfd6ff;font-weight:800;margin:6px 0 10px">
   ZAGUEIRO = Z &nbsp;&nbsp; LATERAL = L &nbsp;&nbsp; MEIO = M &nbsp;&nbsp; ATAQUE = A
 </div>
-<button id="btn-recarregar" style="display:none">RECARREGAR LISTA</button>
+      <button class="btn-recarregar" id="btn-recarregar">RECARREGAR LISTA</button>
           <button class="btn btn-blue" id="btnPdfAtual" type="button">BAIXAR PDF (ATUAL)</button>
       <p style="font-size:12px;">ORDEM ALFABÉTICA POR APELIDO. COLUNA IDADE É CALCULADA AUTOMÁTICA.</p>
 
@@ -349,12 +289,10 @@ function renderAniversariantes(lista) {
     </div>
   </div>
 
- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script>if (!window.supabase && typeof supabase !== "undefined") window.supabase = supabase;</script>
-  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
-    const SUPABASE_URL = (window.parent && window.parent.TESOURA_CONFIG && window.parent.TESOURA_CONFIG.SUPABASE_URL) || "https://xuplzpispukvtggjasxx.supabase.co";
-    const SUPABASE_KEY = (window.parent && window.parent.TESOURA_CONFIG && (window.parent.TESOURA_CONFIG.SUPABASE_KEY || window.parent.TESOURA_CONFIG.SUPABASE_ANON_KEY)) || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
     window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var supabase = window.__TESOURA_SUPABASE__;
     const camisaInput = document.getElementById("camisa");
@@ -376,6 +314,7 @@ function renderAniversariantes(lista) {
     const statusEl = document.getElementById("status");
 
     let editId = null;
+let editApelidoOriginal = null;
 
     let JOGADORES_CACHE = [];
 function el(id){ return document.getElementById(id); }
@@ -398,6 +337,7 @@ function el(id){ return document.getElementById(id); }
 
     function limparFormulario() {
       editId = null;
+      editApelidoOriginal = null;
       camisaInput.value = "";
       nomeInput.value = "";
       apelidoInput.value = "";
@@ -432,9 +372,6 @@ function el(id){ return document.getElementById(id); }
         .select("id,camisa,apelido,nome,data_nasc,celular,posicao,hab,vel,mov,pontos,ativo")
         .order("apelido", { ascending: true });
 
-JOGADORES_CACHE = data || [];
-renderAniversariantes(JOGADORES_CACHE);
-      
       if (error) {
         console.error(error);
         statusEl.textContent = "ERRO AO CARREGAR JOGADORES.";
@@ -472,9 +409,6 @@ renderAniversariantes(JOGADORES_CACHE);
         const tdEditar = document.createElement("td");
         const btnE = document.createElement("button");
         btnE.textContent = "EDITAR";
-        editApelidoOriginal = (j.apelido || "").toUpperCase();
-window.scrollTo({ top: 0, behavior: "smooth" });
-
         btnE.className = "btn btn-orange";
         btnE.style.padding = "6px 10px";
         btnE.style.fontSize = "11px";
@@ -483,10 +417,6 @@ window.scrollTo({ top: 0, behavior: "smooth" });
           camisaInput.value = j.camisa ?? "";
           nomeInput.value = j.nome ?? "";
           apelidoInput.value = j.apelido ?? "";
-apelidoInput.disabled = true; // trava apelido na edição (evita FK)
-try{
-  document.getElementById("editPanel")?.scrollIntoView({behavior:"smooth", block:"start"});
-}catch(e){}     
           dataNascInput.value = j.data_nasc ?? "";
           celularInput.value = j.celular ?? "";
           posicaoInput.value = (j.posicao ?? "").toUpperCase();
@@ -516,6 +446,7 @@ try{
         tbody.appendChild(tr);
       });
 
+      renderAniversariantes(data);
       statusEl.textContent = "TOTAL DE JOGADORES: " + data.length;
     }
 
@@ -533,89 +464,19 @@ try{
       statusEl.textContent = "JOGADOR EXCLUÍDO COM SUCESSO.";
       carregarJogadores();
     }
-async function salvarJogador() {
-  const novoApelido = (apelidoInput.value || "").trim().toUpperCase();
-  if (!novoApelido) {
-    alert("APELIDO é obrigatório.");
-    return;
-  }
 
-  const payload = {
-    camisa: (camisaInput.value || "").trim() || null,
-    apelido: novoApelido,
-    nome: (nomeInput.value || "").trim() || null,
-    data_nasc: (dataNascInput.value || "").trim() || null,
-    celular: (celularInput.value || "").trim() || null,
-    posicao: (posicaoInput.value || "").trim().toUpperCase() || null,
-    hab: habInput.value ? Number(habInput.value) : null,
-    vel: velInput.value ? Number(velInput.value) : null,
-    mov: movInput.value ? Number(movInput.value) : null,
-    pontos: pontosInput.value ? Number(pontosInput.value) : null,
-    ativo: true,
-  };
-
-  try {
-    statusEl.textContent = "Salvando...";
-
-    // NOVO
-    if (!editId) {
-      const { error } = await supabase.from("jogadores").insert(payload);
-      if (error) throw error;
-      statusEl.textContent = "Jogador cadastrado.";
-      limparFormulario();
-      await carregarJogadores();
-      return;
-    }
-
-    // EDIÇÃO (sem trocar apelido)
-    const apelidoAntigo = (editApelidoOriginal || "").toUpperCase();
-    if (apelidoAntigo && novoApelido === apelidoAntigo) {
-      const { error } = await supabase.from("jogadores").update(payload).eq("id", editId);
-      if (error) throw error;
-      statusEl.textContent = "Alteração salva.";
-      limparFormulario();
-      await carregarJogadores();
-      return;
-    }
-
-    // EDIÇÃO (TROCANDO APELIDO) -> MIGRAÇÃO SEGURA
-    // 1) cria novo jogador
-    const { data: novoJog, error: eIns } = await supabase
-      .from("jogadores")
-      .insert(payload)
-      .select("id,apelido")
-      .single();
-
-    if (eIns) throw eIns;
-
-    // 2) migra tabelas que usam apelido
-    const migra = async (tabela) => {
-      const { error } = await supabase
-        .from(tabela)
-        .update({ apelido: novoApelido })
-        .eq("apelido", apelidoAntigo);
-      if (error) throw error;
-    };
-
-    await migra("mensalidades"); // resolve FK
-    await migra("presencas");
-    await migra("gols");
-
-    // 3) apaga jogador antigo
-    const { error: eDel } = await supabase.from("jogadores").delete().eq("id", editId);
-    if (eDel) throw eDel;
-
-    statusEl.textContent = `Apelido alterado: ${apelidoAntigo} → ${novoApelido}`;
-    limparFormulario();
-    await carregarJogadores();
-
-  } catch (err) {
-    console.error(err);
-    alert("ERRO AO SALVAR JOGADOR: " + (err.message || err));
-    statusEl.textContent = "Erro ao salvar.";
-  }
-}
-  
+    async function salvarJogador() {
+      let camisa = camisaInput.value ? parseInt(camisaInput.value, 10) : null;
+      let nome = nomeInput.value.trim().toUpperCase();
+      let apelido = apelidoInput.value.trim().toUpperCase();
+      let data_nasc = dataNascInput.value || null;
+      let celular = celularInput.value.trim();
+      let posicao = posicaoInput.value.trim().toUpperCase().slice(0,1);
+      // compatibilidade: se digitar D, vira Z (Zagueiro)
+      if(posicao === "D") posicao = "Z";
+      if(posicao && !["Z","L","M","A"].includes(posicao)){
+        statusEl.textContent = "POSIÇÃO inválida. Use: Z (Zagueiro), L (Lateral), M (Meio), A (Ataque).";
+        return;
       }
       let hab = habInput.value ? parseInt(habInput.value, 10) : null;
       let vel = velInput.value ? parseInt(velInput.value, 10) : null;
@@ -648,23 +509,61 @@ async function salvarJogador() {
 
       statusEl.textContent = "Salvando jogador...";
       let error;
-      if (editId === null) {
-        const resp = await supabase
-          .from("jogadores")
-          .insert(payload);
+
+      // R1 FIX: permitir corrigir APELIDO sem quebrar FK (mensalidades_apelido_fkey)
+      const novoApelido = String(payload.apelido || "").trim();
+      const apelidoAntigo = String(editApelidoOriginal || "").trim();
+
+      if (editId !== null && apelidoAntigo && novoApelido && novoApelido !== apelidoAntigo) {
+        // 1) cria NOVO jogador com novo apelido
+        const ins = await supabase.from("jogadores").insert(payload).select("id").single();
+        if (ins.error) {
+          error = ins.error;
+        } else {
+          const newId = ins.data.id;
+
+          // 2) move mensalidades para o novo apelido
+          const upMens = await supabase.from("mensalidades").update({ apelido: novoApelido }).eq("apelido", apelidoAntigo);
+          if (upMens.error) {
+            // desfaz: apaga jogador novo
+            await supabase.from("jogadores").delete().eq("id", newId);
+            error = upMens.error;
+          } else {
+              // 2B) tenta mover outras tabelas que guardam APELIDO (se existirem)
+            // (se a tabela não existir, ignora e segue)
+            const extraTables = ["gols", "presenca", "presencas", "presenca_escala", "escala", "escalacao"];
+            for (const t of extraTables) {
+              try{
+                const r = await supabase.from(t).update({ apelido: novoApelido }).eq("apelido", apelidoAntigo);
+                if (r && r.error) {
+                  const msg = String(r.error.message || "").toLowerCase();
+                  if (msg.includes("does not exist") || msg.includes("relation") || msg.includes("table")) {
+                    // ignora tabela inexistente
+                  } else {
+                    // se deu outro erro, só mostra no console e segue
+                    console.warn("Aviso ao atualizar tabela", t, r.error);
+                  }
+                }
+              }catch(e){}
+            }
+
+          // 3) apaga jogador antigo
+            const delOld = await supabase.from("jogadores").delete().eq("id", editId);
+            if (delOld.error) {
+              // desfaz: volta mensalidades e apaga novo
+              await supabase.from("mensalidades").update({ apelido: apelidoAntigo }).eq("apelido", novoApelido);
+              await supabase.from("jogadores").delete().eq("id", newId);
+              error = delOld.error;
+            }
+          }
+        }
+      } else if (editId === null) {
+        const resp = await supabase.from("jogadores").insert(payload);
         error = resp.error;
       } else {
-  // NÃO atualiza "apelido" (evita erro de FK com mensalidades)
-  const payloadUpdate = { ...payload };
-  delete payloadUpdate.apelido;
-
-  const resp = await supabase
-    .from("jogadores")
-    .update(payloadUpdate)
-    .eq("id", editId);
-
-  error = resp.error;
-}
+        const resp = await supabase.from("jogadores").update(payload).eq("id", editId);
+        error = resp.error;
+      }
 
       if (error) {
         console.error(error);
@@ -676,7 +575,6 @@ async function salvarJogador() {
       statusEl.textContent = "JOGADOR SALVO COM SUCESSO.";
       limparFormulario();
       carregarJogadores();
-      apelidoInput.disabled = false;
     }
 
     function init() {
@@ -963,9 +861,11 @@ carregarJogadores();
   });
 })();
 
+
+// R1 FIX: carrega lista automaticamente
+window.addEventListener('DOMContentLoaded', () => { try{ carregarJogadores(); }catch(e){ console.error(e);} });
 </script>
 
 <div id="printArea"></div>
-<div id="tesouraFileBadge">ARQUIVO: tesoura_jogadores_teste.html</div>
 </body>
 </html>
