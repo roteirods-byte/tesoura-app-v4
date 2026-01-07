@@ -113,6 +113,7 @@
 .histBox{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,var(--card),var(--card2));}
 .histTitle{color:var(--orange);font-weight:800;margin-bottom:6px;letter-spacing:.5px}
 @media print{
+  html,body{overflow-x:hidden;}
   body{background:#fff !important;}
   body *{visibility:hidden !important;}
   #printArea, #printArea *{visibility:visible !important;}
@@ -167,21 +168,25 @@
 /* R3 FIX: evitar rolagem horizontal na LISTA DE JOGADORES */
 #jogadoresTable{ table-layout:fixed; width:100%; }
 #jogadoresTable th, #jogadoresTable td{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-#jogadoresTable th:nth-child(1), #jogadoresTable td:nth-child(1){ width:50px; }   /* ORDEM */
-#jogadoresTable th:nth-child(2), #jogadoresTable td:nth-child(2){ width:60px; }   /* ID */
-#jogadoresTable th:nth-child(3), #jogadoresTable td:nth-child(3){ width:70px; }   /* CAMISA */
-#jogadoresTable th:nth-child(4), #jogadoresTable td:nth-child(4){ width:110px; }  /* APELIDO */
-#jogadoresTable th:nth-child(5), #jogadoresTable td:nth-child(5){ width:200px; }  /* NOME */
-#jogadoresTable th:nth-child(6), #jogadoresTable td:nth-child(6){ width:120px; }  /* DATA NASC. */
-#jogadoresTable th:nth-child(7), #jogadoresTable td:nth-child(7){ width:60px; }   /* IDADE */
-#jogadoresTable th:nth-child(8), #jogadoresTable td:nth-child(8){ width:140px; }  /* CELULAR */
-#jogadoresTable th:nth-child(9), #jogadoresTable td:nth-child(9){ width:70px; }   /* POSIÇÃO */
-#jogadoresTable th:nth-child(10), #jogadoresTable td:nth-child(10){ width:50px; } /* HAB */
-#jogadoresTable th:nth-child(11), #jogadoresTable td:nth-child(11){ width:50px; } /* VEL */
-#jogadoresTable th:nth-child(12), #jogadoresTable td:nth-child(12){ width:50px; } /* MOV */
-#jogadoresTable th:nth-child(13), #jogadoresTable td:nth-child(13){ width:70px; } /* PONTOS */
-#jogadoresTable th:nth-child(14), #jogadoresTable td:nth-child(14){ width:90px; } /* EDITAR */
-#jogadoresTable th:nth-child(15), #jogadoresTable td:nth-child(15){ width:90px; } /* EXCLUIR */
+  /* Larguras (px) – ajustadas para NÃO ter barra horizontal */
+  #jogadoresTable { width:100%; table-layout:fixed; }
+  #jogadoresTable th, #jogadoresTable td { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  #jogadoresTable th:nth-child(1),  #jogadoresTable td:nth-child(1){width:40px;}   /* ORDEM */
+  #jogadoresTable th:nth-child(2),  #jogadoresTable td:nth-child(2){width:45px;}   /* ID */
+  #jogadoresTable th:nth-child(3),  #jogadoresTable td:nth-child(3){width:55px;}   /* CAMISA */
+  #jogadoresTable th:nth-child(4),  #jogadoresTable td:nth-child(4){width:90px;}   /* APELIDO */
+  #jogadoresTable th:nth-child(5),  #jogadoresTable td:nth-child(5){width:140px;}  /* NOME */
+  #jogadoresTable th:nth-child(6),  #jogadoresTable td:nth-child(6){width:95px;}   /* DATA NASC. */
+  #jogadoresTable th:nth-child(7),  #jogadoresTable td:nth-child(7){width:50px;}   /* IDADE */
+  #jogadoresTable th:nth-child(8),  #jogadoresTable td:nth-child(8){width:110px;}  /* CELULAR */
+  #jogadoresTable th:nth-child(9),  #jogadoresTable td:nth-child(9){width:50px;}   /* POSIÇÃO */
+  #jogadoresTable th:nth-child(10), #jogadoresTable td:nth-child(10){width:40px;}  /* HAB */
+  #jogadoresTable th:nth-child(11), #jogadoresTable td:nth-child(11){width:40px;}  /* VEL */
+  #jogadoresTable th:nth-child(12), #jogadoresTable td:nth-child(12){width:40px;}  /* MOV */
+  #jogadoresTable th:nth-child(13), #jogadoresTable td:nth-child(13){width:50px;}  /* PONTOS */
+  #jogadoresTable th:nth-child(14), #jogadoresTable td:nth-child(14){width:100px;} /* AÇÕES */
+
 
 
   /* Lista: não quebrar linhas em DATA NASC e CELULAR */
@@ -190,6 +195,16 @@
   /* Nome: mais espaço */
   #tbody-jogadores td:nth-child(5), #tbody-jogadores th:nth-child(5){ min-width:180px; }
 
+
+  .w-aco{width:100px;}
+
+  .birthday-inline{ margin-top:10px; }
+  .birthday-inline h2{ margin:0 0 6px 0; font-size:16px; }
+  .birthday-inline .hint{ margin:0 0 6px 0; font-size:12px; }
+  #birthdayTable th,#birthdayTable td{ padding:6px 8px; font-size:12px; }
+  #birthdayTable th:nth-child(1),#birthdayTable td:nth-child(1){ width:60%; }
+  #birthdayTable th:nth-child(2),#birthdayTable td:nth-child(2){ width:20%; text-align:center; }
+  #birthdayTable th:nth-child(3),#birthdayTable td:nth-child(3){ width:20%; text-align:center; }
 </style>
 </head>
 <body>
@@ -247,7 +262,14 @@
       <p id="status"></p>
     </div>
 
-    <div class="painel" id="birthdayPanel">
+    
+
+    <div class="painel" style="overflow-x:hidden;">
+      <h2>Lista de Jogadores</h2>
+      <div style="color:#cfd6ff;font-weight:800;margin:6px 0 10px">
+  ZAGUEIRO = Z &nbsp;&nbsp; LATERAL = L &nbsp;&nbsp; MEIO = M &nbsp;&nbsp; ATAQUE = A
+</div>
+<div class="painel birthday-inline" id="birthdayPanel">
   <h2>Aniversariantes do Mês</h2>
   <div id="birthdayHint" style="color:#cfd6ff;font-weight:800;margin:6px 0 10px">Carregando...</div>
   <div style="overflow-x:hidden;">
@@ -266,11 +288,6 @@
   </div>
 </div>
 
-    <div class="painel" style="overflow-x:hidden;">
-      <h2>Lista de Jogadores</h2>
-      <div style="color:#cfd6ff;font-weight:800;margin:6px 0 10px">
-  ZAGUEIRO = Z &nbsp;&nbsp; LATERAL = L &nbsp;&nbsp; MEIO = M &nbsp;&nbsp; ATAQUE = A
-</div>
 <button class="btn btn-blue" id="btnPdfAtual" type="button">BAIXAR PDF (ATUAL)</button>
       <p style="font-size:12px;">ORDEM ALFABÉTICA POR APELIDO. COLUNA IDADE É CALCULADA AUTOMÁTICA.</p>
 
@@ -290,8 +307,7 @@
             <th>VEL</th>
             <th>MOV</th>
             <th>PONTOS</th>
-            <th>EDITAR</th>
-            <th>EXCLUIR</th>
+            <th>AÇÕES</th>
           </tr>
         </thead>
         <tbody id="tbody-jogadores"></tbody>
@@ -503,45 +519,52 @@ function el(id){ return document.getElementById(id); }
         tr.appendChild(tdTexto(j.vel ?? ""));
         tr.appendChild(tdTexto(j.mov ?? ""));
         tr.appendChild(tdTexto(j.pontos ?? ""));
+          const tdAcoes = document.createElement("td");
+          tdAcoes.className = "td-acoes";
+          const btnE = document.createElement("button");
+          btnE.textContent = "EDITAR";
+          btnE.className = "btn";
+          btnE.style.padding = "6px 10px";
+          btnE.style.fontSize = "11px";
+          btnE.addEventListener("click", () => {
+            editId = j.id;
+            editApelidoOriginal = (j.apelido || "").toUpperCase();
+            camisaInput.value = j.camisa ?? "";
+            nomeInput.value = j.nome ?? "";
+            apelidoInput.value = (j.apelido ?? "").toUpperCase();
+            dataNascInput.value = j.data_nasc ?? "";
+            celularInput.value = j.celular ?? "";
+            posicaoInput.value = (j.posicao ?? "").toUpperCase();
+            habInput.value = j.hab ?? "";
+            velInput.value = j.vel ?? "";
+            movInput.value = j.mov ?? "";
+            pontosInput.value = j.pontos ?? "";
+            statusEl.textContent = "Editando jogador ID " + j.id;
+            btnSalvar.textContent = "SALVAR ALTERAÇÃO";
+            // rolar para o topo do formulário (sempre visível)
+            document.getElementById("topoFormulario")?.scrollIntoView({behavior:"smooth", block:"start"});
+          });
 
-        const tdEditar = document.createElement("td");
-        const btnE = document.createElement("button");
-        btnE.textContent = "EDITAR";
-        btnE.className = "btn btn-orange";
-        btnE.style.padding = "6px 10px";
-        btnE.style.fontSize = "11px";
-        btnE.addEventListener("click", () => {
-          editId = Number(j.id);
-          camisaInput.value = j.camisa ?? "";
-          nomeInput.value = j.nome ?? "";
-          apelidoInput.value = j.apelido ?? "";
-          dataNascInput.value = j.data_nasc ?? "";
-          celularInput.value = j.celular ?? "";
-          posicaoInput.value = (j.posicao ?? "").toUpperCase();
-          habInput.value = j.hab ?? "";
-          velInput.value = j.vel ?? "";
-          movInput.value = j.mov ?? "";
-          pontosInput.value = j.pontos ?? "";
-          statusEl.textContent = "Editando jogador ID " + j.id;
-          btnSalvar.textContent = "SALVAR ALTERAÇÃO";
-        });
-        tdEditar.appendChild(btnE);
-        tr.appendChild(tdEditar);
+          const btnX = document.createElement("button");
+          btnX.textContent = "EXCLUIR";
+          btnX.className = "btn btn-red";
+          btnX.style.padding = "6px 10px";
+          btnX.style.fontSize = "11px";
+          btnX.addEventListener("click", async () => {
+            if (!confirm("Excluir este jogador?")) return;
+            await excluirJogador(j.id);
+          });
 
-        const tdExcluir = document.createElement("td");
-        const btnX = document.createElement("button");
-        btnX.textContent = "EXCLUIR";
-        btnX.className = "btn btn-red";
-        btnX.style.padding = "6px 10px";
-        btnX.style.fontSize = "11px";
-        btnX.addEventListener("click", async () => {
-          if (!confirm("Excluir este jogador?")) return;
-          await excluirJogador(j.id);
-        });
-        tdExcluir.appendChild(btnX);
-        tr.appendChild(tdExcluir);
+          const wrap = document.createElement("div");
+          wrap.style.display = "flex";
+          wrap.style.gap = "6px";
+          wrap.style.justifyContent = "center";
+          wrap.appendChild(btnE);
+          wrap.appendChild(btnX);
 
-        tbody.appendChild(tr);
+          tdAcoes.appendChild(wrap);
+          tr.appendChild(tdAcoes);
+tbody.appendChild(tr);
       });
 
       renderAniversariantes(data);
