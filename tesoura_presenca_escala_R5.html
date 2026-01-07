@@ -1,10 +1,26 @@
 <!DOCTYPE html>
+
 <html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <title>TESOURA - PRESENÇA / ESCALAÇÃO</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
+<head><style>
+/* Anti-FLASH (painel errado por 1s): esconde até carregar o layout final */
+html.tesoura-preload body{opacity:0; pointer-events:none;}
+html body{transition:opacity .12s ease;}
+</style><script>
+(function(){
+  try{
+    document.documentElement.classList.add('tesoura-preload');
+    var done=false;
+    function show(){ if(done) return; done=true; document.documentElement.classList.remove('tesoura-preload'); }
+    window.addEventListener('load', show);
+    // Fallback: se der algum erro, mostra em 1.5s
+    setTimeout(show, 1500);
+  }catch(e){}
+})();
+</script>
+<meta charset="utf-8"/>
+<title>TESOURA - PRESENÇA / ESCALAÇÃO</title>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<style>
 
     body{margin:0;padding:0;font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb;font-size:12px}
     header{background:#020617;padding:12px 16px;text-align:center;font-weight:bold;letter-spacing:1px;text-transform:uppercase}
@@ -222,163 +238,132 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
 
 
   </style>
-
-<style>
-#tesouraFileBadge{
-  position:fixed; right:10px; bottom:10px; z-index:99999;
-  font: 11px/1.2 Arial, sans-serif;
-  background: rgba(0,0,0,.55);
-  color:#fff; padding:6px 8px; border-radius:10px;
-  border:1px solid rgba(255,255,255,.15);
-}
-</style>
-
 </head>
 <body>
-  <header>TESOURA - PRESENÇA / ESCALAÇÃO</header>
-
-  <div class="no-print" style="text-align:right; padding:6px 16px 0 16px;">
-  </div>
-
-  <div class="container">
-
-    <div class="linhas-topo">
-      <div class="col-50">
-        <div class="painel">
-          <h2>Jogadores (todos)</h2>
-          <div class="status-info">Clique em <b>CHEGOU AGORA</b> quando o jogador chegar.</div>
-          <div id="status-jogadores" class="status-info"></div>
-
-          <div class="painel-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width:70px">ID</th>
-                  <th>APELIDO</th>
-                  <th style="width:170px">CHEGOU AGORA</th>
-                </tr>
-              </thead>
-              <tbody id="tbody-jogadores-todos"></tbody>
-            </table>
-          </div>
-
-          <div id="status-total-jogadores" class="status-info"></div>
-        </div>
-      </div>
-
-      <div class="col-50">
-        <div class="painel">
-          <h2>Presença hoje</h2>
-
-          <div style="display:flex; justify-content:space-between; gap:12px; align-items:center;">
-            <div id="info-presentes" class="status-info"></div>
-            <div id="info-data-jogo" class="status-info"></div>
-          </div>
-
-          <div class="no-print" style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-            <button id="btn-limpar-presentes" class="btn-perigo">Limpar hoje</button>
-            <button id="btn-salvar-presenca" class="btn-neutro">Salvar presença</button>
-<button id="btn-escalar-1t" class="btn-primario">Escalar 1º tempo</button>
-<button id="btn-desfazer-1t" class="btn-neutro">Desfazer 1º tempo</button>
-<button id="btn-baixar-presenca" class="btn-neutro">Baixar presença</button>
-<span style="margin-left:10px;color:#cbd5e1;font-size:12px;">Horário de corte: 06:15</span>
-            
-          </div>
-
-          <div id="status-presentes" class="status-info"></div>
-
-          <div class="painel-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width:70px">ID</th>
-                  <th style="width:70px">ORDEM</th>
-                  <th>APELIDO</th>
-                  <th style="width:110px">HORA</th>
-                  <th style="width:110px">OBS</th>
-                  <th style="width:170px">NÃO VAI JOGAR</th>
-                  <th style="width:120px">EXCLUIR</th>
-                </tr>
-              </thead>
-              <tbody id="tbody-presentes-hoje"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="painel">
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-        <h2 style="margin:0;">Escalação do jogo</h2>
-        <div class="no-print" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-          <div id="msg-salvar" class="msg-salvar"></div>
-          <button id="btn-escalar-2t" class="btn-primario">Escalar 2º tempo</button>
-          <button id="btn-desfazer-2t" class="btn-neutro">Desfazer 2º tempo</button>
-          <button id="btn-baixar-1t" class="btn-neutro">Baixar 1º tempo</button>
-          <button id="btn-baixar-2t" class="btn-neutro">Baixar 2º tempo</button>
-          <button id="btn-salvar-jogo" class="btn-neutro">Salvar</button>
-        </div>
-      </div>
-
-      <div class="grid-escalacao">
-        <div class="col-escalacao">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-           <div class="t-amarelo" style="font-size:13px">1º TEMPO — JOGO DAS 06:40 ÀS 07:40</div> 
-            <div class="status-info">Botão <b>SAIU</b> risca o nome.</div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th style="width:70px">ID</th>
-                <th style="width:60px">POS</th>
-                <th class="t-amarelo">AMARELO</th>
-                <th style="width:60px">SAIU</th>
-                <th class="t-azul">AZUL</th>
-                <th style="width:60px">SAIU</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-1t"></tbody>
-          </table>
-          <div class="totais" id="totais-1t">TOTAL PONTOS: 0 x 0</div>
+<header>TESOURA - PRESENÇA / ESCALAÇÃO</header>
+<div class="no-print" style="text-align:right; padding:6px 16px 0 16px;">
 </div>
-
-        <div class="col-escalacao">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div class="t-amarelo" style="font-size:13px">2º TEMPO — JOGO DAS 08:00 ÀS 09:00</div>
-             <div class="status-info">Prioridade: quem não jogou.</div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th style="width:70px">ID</th>
-                <th style="width:60px">POS</th>
-                <th class="t-amarelo">AMARELO</th>
-                <th class="t-azul">AZUL</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-2t"></tbody>
-          </table>
-          <div class="totais" id="totais-2t">TOTAL PONTOS: 0 x 0</div>
-        </div>
-      </div>
-
-      <div class="legenda">
-        <b>OBS:</b>
+<div class="container">
+<div class="linhas-topo">
+<div class="col-50">
+<div class="painel">
+<h2>Jogadores (todos)</h2>
+<div class="status-info">Clique em <b>CHEGOU AGORA</b> quando o jogador chegar.</div>
+<div class="status-info" id="status-jogadores"></div>
+<div class="painel-scroll">
+<table>
+<thead>
+<tr>
+<th style="width:70px">ID</th>
+<th>APELIDO</th>
+<th style="width:170px">CHEGOU AGORA</th>
+</tr>
+</thead>
+<tbody id="tbody-jogadores-todos"></tbody>
+</table>
+</div>
+<div class="status-info" id="status-total-jogadores"></div>
+</div>
+</div>
+<div class="col-50">
+<div class="painel">
+<h2>Presença hoje</h2>
+<div style="display:flex; justify-content:space-between; gap:12px; align-items:center;">
+<div class="status-info" id="info-presentes"></div>
+<div class="status-info" id="info-data-jogo"></div>
+</div>
+<div class="no-print" style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+<button class="btn-perigo" id="btn-limpar-presentes">Limpar hoje</button>
+<button class="btn-primario" id="btn-escalar-1t">Escalar 1º tempo</button>
+<button class="btn-neutro" id="btn-desfazer-1t">Desfazer 1º tempo</button>
+<button class="btn-neutro" id="btn-baixar-presenca">Baixar presença</button>
+<span style="margin-left:10px;color:#cbd5e1;font-size:12px;">Horário de corte: 06:15</span>
+</div>
+<div class="status-info" id="status-presentes"></div>
+<div class="painel-scroll">
+<table>
+<thead>
+<tr>
+<th style="width:70px">ID</th>
+<th style="width:70px">ORDEM</th>
+<th>APELIDO</th>
+<th style="width:110px">HORA</th>
+<th style="width:110px">OBS</th>
+<th style="width:170px">NÃO VAI JOGAR</th>
+<th style="width:120px">EXCLUIR</th>
+</tr>
+</thead>
+<tbody id="tbody-presentes-hoje"></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="painel">
+<div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+<h2 style="margin:0;">Escalação do jogo</h2>
+<div class="no-print" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+<div class="msg-salvar" id="msg-salvar"></div>
+<button class="btn-primario" id="btn-escalar-2t">Escalar 2º tempo</button>
+<button class="btn-neutro" id="btn-desfazer-2t">Desfazer 2º tempo</button>
+<button class="btn-neutro" id="btn-baixar-1t">Baixar 1º tempo</button>
+<button class="btn-neutro" id="btn-baixar-2t">Baixar 2º tempo</button>
+<button class="btn-neutro" id="btn-salvar-jogo">Salvar</button>
+</div>
+</div>
+<div class="grid-escalacao">
+<div class="col-escalacao">
+<div style="display:flex; justify-content:space-between; align-items:center;">
+<div class="t-amarelo" style="font-size:13px">1º TEMPO — JOGO DAS 06:40 ÀS 07:40</div>
+<div class="status-info">Botão <b>SAIU</b> risca o nome.</div>
+</div>
+<table>
+<thead>
+<tr>
+<th style="width:70px">ID</th>
+<th style="width:60px">POS</th>
+<th class="t-amarelo">AMARELO</th>
+<th style="width:60px">SAIU</th>
+<th class="t-azul">AZUL</th>
+<th style="width:60px">SAIU</th>
+</tr>
+</thead>
+<tbody id="tbody-1t"></tbody>
+</table>
+<div class="totais" id="totais-1t">TOTAL PONTOS: 0 x 0</div>
+</div>
+<div class="col-escalacao">
+<div style="display:flex; justify-content:space-between; align-items:center;">
+<div class="t-amarelo" style="font-size:13px">2º TEMPO — JOGO DAS 08:00 ÀS 09:00</div>
+<div class="status-info">Prioridade: quem não jogou.</div>
+</div>
+<table>
+<thead>
+<tr>
+<th style="width:70px">ID</th>
+<th style="width:60px">POS</th>
+<th class="t-amarelo">AMARELO</th>
+<th class="t-azul">AZUL</th>
+</tr>
+</thead>
+<tbody id="tbody-2t"></tbody>
+</table>
+<div class="totais" id="totais-2t">TOTAL PONTOS: 0 x 0</div>
+</div>
+</div>
+<div class="legenda">
+<b>OBS:</b>
 C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
 <span class="obs-pago">P (verde) pagou</span> |
 <span class="obs-inad">P (vermelho) não pagou</span>
-      </div>
-    </div>
-
-  </div>
-
- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script>if (!window.supabase && typeof supabase !== "undefined") window.supabase = supabase;</script>
-	
-  <script>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
 // ===== SUPABASE =====
-    const SUPABASE_URL = (window.parent && window.parent.TESOURA_CONFIG && window.parent.TESOURA_CONFIG.SUPABASE_URL) || "https://xuplzpispukvtggjasxx.supabase.co";
-    const SUPABASE_KEY = (window.parent && window.parent.TESOURA_CONFIG && (window.parent.TESOURA_CONFIG.SUPABASE_KEY || window.parent.TESOURA_CONFIG.SUPABASE_ANON_KEY)) || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
     window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var supabase = window.__TESOURA_SUPABASE__;
     // ===== ESTADO =====
@@ -405,7 +390,6 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
     const tbodyPresentesHoje = document.getElementById("tbody-presentes-hoje");
 
     const btnLimparPresentes = document.getElementById("btn-limpar-presentes");
-      const btnSalvarPresenca = document.getElementById("btn-salvar-presenca");
     const btnEscalar1T = document.getElementById("btn-escalar-1t");
     const btnEscalar2T = document.getElementById("btn-escalar-2t");
     const btnSalvarJogo = document.getElementById("btn-salvar-jogo");
@@ -434,57 +418,6 @@ function toast(msg, ok=false){
   console.log(msg);
 }
 
-    // ======= PRESENÇA: AUTO-SALVAR =======
-    let __autoSavePresencaTimer = null;
-
-    function agendarAutoSavePresenca(ms=800){
-      if(__autoSavePresencaTimer) clearTimeout(__autoSavePresencaTimer);
-      __autoSavePresencaTimer = setTimeout(()=>{ salvarPresencaHoje(false).catch(console.warn); }, ms);
-    }
-
-    async function salvarPresencaHoje(forceMsg){
-    const dia = getDiaISO();
-    const payload = {
-      dia,
-      presentesHoje,
-      ts: new Date().toISOString(),
-    };
-
-    // A) SALVA/ATUALIZA A "FONTE" (arquivos_app) — sem delete (evita problema de permissão)
-    try{
-      const { error: errIns } = await supabase
-        .from("arquivos_app")
-        .insert([{ painel: "presenca", periodo: "diario", data_ref: dia, mes_ref: mesRefNum(dia), ano_ref: Number(dia.slice(0,4)), conteudo: payload }]);
-      if(errIns) throw errIns;
-    }catch(e){
-      console.warn("Falha ao salvar presença em arquivos_app:", e);
-      if(forceMsg) toast("Não consegui salvar a PRESENÇA no banco. Veja o Console.", false);
-      return false;
-    }
-
-    // B) COMPAT: tenta sincronizar na tabela presencas (se existir e permitir delete)
-    try{
-      // apaga tudo do dia
-      await supabase.from("presencas").delete().eq("data_jogo", dia);
-      const presRows = todosJogadores.map(j => ({
-        data_jogo: dia,
-        apelido: j.apelido,
-        presenca: presentesHoje.some(p => p.apelido === j.apelido),
-        faltoso: false,
-      }));
-      if(presRows.length){
-        const { error: errPres } = await supabase.from("presencas").insert(presRows);
-        if(errPres) throw errPres;
-      }
-    }catch(e){
-      // não quebra o app
-      console.warn("Compat presencas falhou (ok):", e);
-    }
-
-    if(forceMsg) toast("PRESENÇA salva.", true);
-    return true;
-  }
-
 
     // ===== DATA/HORA =====
     function hojeIso() {
@@ -505,19 +438,7 @@ function getDataJogoISO() {
     function comparaHoraStr(a,b){ return (a||"").localeCompare(b||""); }
 
     function atualizarInfoPresentes(){
-      if (!infoPresentesEl) return;
       infoPresentesEl.textContent = `Presentes hoje: ${presentesHoje.length}`;
-    }
-
-    // ===== REGRA: PRESENÇA só pode ser marcada até 07:30 =====
-    const LIMITE_PRESENCA_HHMM = "07:30";
-
-    function passouLimitePresencaAgora(){
-      const agora = new Date();
-      const hh = String(agora.getHours()).padStart(2,"0");
-      const mm = String(agora.getMinutes()).padStart(2,"0");
-      const hhmm = `${hh}:${mm}`;
-      return hhmm > LIMITE_PRESENCA_HHMM;
     }
 
     // ===== REGRA PAGAMENTO =====
@@ -691,80 +612,58 @@ function getDataJogoISO() {
       }catch(err){
         console.error(err);
         statusBaseEl.textContent = "ERRO ao carregar base. Ver F12 > Console.";
-        /* sem alert para evitar “flash” (ver Console). */
+        alert("Erro ao carregar base (ver Console).");
       }
     }
 
     
     // ===== CARREGAR PRESENÇA DO DIA (para estabilidade) =====
     async function carregarPresencaHoje(){
-    const dia = getDiaISO();
-    // 1) tenta carregar do ARQUIVOS_APP (fonte principal, garante persistência e permite “limpar” sem delete)
-    try{
-      const { data, error } = await supabase
-        .from("arquivos_app")
-        .select("conteudo, created_at")
-        .eq("painel", "presenca")
-        .eq("data_ref", dia)
-        .order("created_at", { ascending: false })
-        .limit(1);
+      const dia = getDataJogoISO();
+      dataJogoIso = dia; // habilita SALVAR
 
-      if(!error && data && data.length){
-        const c = data[0].conteudo || {};
-        presentesHoje = Array.isArray(c.presentesHoje) ? c.presentesHoje : [];
+      statusPresentesEl.textContent = "Carregando presença...";
+      try{
+        const { data: rows, error } = await supabase
+          .from("presencas")
+          .select("apelido, presenca")
+          .eq("data_jogo", dia);
 
-        // garante formato (compat com versões antigas)
-        presentesHoje = (presentesHoje || []).map(p=>{
-          const apelido = String(p?.apelido || "").trim();
-          const k = keyApelido(apelido);
-          const base = mapaJogadores[k] || {};
-          return {
-            id: (p?.id != null ? p.id : base.id),
-            apelido,
-            horaChegada: String(p?.horaChegada || ""),
-            obs: String(p?.obs || ""),
-            naoVaiJogar: !!p?.naoVaiJogar,
-            escalou1: !!p?.escalou1,
-            escalou2: !!p?.escalou2,
-            saiu: !!p?.saiu,
-            pontos: (p?.pontos != null ? Number(p.pontos) : (base.pontos || 0))
-          };
-        });
+        if(error) throw error;
 
-        // mantém escalações consistentes com a presença
-        syncEscalacoesComPresenca();
-renderPresentes();
+        const setPresentes = new Set(
+          (rows || [])
+            .filter(r => r && (r.presenca === true || r.presenca === 1))
+            .map(r => String(r.apelido || "").trim())
+        );
+
+        presentesHoje = (todosJogadores || [])
+          .filter(j => setPresentes.has(j.apelido))
+          .map(j => ({
+            id: j.id,
+            apelido: j.apelido,
+            horaChegada: "",
+            naoVaiJogar: false,
+            escalou1: false,
+            escalou2: false,
+            saiu: false,
+            obs: "",
+            pontos: Number(j.pontos || 0),
+          }));
+
         atualizarInfoPresentes();
-        return; // ok
+        renderPresentes();
+        syncEscalacoesComPresenca();
+        renderEscalacoes();
+
+        statusPresentesEl.textContent = "Presença carregada.";
+      }catch(err){
+        console.error(err);
+        statusPresentesEl.textContent = "Erro ao carregar presença (ver Console).";
+        // não derruba a base toda
       }
-    }catch(e){ /* segue para fallback */ }
-
-    // 2) fallback: tabela PRESENCAS (compatibilidade)
-    try{
-      const { data: rows, error: err } = await supabase
-        .from("presencas")
-        .select("apelido")
-        .eq("data_jogo", dia)
-        .eq("presenca", true);
-
-      if(err) throw err;
-      const set = new Set((rows||[]).map(r=>String(r.apelido||"")));
-      presentesHoje = todosJogadores
-        .filter(j=>set.has(j.apelido))
-        .map(j=>({
-          id: j.id,
-          apelido: j.apelido,
-          horaChegada: "",
-          obs: "",
-          naoVaiJogar: false,
-        }));
-    }catch(e){
-      presentesHoje = [];
     }
 
-    renderPresentes();
-    atualizarInfoPresentes();
-  }
 function renderJogadoresTodos(){
       tbodyJogadoresTodos.innerHTML = "";
       todosJogadores.forEach(j=>{
@@ -794,12 +693,6 @@ function renderJogadoresTodos(){
       const apelido = j?.apelido;
       if(!apelido) return;
 
-
-      if(passouLimitePresencaAgora()){
-        alert("Presença só pode ser marcada até 07:30.");
-        return;
-      }
-
       if(presentesHoje.find(p=>p.apelido===apelido)){
         alert("Este jogador já está na lista de presença hoje.");
         return;
@@ -825,7 +718,6 @@ function renderJogadoresTodos(){
       atualizarInfoPresentes();
       renderPresentes();
       renderEscalacoes();
-         agendarAutoSavePresenca();
     }
 
     function toggleNaoVaiJogar(apelido){
@@ -843,7 +735,6 @@ function renderJogadoresTodos(){
       syncEscalacoesComPresenca();
       renderPresentes();
       renderEscalacoes();
-         agendarAutoSavePresenca();
     }
 
     function excluirPresente(apelido){
@@ -857,7 +748,6 @@ function renderJogadoresTodos(){
       syncEscalacoesComPresenca();
       renderPresentes();
       renderEscalacoes();
-         agendarAutoSavePresenca();
     }
 
     // ===== SINCRONIZAÇÃO (NÃO DESFAZER RISCOS AO CHEGAR NOVO JOGADOR) =====
@@ -1084,26 +974,6 @@ function renderJogadoresTodos(){
       const d = pad2(dt.getDate());
       return `${y}-${m}-${d}`;
     }
-
-    // Retorna o dia atual em ISO (YYYY-MM-DD) no horário local do dispositivo
-    function getDiaISO(){
-      const d = new Date();
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth()+1).padStart(2,"0");
-      const dd = String(d.getDate()).padStart(2,"0");
-      return `${yyyy}-${mm}-${dd}`;
-    }
-
-    function mesAnoBR(diaISO){
-      // "YYYY-MM-DD" -> "MM/YYYY"
-	      return `${diaISO.slice(5,7)}/${diaISO.slice(0,4)}`;
-	    }
-
-	    function mesRefNum(diaISO){
-      // "YYYY-MM-DD" -> 1..12 (Number) (coluna mes_ref é INTEGER)
-      return Number(diaISO.slice(5,7));
-    }
-
 
     function domingoAnterior(dataISO){
       const dt = parseDataISO(dataISO);
@@ -1467,39 +1337,15 @@ function calcularTotalPontos(lista){
       totais2TEl.textContent = `TOTAL PONTOS: ${totalAm2} x ${totalAz2}  (DIF: ${dif2})`;
     }
 
-    async function limparPresentesHoje(){
-    if(!confirm("CONFIRMA LIMPAR a PRESENÇA de HOJE?\n\nIsso zera a lista e salva vazio.")) return;
-
-    const dia = getDiaISO();
-
-    // zera na tela
-    presentesHoje = [];
-    renderPresentes();
-    atualizarInfoPresentes();
-
-    // salva vazio (arquivos_app)
-    try{
-      const payload = { dia, presentesHoje: [], ts: new Date().toISOString(), limpo: true };
-      const { error: errIns } = await supabase
-        .from("arquivos_app")
-        .insert([{ painel: "presenca", periodo: "diario", data_ref: dia, mes_ref: mesRefNum(dia), ano_ref: Number(dia.slice(0,4)), conteudo: payload }]);
-      if(errIns) throw errIns;
-    }catch(e){
-      console.warn("Falha ao salvar LIMPEZA (arquivos_app):", e);
-      alert("Não consegui salvar a LIMPEZA no banco. Veja o Console.");
-      return;
+    function limparPresentesHoje(){
+      if(!confirm("Limpar toda a presença de hoje?")) return;
+      presentesHoje=[];
+      limparEscalacoes();
+      atualizarInfoPresentes();
+      renderPresentes();
+      renderEscalacoes();
     }
 
-    // tenta limpar legacy (se permitido)
-    try{
-      await supabase.from("presencas").delete().eq("data_jogo", dia);
-      await supabase.from("escalacao").delete().eq("data_jogo", dia);
-    }catch(e){
-      console.warn("Compat delete falhou (ok):", e);
-    }
-
-    alert("Presença de hoje foi limpa.");
-  }
     // ===== DESFAZER ESCALAÇÃO (não mexe na lista de presença) =====
     function desfazerEscalacao1T(){
       if(!confirm("Desfazer escalação do 1º tempo?")) return;
@@ -1558,126 +1404,266 @@ function calcularTotalPontos(lista){
           setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
         }
 
-        function buildBaseCss(){
-          return `
-            body{font-family:Arial, sans-serif;margin:24px;color:#111;}
-            h1{font-size:18px;margin:0 0 12px;}
-            .meta{margin:0 0 16px;color:#444;font-size:12px;}
-            table{width:100%;border-collapse:collapse;table-layout:fixed;}
-            th,td{border:1px solid #ccc;padding:6px 8px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-            th{background:#f5f5f5;}
-            #tesouraFileBadge{position:fixed;top:8px;right:8px;font-size:11px;color:#777;}
-            @page{size:A4 landscape;margin:12mm;}
-            @media print{#tesouraFileBadge{display:none;}}
-          `;
-        }
-
-        function makeHtmlDoc(titulo, metaHtml, contentHtml){
-          return `<!doctype html>
-<html lang="pt-br">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>${escapeHtml(titulo)}</title>
-  <style>${buildBaseCss()}</style>
-</head>
-<body>
-  <div id="tesouraFileBadge">ARQUIVO: tesoura_presenca_escala_R5.html</div>
-  <h1>${escapeHtml(titulo)}</h1>
-  ${metaHtml || ""}
-  ${contentHtml || ""}
-</body>
-</html>`;
-        }
-
         function baixarPresenca(){
           try{
             const dia = getDataJogoISO();
-            const titulo = "PRESENÇA - " + dia;
-            const meta = `<div class="meta">Gerado em: ${escapeHtml(new Date().toLocaleString('pt-BR'))}</div>`;
+            const titulo = `Presença (${isoToBr(dia)})`;
+            const cols = ["ID","ORDEM","APELIDO","HORA","OBS","NÃO VAI JOGAR"];
 
-            const thead = `<tr>
-              <th style="width:60px">ORDEM</th>
-              <th style="width:80px">ID</th>
-              <th>APELIDO</th>
-              <th style="width:90px">HORA</th>
-              <th style="width:160px">OBS</th>
-              <th style="width:120px">NÃO VAI JOGAR</th>
-            </tr>`;
+            const rows = (presentesHoje || []).map((p, idx) => ([
+              p.id ?? "",
+              String(idx+1),
+              (p.apelido || ""),
+              (p.horaChegada || ""),
+              (p.obs || ""),
+              p.naoVaiJogar ? "SIM" : ""
+            ]));
 
-            const rows = (presentesHoje || [])
-              .slice()
-              .sort((a,b)=>(Number(a.ordem||0)-Number(b.ordem||0)))
-              .map(p=>{
-                const ordem = escapeHtml(p.ordem ?? "");
-                const id = escapeHtml(p.id ?? "");
-                const apelido = escapeHtml(p.apelido ?? "");
-                const hora = escapeHtml(p.hora ?? "");
-                const obs = escapeHtml(p.obs ?? "");
-                const nao = escapeHtml(p.nao_vai_jogar ? "SIM" : "");
-                return `<tr><td>${ordem}</td><td>${id}</td><td>${apelido}</td><td>${hora}</td><td>${obs}</td><td>${nao}</td></tr>`;
-              }).join("");
+            const thead = "<tr>" + cols.map(c=>"<th>"+escapeHtml(c)+"</th>").join("") + "</tr>";
+            const tbody = rows.map(r=>"<tr>" + r.map(v=>"<td>"+escapeHtml(v)+"</td>").join("") + "</tr>").join("");
 
-            const table = `<table>
-              <thead>${thead}</thead>
-              <tbody>${rows || `<tr><td colspan="6">Sem registros.</td></tr>`}</tbody>
-            </table>`;
+            const htmlDoc =
+`<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>${escapeHtml(titulo)}</title>
+<style>
+  body{font-family:Arial, sans-serif; padding:18px;}
+  h2{margin:0 0 12px 0;}
+  table{border-collapse:collapse; width:100%;}
+  th,td{border:1px solid #999; padding:6px 8px; font-size:12px;}
+  th{background:#f2f2f2; text-align:left;}
+</style>
+</head>
+<body>
+<h2>${escapeHtml(titulo)}</h2>
+<table>
+  <thead>${thead}</thead>
+  <tbody>${tbody}</tbody>
+</table>
+</body>
+</html>`;
 
-            const htmlDoc = makeHtmlDoc(titulo, meta, table);
-            downloadBlob(`PRESENCA_${dia}.html`, htmlDoc, "text/html;charset=utf-8");
+            downloadTextFile(`presenca_${dia}.html`, htmlDoc, "text/html");
           }catch(e){
             console.error(e);
-            alert("Erro ao gerar arquivo de presença.");
+            alert("Erro ao baixar presença (ver Console).");
           }
         }
 
-        function baixarEscalacao(tempo){
+        function printEscalacao(tempo){
           try{
             const dia = getDataJogoISO();
-            const titulo = `ESCALAÇÃO ${tempo}º TEMPO - ${dia}`;
-            const meta = `<div class="meta">Gerado em: ${escapeHtml(new Date().toLocaleString('pt-BR'))}</div>`;
+            const titulo = tempo === 1 ? `Escalação 1º Tempo (${isoToBr(dia)})` : `Escalação 2º Tempo (${isoToBr(dia)})`;
+            const esc = (tempo===1) ? (escala1 || {amarelo:[],azul:[]}) : (escala2 || {amarelo:[],azul:[]});
 
-            const tbodyId = (tempo === 1) ? "tbody-1t" : "tbody-2t";
-            const tbody = document.getElementById(tbodyId);
-            const tableEl = tbody ? tbody.closest("table") : null;
-            const tableHtml = tableEl ? tableEl.outerHTML : "<p>Sem dados.</p>";
+            const maxLen = Math.max((esc.amarelo||[]).length, (esc.azul||[]).length, 10);
+            let rowsHtml = "";
+            for(let i=0;i<maxLen;i++){
+              const am = esc.amarelo[i]?.apelido ? String(esc.amarelo[i].apelido).toUpperCase() : "";
+              const az = esc.azul[i]?.apelido ? String(esc.azul[i].apelido).toUpperCase() : "";
+              rowsHtml += "<tr><td class=\"am\">"+escapeHtml(am)+"</td><td class=\"az\">"+escapeHtml(az)+"</td></tr>";
+            }
 
-            const htmlDoc = makeHtmlDoc(titulo, meta, tableHtml);
-            downloadBlob(`ESCALACAO_${tempo}T_${dia}.html`, htmlDoc, "text/html;charset=utf-8");
+            const htmlDoc =
+`<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>${escapeHtml(titulo)}</title>
+<style>
+  body{margin:0;font-family:Arial,sans-serif;background:#0b1220;color:#fff}
+  .wrap{padding:16px}
+  h2{margin:0 0 10px 0;color:#ff7f27}
+  table{border-collapse:collapse;width:100%;background:#0b1220}
+  th,td{border:1px solid #334155;padding:8px;font-size:14px}
+  th{background:#ff7f27;color:#000;font-weight:900;text-align:center}
+  .am{color:#fbbf24;font-weight:900}
+  .az{color:#60a5fa;font-weight:900}
+  @media print{
+    body{background:#fff;color:#000}
+    th{background:#ff7f27 !important;color:#000 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>${escapeHtml(titulo)}</h2>
+    <table>
+      <thead><tr><th>AMARELO</th><th>AZUL</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  </div>
+</body>
+</html>`;
+
+            downloadTextFile(`escalacao_${tempo}t_${dia}.html`, htmlDoc, "text/html");
           }catch(e){
             console.error(e);
-            alert("Erro ao gerar arquivo de escalação.");
+            alert("Erro ao baixar escalação (ver Console).");
           }
         }
 
-        async function salvarArquivoEscalacao(){
-          try{
-            const dia = getDataJogoISO();
-            const payload = {
-              data_ref: dia,
-              escala1: (typeof escala1 !== "undefined" ? escala1 : null),
-              escala2: (typeof escala2 !== "undefined" ? escala2 : null),
-              gerado_em: new Date().toISOString()
-            };
+// ===== SALVAR (SEM UPSERT, PARA NÃO DEPENDER DE CONSTRAINT) =====
+    async function salvarJogo(){
+      try{
+        if(!dataJogoIso){ alert("Base não carregada."); return; }
+        msgSalvarEl.textContent="";
 
-            const reg = {
-              painel: "escalacao",
-              periodo: "semanal",
-              data_ref: dia,
-              mes_ref: (typeof mesRefNum === "function" ? mesRefNum(dia) : Number(String(dia).slice(0,7).replace("-",""))),
-              ano_ref: Number(String(dia).slice(0,4)),
-              conteudo: payload
-            };
+        const dia=dataJogoIso;
 
-            const { error } = await supabase.from("arquivos_app").insert([reg]);
-            if(error) throw error;
+        // 1) presenças: apaga do dia e insere novamente
+        const { error: errDelPres } = await supabase.from("presencas").delete().eq("data_jogo", dia);
+        if(errDelPres){ console.error(errDelPres); alert("Erro ao limpar presenças do dia."); return; }
 
-            alert("Escalação SALVA no Banco de Dados.");
-          }catch(e){
-            console.error(e);
-            alert("Erro ao salvar escalação.");
-          }
+        const presentesSet=new Set(presentesHoje.map(p=>p.apelido));
+        const presRows = todosJogadores.map(j=>({
+          data_jogo: dia,
+          apelido: j.apelido,
+          presenca: presentesSet.has(j.apelido),
+          faltoso: !presentesSet.has(j.apelido)
+        }));
+
+        if(presRows.length){
+          const { error: errInsPres } = await supabase.from("presencas").insert(presRows);
+          if(errInsPres){ console.error(errInsPres); alert("Erro ao salvar presenças."); return; }
         }
-      </script>
+
+        // 2) escalação: apaga do dia e insere
+        const { error: errDelEsc } = await supabase.from("escalacao").delete().eq("data_jogo", dia);
+        if(errDelEsc){ console.error(errDelEsc); alert("Erro ao limpar escalação."); return; }
+
+        const escRows=[];
+        escala1.amarelo.forEach(e=>escRows.push({data_jogo:dia, apelido:e.apelido, tempo:1, time:"AMARELO"}));
+        escala1.azul.forEach(e=>escRows.push({data_jogo:dia, apelido:e.apelido, tempo:1, time:"AZUL"}));
+        escala2.amarelo.forEach(e=>escRows.push({data_jogo:dia, apelido:e.apelido, tempo:2, time:"AMARELO"}));
+        escala2.azul.forEach(e=>escRows.push({data_jogo:dia, apelido:e.apelido, tempo:2, time:"AZUL"}));
+
+        if(escRows.length){
+          const { error: errInsEsc } = await supabase.from("escalacao").insert(escRows);
+          if(errInsEsc){ console.error(errInsEsc); alert("Erro ao salvar escalação."); return; }
+        }
+
+
+        // 3) ARQUIVAR NO BANCO DE DADOS (arquivos_app)
+        try{
+          const dtRef = new Date(dia+"T00:00:00");
+          const mes_ref = dtRef.getMonth()+1;
+          const ano_ref = dtRef.getFullYear();
+
+          // Presença (arquivo semanal)
+          const presPayload = todosJogadores.map(j=> {
+            const p = presentesHoje.find(x=>x.apelido===j.apelido);
+            return {
+              id: j.id,
+              apelido: j.apelido,
+              posicao: (j.posicao||"").toUpperCase(),
+              pontos: j.pontos ?? "",
+              presente: !!p,
+              hora_chegada: p ? (p.horaChegada||"") : "",
+              nao_vai_jogar: p ? !!p.naoVaiJogar : false,
+              pago: isPagoHoje(j.apelido)
+            };
+          });
+
+          // limpa registro anterior do mesmo domingo (evita acumular testes)
+          await supabase.from("arquivos_app").delete()
+            .eq("painel","presenca").eq("periodo","semanal").eq("data_ref", dia);
+
+                    const presTableHtml = document.getElementById("tblPresencaHoje")?.outerHTML || "";
+          const presConteudo = { table_html: presTableHtml };
+
+          const { error: errArqPres } = await supabase.from("arquivos_app").insert([{
+            painel: "presenca",
+            periodo: "semanal",
+            data_ref: dia,
+            mes_ref,
+            ano_ref,
+            referencia: isoToBr(dia),
+            titulo: `Presença (${isoToBr(dia)})`,
+            conteudo: presConteudo
+          }]);
+          if(errArqPres) throw errArqPres;
+
+          // Escalação (arquivo semanal)
+          const escPayload = [];
+          escala1.amarelo.forEach(e=>escPayload.push({tempo:1, time:"AMARELO", apelido:e.apelido}));
+          escala1.azul.forEach(e=>escPayload.push({tempo:1, time:"AZUL", apelido:e.apelido}));
+          escala2.amarelo.forEach(e=>escPayload.push({tempo:2, time:"AMARELO", apelido:e.apelido}));
+          escala2.azul.forEach(e=>escPayload.push({tempo:2, time:"AZUL", apelido:e.apelido}));
+
+          await supabase.from("arquivos_app").delete()
+            .eq("painel","escalacao").eq("periodo","semanal").eq("data_ref", dia);
+
+                    const escAreaHtml = document.getElementById("areaEscalacao")?.outerHTML
+            || document.getElementById("painelEscalacao")?.outerHTML
+            || "";
+
+          const escConteudo = { table_html: escAreaHtml };
+
+          const { error: errArqEsc } = await supabase.from("arquivos_app").insert([{
+            painel: "escalacao",
+            periodo: "semanal",
+            data_ref: dia,
+            mes_ref,
+            ano_ref,
+            referencia: isoToBr(dia),
+            titulo: `Escalação (${isoToBr(dia)})`,
+            conteudo: escConteudo
+          }]);
+          if(errArqEsc) throw errArqEsc;
+
+        }catch(eArq){
+          console.error(eArq);
+          alert("⚠️ Salvou PRESENÇA/ESCALAÇÃO, mas NÃO arquivou no BANCO DE DADOS. (Veja o Console)");
+        }
+
+        msgSalvarEl.textContent="PÁGINA SALVA";
+        alert("Página salva.");
+      }catch(e){
+        console.error(e);
+        alert("Erro ao salvar (veja F12 > Console).");
+      }
+    }
+
+    // ===== EVENTOS =====
+    btnLimparPresentes.addEventListener("click", limparPresentesHoje);
+    btnEscalar1T.addEventListener("click", escalarPrimeiroTempo);
+    btnEscalar2T.addEventListener("click", escalarSegundoTempo);
+    btnSalvarJogo.addEventListener("click", salvarJogo);
+
+    if(btnDesfazer1T) btnDesfazer1T.addEventListener("click", desfazerEscalacao1T);
+    if(btnDesfazer2T) btnDesfazer2T.addEventListener("click", desfazerEscalacao2T);
+    if(btnBaixarPresenca) btnBaixarPresenca.addEventListener("click", baixarPresenca);
+    if(btnBaixar1T) btnBaixar1T.addEventListener("click", ()=>printEscalacao(1));
+    if(btnBaixar2T) btnBaixar2T.addEventListener("click", ()=>printEscalacao(2));
+
+    carregarBase();
+</script>
+<div class="bloco-regras">
+<div class="col-regras">
+<h3>Regras 1º tempo (corte 06:15)</h3>
+<ul>
+<li>Se até 06:15 tiver até 20 presentes (ex.: 15, 19, 20): sem eliminação (todos jogam).</li>
+<li>Se até 06:15 tiver mais de 20 presentes (ex.: 25): o app corta até ficar 20, na ordem: faltou no domingo anterior → inadimplente → maior nº de faltas.</li>
+</ul>
+</div>
+<div class="col-regras">
+<h3>Regras 2º tempo (resumo)</h3>
+<ul>
+<li>Prioridade: quem está presente e não jogou no 1º tempo.</li>
+<li>Para abrir vagas, sai primeiro: (1) quem marcou SAIU/SAIU, (2) faltou no domingo anterior, (3) jogou os dois tempos no domingo anterior, (4) maior nº de faltas, (5) mais novos.</li>
+<li>Manter base dos times e distribuir quem entra equilibrando pontos e posições.</li>
+</ul>
+</div>
+<div class="obs-legenda">
+<strong>OBS:</strong>
+    C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) | 
+    <span class="pago-ok">P (verde) pagou</span> | <span class="pago-bad">P (vermelho) não pagou</span>
+</div>
+</div>
 </body>
 </html>
