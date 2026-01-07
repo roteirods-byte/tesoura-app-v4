@@ -326,7 +326,7 @@ if (!pago) return; // desmarcou ou excluiu: só remove
 
     if(ex.row){
       const { error } = await sb
-        .from("mensalidades")
+     .from("vw_mensalidades_painel")
         .update(payload)
         .eq("apelido", apel)
         .eq("ano", year)
