@@ -536,7 +536,7 @@ async function detectHora(){
             $("thHora").style.display = "none";
           }catch(_){}
           const { data: data2, error: error2 } = await sb
-            .from("caixa")
+           .from("vw_caixa_painel")
             .select(`${KEY_FIELD},data,tipo,descricao,obs,valor`)
             .gte("data", range.startIso)
             .lt("data", range.endIso)
