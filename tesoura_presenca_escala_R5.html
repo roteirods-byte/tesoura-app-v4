@@ -1558,23 +1558,126 @@ function calcularTotalPontos(lista){
           setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
         }
 
+        function buildBaseCss(){
+          return `
+            body{font-family:Arial, sans-serif;margin:24px;color:#111;}
+            h1{font-size:18px;margin:0 0 12px;}
+            .meta{margin:0 0 16px;color:#444;font-size:12px;}
+            table{width:100%;border-collapse:collapse;table-layout:fixed;}
+            th,td{border:1px solid #ccc;padding:6px 8px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            th{background:#f5f5f5;}
+            #tesouraFileBadge{position:fixed;top:8px;right:8px;font-size:11px;color:#777;}
+            @page{size:A4 landscape;margin:12mm;}
+            @media print{#tesouraFileBadge{display:none;}}
+          `;
+        }
+
+        function makeHtmlDoc(titulo, metaHtml, contentHtml){
+          return `<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>${escapeHtml(titulo)}</title>
+  <style>${buildBaseCss()}</style>
+</head>
+<body>
+  <div id="tesouraFileBadge">ARQUIVO: tesoura_presenca_escala_R5.html</div>
+  <h1>${escapeHtml(titulo)}</h1>
+  ${metaHtml || ""}
+  ${contentHtml || ""}
+</body>
+</html>`;
+        }
+
         function baixarPresenca(){
           try{
             const dia = getDataJogoISO();
-            const titulo = `Presença (${isoToBr(dia)})`;
-            const cols = ["ID","ORDEM","APELIDO","HORA","OBS","NÃO VAI JOGAR"];
+            const titulo = "PRESENÇA - " + dia;
+            const meta = `<div class="meta">Gerado em: ${escapeHtml(new Date().toLocaleString('pt-BR'))}</div>`;
 
-            const rows = (presentesHoje || []).map((p, idx) => ([
-              p.id ?? "",
-              String(idx+1),
-              (p.apelido || ""),
-              (p.horaChegada || ""),
-              (p.obs || ""),
-              p.naoVaiJogar ? "SIM" : ""
-            ]));
+            const thead = `<tr>
+              <th style="width:60px">ORDEM</th>
+              <th style="width:80px">ID</th>
+              <th>APELIDO</th>
+              <th style="width:90px">HORA</th>
+              <th style="width:160px">OBS</th>
+              <th style="width:120px">NÃO VAI JOGAR</th>
+            </tr>`;
 
-            const thead = "<tr>" + cols.map(c=>"<th>"+escapeHtml(c)+"</th>").join("") + "</tr>";
-            const tbody = rows.map(r=>"<tr>" + r.map(v=>"<td>"+escapeHtml(v)+"</td>").join("") + "</tr>").join("");
+            const rows = (presentesHoje || [])
+              .slice()
+              .sort((a,b)=>(Number(a.ordem||0)-Number(b.ordem||0)))
+              .map(p=>{
+                const ordem = escapeHtml(p.ordem ?? "");
+                const id = escapeHtml(p.id ?? "");
+                const apelido = escapeHtml(p.apelido ?? "");
+                const hora = escapeHtml(p.hora ?? "");
+                const obs = escapeHtml(p.obs ?? "");
+                const nao = escapeHtml(p.nao_vai_jogar ? "SIM" : "");
+                return `<tr><td>${ordem}</td><td>${id}</td><td>${apelido}</td><td>${hora}</td><td>${obs}</td><td>${nao}</td></tr>`;
+              }).join("");
 
-            const htmlDoc =
-`<div id="tesouraFileBadge">ARQUIVO: tesoura_presenca_escala_R5.html</div>
+            const table = `<table>
+              <thead>${thead}</thead>
+              <tbody>${rows || `<tr><td colspan="6">Sem registros.</td></tr>`}</tbody>
+            </table>`;
+
+            const htmlDoc = makeHtmlDoc(titulo, meta, table);
+            downloadBlob(`PRESENCA_${dia}.html`, htmlDoc, "text/html;charset=utf-8");
+          }catch(e){
+            console.error(e);
+            alert("Erro ao gerar arquivo de presença.");
+          }
+        }
+
+        function baixarEscalacao(tempo){
+          try{
+            const dia = getDataJogoISO();
+            const titulo = `ESCALAÇÃO ${tempo}º TEMPO - ${dia}`;
+            const meta = `<div class="meta">Gerado em: ${escapeHtml(new Date().toLocaleString('pt-BR'))}</div>`;
+
+            const tbodyId = (tempo === 1) ? "tbody-1t" : "tbody-2t";
+            const tbody = document.getElementById(tbodyId);
+            const tableEl = tbody ? tbody.closest("table") : null;
+            const tableHtml = tableEl ? tableEl.outerHTML : "<p>Sem dados.</p>";
+
+            const htmlDoc = makeHtmlDoc(titulo, meta, tableHtml);
+            downloadBlob(`ESCALACAO_${tempo}T_${dia}.html`, htmlDoc, "text/html;charset=utf-8");
+          }catch(e){
+            console.error(e);
+            alert("Erro ao gerar arquivo de escalação.");
+          }
+        }
+
+        async function salvarArquivoEscalacao(){
+          try{
+            const dia = getDataJogoISO();
+            const payload = {
+              data_ref: dia,
+              escala1: (typeof escala1 !== "undefined" ? escala1 : null),
+              escala2: (typeof escala2 !== "undefined" ? escala2 : null),
+              gerado_em: new Date().toISOString()
+            };
+
+            const reg = {
+              painel: "escalacao",
+              periodo: "semanal",
+              data_ref: dia,
+              mes_ref: (typeof mesRefNum === "function" ? mesRefNum(dia) : Number(String(dia).slice(0,7).replace("-",""))),
+              ano_ref: Number(String(dia).slice(0,4)),
+              conteudo: payload
+            };
+
+            const { error } = await supabase.from("arquivos_app").insert([reg]);
+            if(error) throw error;
+
+            alert("Escalação SALVA no Banco de Dados.");
+          }catch(e){
+            console.error(e);
+            alert("Erro ao salvar escalação.");
+          }
+        }
+      </script>
+</body>
+</html>
