@@ -20,7 +20,7 @@
     }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    .wrap{max-width:1400px;margin:0 auto;padding:18px}
+    \.wrap{max-width:1400px;margin:0 auto;padding:18px}
     .card{background:linear-gradient(180deg,rgba(18,24,45,.92),rgba(10,16,32,.92));border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
     .title{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:2px solid rgba(255,138,42,.55)}
     .title h1{margin:0;font-size:18px;letter-spacing:.4px;color:var(--orange)}
@@ -32,43 +32,48 @@
     label{font-size:12px;color:var(--muted)}
     select,input{height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.10);background:#0a1020;color:#fff;padding:0 10px;outline:none}
     input::placeholder{color:#5f6f93}
-    .btn{height:36px;border-radius:10px;border:0;padding:0 14px;font-weight:800;cursor:pointer}
+    .btn{height:36px;border-radius:10px;border:0;padding:0 14px;font-weight:700;cursor:pointer}
     .btn.blue{background:var(--blue);color:#00111a}
     .btn.orange{background:var(--orange);color:#1a0a00}
     .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.14);color:#fff}
     .meta{margin-top:8px;color:var(--muted);font-size:12px}
-    .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;border:1px solid rgba(255,255,255,.14);color:#dbe7ff;background:rgba(0,0,0,.18)}
-    .badge.lock{border-color:rgba(255,138,42,.55);color:#ffd9b5}
+    .stats{display:flex;gap:14px;flex-wrap:wrap;color:var(--text);font-size:12px;margin-top:8px}
+    .stats b{color:#fff}
     .table-wrap{margin-top:10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);overflow:hidden}
     table{width:100%;border-collapse:collapse;table-layout:fixed}
     thead th{background:var(--orange);color:#fff;font-size:12px;padding:10px;border-right:1px solid rgba(0,0,0,.18)}
     thead th:last-child{border-right:0}
     tbody td{padding:10px;border-top:1px solid rgba(255,255,255,.08);vertical-align:middle;font-size:12px;color:#e9f1ff}
     tbody tr:nth-child(even){background:rgba(255,255,255,.02)}
-
     .col-date{width:110px}
-    .col-desc{width:320px}
-    .col-obs{width:180px}
-    .col-money{width:130px;text-align:right}
-    .col-act{width:110px;text-align:center}
+    .col-desc{width:280px}
+    .col-obs{width:140px}
+    .col-money{width:120px;text-align:right}
+    .col-actions{width:260px;text-align:center}
 
-    td.col-desc, td.col-obs{white-space:normal;text-align:left;}
-    .money.pos{color:var(--green);font-weight:900}
-    .money.neg{color:var(--red);font-weight:900}
-
-    .btnSmall{height:30px;border-radius:10px;border:0;padding:0 12px;font-weight:900;cursor:pointer;font-size:12px}
+    td.col-desc, td.col-obs{white-space:normal;}
+    td.col-desc{text-align:left;}
+    td.col-obs{text-align:left;}
+    .money.pos{color:var(--green);font-weight:800}
+    .money.neg{color:var(--red);font-weight:800}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;border:1px solid rgba(255,255,255,.14);color:#dbe7ff;background:rgba(0,0,0,.18)}
+    .badge.lock{border-color:rgba(255,138,42,.55);color:#ffd9b5}
+    .actions{display:flex;gap:10px;justify-content:center;align-items:center}
+    .btnSmall{height:30px;border-radius:10px;border:0;padding:0 12px;font-weight:800;cursor:pointer;font-size:12px}
     .btnEdit{background:var(--green);color:#02140b}
     .btnDel{background:var(--red);color:#1a0000}
     .btnDisabled{opacity:.55;cursor:not-allowed}
-
+    .readonly{opacity:.75}
+    .line{height:1px;background:rgba(255,255,255,.08);margin:10px 0}
+    /* impressão */
     @media print{
       body{background:#fff;color:#000}
       .wrap{max-width:none;padding:0}
       .card{box-shadow:none;border:0;border-radius:0;background:#fff}
-      .title .right-actions{display:none !important}
-      .no-print{display:none !important}
+      .title,.section h2,.row,.meta,.stats,.actions,.btn{display:none !important}
       .table-wrap{border:0}
       table{table-layout:auto;width:100%}
+      thead th{position:static}
     }
     @page{size:A4 landscape;margin:10mm}
   </style>
@@ -77,68 +82,63 @@
   <div class="wrap">
     <div class="card">
       <div class="title">
-        <div>
-          <h1>TESOURA - CAIXA</h1>
-          <small>Arquivo mensal: dia 1 → dia 1 do próximo mês. Tela fica no mês corrente.</small>
-        </div>
-        <div class="right-actions no-print">
-          <span class="badge" id="badgeMes">Mês corrente</span>
-        </div>
+        <h1>TESOURA - CAIXA</h1>
+        <small>(auto-save)</small>
       </div>
 
-      <div class="section no-print">
-        <h2>LANÇAMENTOS (mês corrente)</h2>
-        <div class="row">
-          <div class="field">
-            <label>DATA (automática):</label>
-            <input id="inData" type="date" style="width:170px" readonly />
-          </div>
-          <div class="field">
-            <label>TIPO:</label>
-            <select id="inTipo" style="width:150px">
-              <option value="RECEITA">RECEITA</option>
-              <option value="DESPESA">DESPESA</option>
-            </select>
-          </div>
-          <div class="field" style="flex:1;min-width:260px">
-            <label>DESCRIÇÃO:</label>
-            <input id="inDesc" placeholder="Descrição" />
-          </div>
-          <div class="field" style="min-width:220px">
-            <label>OBS:</label>
-            <input id="inObs" placeholder="Opcional" />
-          </div>
-          <div class="field" style="width:160px">
-            <label>VALOR (R$):</label>
-            <input id="inValor" placeholder="0,00" inputmode="decimal" />
-          </div>
-
-          <button class="btn blue" id="btnSalvar">SALVAR</button>
-          <button class="btn ghost" id="btnCancelar" style="display:none">CANCELAR</button>
-          <button class="btn ghost" id="btnLimpar">LIMPAR</button>
-        </div>
-
-        <div class="meta" id="status">Carregando...</div>
-      </div>
-
-      <div class="section no-print">
-        <h2>PDF (arquivo mensal)</h2>
+      <div class="section">
+        <h2>FILTRO</h2>
         <div class="row">
           <div class="field">
             <label>ANO:</label>
-            <select id="selAnoPdf"></select>
+            <select id="selAno"></select>
           </div>
           <div class="field">
             <label>MÊS:</label>
-            <select id="selMesPdf"></select>
+            <select id="selMes"></select>
           </div>
+          <div class="field">
+            <label>PERÍODO:</label>
+            <select id="selPeriodo">
+              <option value="SEMANAL">SEMANAL</option>
+              <option value="MENSAL">MENSAL</option>
+              <option value="ANUAL">ANUAL</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>SEMANA:</label>
+            <select id="selSemana"></select>
+          </div>
+
+          <div style="flex:1"></div>
+
+          <button class="btn blue" id="btnConsultar">CONSULTAR</button>
           <button class="btn orange" id="btnPdf">BAIXAR PDF</button>
-          <div class="meta">Obs: o PDF abre no navegador. Depois clique em imprimir e salve como PDF.</div>
+        </div>
+
+        <div class="meta" id="status">Carregando...</div>
+        <div class="stats">
+          <div><b>SALDO ANTERIOR:</b> <span id="sAnterior">R$ 0,00</span></div>
+          <div><b>SALDO NO PERÍODO:</b> <span id="sPeriodo">R$ 0,00</span></div>
+          <div><b>SALDO FINAL:</b> <span id="sFinal">R$ 0,00</span></div>
         </div>
       </div>
 
       <div class="section">
-        <h2 id="h2Tabela">LANÇAMENTOS</h2>
+        <h2>LANÇAMENTOS</h2>
+        <div class="row">
+          <input id="inData" type="date" style="width:160px"/>
+          <select id="inTipo" style="width:140px">
+            <option value="RECEITA">RECEITA</option>
+            <option value="DESPESA">DESPESA</option>
+          </select>
+          <input id="inDesc" placeholder="DESCRIÇÃO" style="flex:1;min-width:220px"/>
+          <input id="inObs" placeholder="OBS" style="width:220px"/>
+          <input id="inValor" placeholder="VALOR (R$)" inputmode="decimal" style="width:160px"/>
+          <button class="btn blue" id="btnSalvar">SALVAR</button>
+          <button class="btn ghost" id="btnCancelar" style="display:none">CANCELAR</button>
+        </div>
+
         <div class="table-wrap">
           <table>
             <thead>
@@ -149,8 +149,7 @@
                 <th class="col-money">RECEITA (R$)</th>
                 <th class="col-money">DESPESA (R$)</th>
                 <th class="col-money">SALDO (R$)</th>
-                <th class="col-act">EDITAR</th>
-                <th class="col-act">EXCLUIR</th>
+                <th class="col-actions">AÇÕES</th>
               </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -168,6 +167,13 @@ const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || CFG.SUPABASE_ANON ||
 const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
 /* ===== elementos ===== */
+const selAno = document.getElementById("selAno");
+const selMes = document.getElementById("selMes");
+const selPeriodo = document.getElementById("selPeriodo");
+const selSemana = document.getElementById("selSemana");
+const btnConsultar = document.getElementById("btnConsultar");
+const btnPdf = document.getElementById("btnPdf");
+
 const inData = document.getElementById("inData");
 const inTipo = document.getElementById("inTipo");
 const inDesc = document.getElementById("inDesc");
@@ -175,121 +181,243 @@ const inObs = document.getElementById("inObs");
 const inValor = document.getElementById("inValor");
 const btnSalvar = document.getElementById("btnSalvar");
 const btnCancelar = document.getElementById("btnCancelar");
-const btnLimpar = document.getElementById("btnLimpar");
-const btnPdf = document.getElementById("btnPdf");
-
-const selAnoPdf = document.getElementById("selAnoPdf");
-const selMesPdf = document.getElementById("selMesPdf");
 
 const tbody = document.getElementById("tbody");
 const statusEl = document.getElementById("status");
-const badgeMes = document.getElementById("badgeMes");
-const h2Tabela = document.getElementById("h2Tabela");
+
+const sAnterior = document.getElementById("sAnterior");
+const sPeriodo = document.getElementById("sPeriodo");
+const sFinal = document.getElementById("sFinal");
 
 /* ===== util ===== */
 function pad2(n){ return String(n).padStart(2,"0"); }
 function isoDate(d){ return d.toISOString().slice(0,10); }
-function money(n){
-  const v = Number(n||0);
-  return v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
-}
 function parseMoneyBR(v){
   const s = String(v||"").trim().replaceAll(".","").replace(",",".");
   const num = Number(s);
   return isFinite(num) ? num : NaN;
 }
-function setStatus(msg){ if(statusEl) statusEl.textContent = msg; }
-function monthNamePT(m){
-  const nomes = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
-  return nomes[(m-1)] || "";
+function money(n){
+  const v = Number(n||0);
+  return v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
 }
-function rangeMonth(y,m){
-  const ini = `${y}-${pad2(m)}-01`;
-  const next = (m===12) ? { y:y+1, m:1 } : { y:y, m:m+1 };
-  const fim = `${next.y}-${pad2(next.m)}-01`;
-  return { ini, fim };
+function pickCol(row, candidates){
+  if(!row) return null;
+  const keys = Object.keys(row);
+  const low = keys.map(k=>k.toLowerCase());
+  for(const c of candidates){
+    const i = low.indexOf(String(c).toLowerCase());
+    if(i>=0) return keys[i];
+  }
+  return null;
 }
 function isMensalidadeRow(r){
   const obs = String(r.obs||"").toUpperCase();
-  const desc = String(r.descricao||"").toUpperCase();
-  const origem = String(r.origem||"").toUpperCase();
-  if (origem === "MENSALIDADE") return true;
-  if (r.mensalidade_id != null) return true;
+  const desc = String(r.descricao||r.desc||"").toUpperCase();
   if (obs.includes("MENSALIDADE")) return true;
   if (desc.startsWith("MENSALIDADE")) return true;
+  if (String(r._src||"") === "MENSALIDADE") return true;
   return false;
 }
+function weekStartMonday(d){
+  const x = new Date(d);
+  const day = (x.getDay()+6)%7; // 0=Mon
+  x.setDate(x.getDate()-day);
+  x.setHours(0,0,0,0);
+  return x;
+}
+function weekEndExclusive(d){
+  const s = weekStartMonday(d);
+  const e = new Date(s);
+  e.setDate(e.getDate()+7);
+  return e;
+}
+function buildWeeksForYear(year){
+  // gera semanas do ano (segunda->segunda)
+  const weeks = [];
+  let d = new Date(year,0,1);
+  d = weekStartMonday(d);
+  // até início do ano seguinte + 1 semana
+  const end = new Date(year+1,0,15);
+  while(d < end){
+    const s = new Date(d);
+    const e = weekEndExclusive(s);
+    const label = `${pad2(s.getDate())}/${pad2(s.getMonth()+1)}/${s.getFullYear()} → ${pad2(new Date(e-1).getDate())}/${pad2(new Date(e-1).getMonth()+1)}/${new Date(e-1).getFullYear()}`;
+    weeks.push({ ini: isoDate(s), fim: isoDate(e), label });
+    d = e;
+  }
+  return weeks;
+}
+let WEEKS = [];
 
 /* ===== estado ===== */
 let editingId = null;
-let currentMode = "CURRENT"; // CURRENT ou PDF
+let editingPayloadBase = null; // guarda colunas detectadas
+let lastLoadedRows = []; // já com mensalidades mescladas
 
-/* ===== colunas (compat) ===== */
-async function detectCols(){
-  const { data, error } = await sb.from("caixa").select("*").limit(1);
-  if (error) throw error;
-  const row = (data && data.length) ? data[0] : null;
-  const keys = row ? Object.keys(row) : [];
+/* ===== UI builders ===== */
+function buildAno(){
+  selAno.innerHTML = "";
+  const nowY = new Date().getFullYear();
+  const anos = [nowY-1, nowY, nowY+1];
+  anos.forEach(y=>{
+    const opt = document.createElement("option");
+    opt.value = String(y);
+    opt.textContent = String(y);
+    selAno.appendChild(opt);
+  });
+}
+function buildMes(){
+  selMes.innerHTML = "";
+  const meses = [
+    ["01","JAN"],["02","FEV"],["03","MAR"],["04","ABR"],["05","MAI"],["06","JUN"],
+    ["07","JUL"],["08","AGO"],["09","SET"],["10","OUT"],["11","NOV"],["12","DEZ"]
+  ];
+  meses.forEach(([v,n])=>{
+    const opt = document.createElement("option");
+    opt.value = String(Number(v));
+    opt.textContent = `${v} - ${n}`;
+    selMes.appendChild(opt);
+  });
+}
+function buildSemanas(){
+  const year = Number(selAno.value);
+  WEEKS = buildWeeksForYear(year);
+  selSemana.innerHTML = "";
+  WEEKS.forEach((w, idx)=>{
+    const opt = document.createElement("option");
+    opt.value = String(idx);
+    opt.textContent = w.label;
+    selSemana.appendChild(opt);
+  });
+  // semana atual
+  const now = new Date();
+  const idxNow = WEEKS.findIndex(w => isoDate(now) >= w.ini && isoDate(now) < w.fim);
+  selSemana.value = String(Math.max(0, idxNow));
+}
+function updateUIByPeriodo(){
+  const p = selPeriodo.value;
+  selSemana.disabled = (p !== "SEMANAL");
+  selMes.disabled = (p === "ANUAL");
+}
+function setStatus(msg){ statusEl.textContent = msg; }
 
-  function pick(cands){
-    const low = keys.map(k=>k.toLowerCase());
-    for (const c of cands){
-      const i = low.indexOf(String(c).toLowerCase());
-      if (i>=0) return keys[i];
-    }
-    return null;
+/* ===== datas do filtro ===== */
+function getRange(){
+  const p = selPeriodo.value;
+  const year = Number(selAno.value);
+  const month = Number(selMes.value); // 1-12
+  if (p === "ANUAL"){
+    const ini = `${year}-01-01`;
+    const fim = `${year+1}-01-01`;
+    return { ini, fim };
   }
+  if (p === "MENSAL"){
+    const ini = `${year}-${pad2(month)}-01`;
+    const next = (month===12) ? { y:year+1, m:1 } : { y:year, m:month+1 };
+    const fim = `${next.y}-${pad2(next.m)}-01`;
+    return { ini, fim };
+  }
+  // semanal
+  const idx = Number(selSemana.value || 0);
+  const w = WEEKS[idx] || WEEKS[0];
+  return { ini: w.ini, fim: w.fim };
+}
 
+/* ===== SUPABASE: CAIXA (manual) ===== */
+async function detectCols(){
+  // Colunas oficiais da tabela public.caixa (base do projeto)
+  // (evita depender de ter linhas para "descobrir" nomes)
   return {
-    idCol: pick(["id"]),
-    dataCol: pick(["data"]),
-    dataLancCol: pick(["data_lancamento"]),
-    tipoCol: pick(["tipo"]),
-    descCol: pick(["descricao","descrição","desc"]),
-    obsCol: pick(["obs"]),
-    valorCol: pick(["valor"]),
-    origemCol: pick(["origem"]),
-    mensalidadeIdCol: pick(["mensalidade_id"]),
+    idCol: "id",
+    dateCol: "data",
+    tipoCol: "tipo",
+    descricaoCol: "descricao",
+    obsCol: "obs",
+    valorCol: "valor",
+    saldoCol: "saldo",
+    mesRefCol: "referencia",
+    origemCol: "origem",
+    mensalidadeIdCol: "mensalidade_id",
+    dataLancCol: "data_lancamento",
+    apelidoCol: "apelido"
   };
 }
 
-function normalizeRow(r, cols){
-  const dt = (cols.dataCol && r[cols.dataCol]) ? String(r[cols.dataCol]).slice(0,10)
-           : (cols.dataLancCol && r[cols.dataLancCol]) ? String(r[cols.dataLancCol]).slice(0,10)
-           : "";
+async function fetchCaixaManual(ini, fim){
+  // Lista do painel vem da VIEW (já traz receita/despesa/saldo e permissões de edição/exclusão)
+  const VIEW = "vw_caixa_painel";
 
-  const tipo = cols.tipoCol ? String(r[cols.tipoCol]||"") : "";
-  const descricao = cols.descCol ? String(r[cols.descCol]||"") : "";
-  const obs = cols.obsCol ? String(r[cols.obsCol]||"") : "";
-  const origem = cols.origemCol ? String(r[cols.origemCol]||"") : "";
-  const mensalidade_id = cols.mensalidadeIdCol ? r[cols.mensalidadeIdCol] : null;
+  const { data, error } = await sb
+    .from(VIEW)
+    .select("id,data,descricao,obs,receita,despesa,saldo,pode_editar,pode_excluir")
+    .gte("data", ini)
+    .lt("data", fim)
+    .order("data", { ascending: true })
+    .order("id", { ascending: true });
 
-  let val = cols.valorCol ? Number(r[cols.valorCol]||0) : 0;
-  if (!isFinite(val)) val = 0;
+  if(error) throw error;
 
-  // padroniza: RECEITA positiva, DESPESA negativa
-  const up = String(tipo||"").toUpperCase();
-  if (up === "DESPESA" && val > 0) val = -Math.abs(val);
-  if (up === "RECEITA" && val < 0) val = Math.abs(val);
+  const rows = (data || []).map(r => {
+    const receita = (r.receita != null) ? Number(r.receita) : null;
+    const despesa = (r.despesa != null) ? Number(r.despesa) : null;
 
-  const receita = val > 0 ? val : 0;
-  const despesa = val < 0 ? Math.abs(val) : 0;
+    const podeEditar = (r.pode_editar !== false);
+    const podeExcluir = (r.pode_excluir !== false);
+    const locked = (!podeEditar && !podeExcluir); // mensalidade: travado
 
-  const locked = isMensalidadeRow({ obs, descricao, origem, mensalidade_id });
+    return {
+      id: r.id,
+      data: r.data,
+      descricao: r.descricao || "",
+      obs: r.obs || "",
+      receita: receita,
+      despesa: despesa,
+      saldo: (r.saldo != null) ? Number(r.saldo) : null,
+      canEdit: podeEditar,
+      canDelete: podeExcluir,
+      locked
+    };
+  });
 
-  return {
-    id: cols.idCol ? r[cols.idCol] : r.id,
-    data: dt,
-    tipo: up,
-    descricao,
-    obs,
-    origem,
-    mensalidade_id,
-    valor_signed: val,
-    receita,
-    despesa,
-    locked
-  };
+  // Mantemos "cols" para as rotinas de salvar/editar/excluir (tabela base)
+  const cols = await detectCols();
+
+  return { rows, cols };
+}
+
+
+/* ===== SUPABASE: MENSALIDADES (auto) ===== */
+async function fetchMensalidadesPago(ini, fim){
+  // busca pagamentos dentro do intervalo
+  // coluna data_pagamento é usada no painel mensalidade
+  const { data, error } = await sb
+    .from("mensalidades")
+    .select("*")
+    .eq("pago", true)
+    .gte("data_pagamento", ini)
+    .lt("data_pagamento", fim);
+
+  if (error) throw error;
+
+  return (data||[]).map(r=>{
+    const dt = String(r.data_pagamento||"").slice(0,10);
+    const ano = r.ano;
+    const mes = r.mes;
+    const mm = pad2(mes);
+    const marker = `MENSALIDADE (${mm}/${ano})`;
+    return {
+      _src:"MENSALIDADE",
+      id: `MENSALIDADE:${String(r.apelido||"").toUpperCase()}:${ano}-${mm}`,
+      data: dt,
+      descricao: String(r.apelido||"").toUpperCase(),
+      obs: marker,
+      receita: Math.abs(Number(r.valor||0)) || 0,
+      despesa: 0,
+      locked: true,
+      _mens: r
+    };
+  }).filter(x => x.data); // só com data válida
 }
 
 /* ===== render ===== */
@@ -297,9 +425,8 @@ function render(rows){
   tbody.innerHTML = "";
   let saldo = 0;
 
-  rows.forEach((r)=>{
+  rows.forEach((r, idx)=>{
     saldo += (Number(r.receita||0) - Number(r.despesa||0));
-
     const tr = document.createElement("tr");
 
     const tdD = document.createElement("td");
@@ -307,12 +434,10 @@ function render(rows){
     tr.appendChild(tdD);
 
     const tdDesc = document.createElement("td");
-    tdDesc.className = "col-desc";
     tdDesc.textContent = r.descricao || "";
     tr.appendChild(tdDesc);
 
     const tdObs = document.createElement("td");
-    tdObs.className = "col-obs";
     tdObs.textContent = r.obs || "";
     tr.appendChild(tdObs);
 
@@ -333,50 +458,66 @@ function render(rows){
       : `<span class="money neg">${money(saldo)}</span>`;
     tr.appendChild(tdS);
 
-    const tdEdit = document.createElement("td");
-    tdEdit.className = "col-act";
-    const tdDel = document.createElement("td");
-    tdDel.className = "col-act";
+    const tdA = document.createElement("td");
+    tdA.className = "col-actions";
+    const box = document.createElement("div");
+    box.className = "actions";
 
-    if (r.locked){
-      tdEdit.innerHTML = `<span class="badge lock">AUTO</span>`;
-      tdDel.innerHTML = `<span class="badge lock">AUTO</span>`;
+    if (!r.canEdit && !r.canDelete){
+      const badge = document.createElement("span");
+      badge.className = "badge lock";
+      badge.textContent = "AUTO";
+      box.appendChild(badge);
     } else {
-      const bE = document.createElement("button");
-      bE.className = "btnSmall btnEdit";
-      bE.textContent = "EDITAR";
-      bE.addEventListener("click", ()=>startEdit(r));
-      tdEdit.appendChild(bE);
-
-      const bD = document.createElement("button");
-      bD.className = "btnSmall btnDel";
-      bD.textContent = "EXCLUIR";
-      bD.addEventListener("click", ()=>doDelete(r));
-      tdDel.appendChild(bD);
+      if (r.canEdit){
+        const eb = mkBtn("EDITAR", "mini edit");
+        eb.onclick = ()=> startEdit(r);
+        box.appendChild(eb);
+      }
+      if (r.canDelete){
+        const db = mkBtn("EXCLUIR", "mini del");
+        db.onclick = ()=> doDelete(r);
+        box.appendChild(db);
+      }
     }
-
-    tr.appendChild(tdEdit);
-    tr.appendChild(tdDel);
+    tdA.appendChild(box);
+    tr.appendChild(tdA);
 
     tbody.appendChild(tr);
   });
+
+  // saldos
+  sPeriodo.textContent = `R$ ${money(rows.reduce((acc,r)=>acc + (Number(r.receita||0)-Number(r.despesa||0)),0))}`;
+  sFinal.textContent = `R$ ${money(saldo)}`;
 }
 
-/* ===== carregar mês corrente ===== */
-async function loadCurrentMonth(){
+/* ===== carregar ===== */
+async function carregar(){
   try{
-    currentMode = "CURRENT";
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth()+1;
-    const { ini, fim } = rangeMonth(y,m);
+    setStatus("Carregando...");
+    const { ini, fim } = getRange();
 
-    badgeMes.textContent = `Mês corrente: ${monthNamePT(m)}/${y}`;
-    h2Tabela.textContent = `LANÇAMENTOS (mês corrente: ${monthNamePT(m)}/${y})`;
+    const manual = await fetchCaixaManual(ini, fim);
+    let rows = manual.rows;
 
-    setStatus("Carregando mês corrente...");
-    const rows = await fetchCaixaRange(ini, fim);
+    // OBS: agora a lista vem pronta da VIEW vw_caixa_painel (inclui mensalidades e permissões)
+
+    // ordena por data (e por origem)
+    rows.sort((a,b)=>{
+      const da = a.data || "0000-00-00";
+      const db = b.data || "0000-00-00";
+      if (da < db) return -1;
+      if (da > db) return 1;
+      // manual antes de auto no mesmo dia
+      if (a._src === b._src) return 0;
+      return a._src === "CAIXA" ? -1 : 1;
+    });
+
+    lastLoadedRows = rows;
     setStatus(`LISTA CARREGADA. Registros: ${rows.length}`);
+
+    // saldo anterior: calculo simples = 0 (mantém como estava)
+    sAnterior.textContent = "R$ 0,00";
     render(rows);
   }catch(e){
     console.error(e);
@@ -385,196 +526,140 @@ async function loadCurrentMonth(){
   }
 }
 
-async function fetchCaixaRange(ini, fim){
-  const cols = await detectCols();
-
-  // preferir filtro por "data" (date)
-  let q = sb.from("caixa").select("*");
-  if (cols.dataCol){
-    q = q.gte(cols.dataCol, ini).lt(cols.dataCol, fim).order(cols.dataCol, {ascending:true}).order(cols.idCol || "id", {ascending:true});
-  } else if (cols.dataLancCol){
-    // fallback por timestamp
-    q = q.gte(cols.dataLancCol, ini).lt(cols.dataLancCol, fim).order(cols.dataLancCol, {ascending:true}).order(cols.idCol || "id", {ascending:true});
-  } else {
-    q = q.order(cols.idCol || "id", {ascending:true});
-  }
-
-  const { data, error } = await q;
-  if (error) throw error;
-
-  const rows = (data||[]).map(r => normalizeRow(r, cols));
-
-  // ordena por data (string ISO), depois id
-  rows.sort((a,b)=>{
-    const da = a.data || "0000-00-00";
-    const db = b.data || "0000-00-00";
-    if (da < db) return -1;
-    if (da > db) return 1;
-    return Number(a.id||0) - Number(b.id||0);
-  });
-
-  return rows;
-}
-
-/* ===== criar/editar/excluir ===== */
+/* ===== criar/editar/excluir manual ===== */
 function resetForm(){
   editingId = null;
+  editingPayloadBase = null;
   btnCancelar.style.display = "none";
   btnSalvar.textContent = "SALVAR";
-  inTipo.value = "RECEITA";
   inDesc.value = "";
   inObs.value = "";
   inValor.value = "";
 }
 
 function startEdit(r){
+  // só manual
   if (!r || r.locked) return;
   editingId = r.id;
 
-  // data fica automática (não edita data no caixa)
-  inTipo.value = (r.valor_signed < 0) ? "DESPESA" : "RECEITA";
+  // preenche form
+  inData.value = (r.data || "");
+  const signed = (Number(r.receita||0) - Number(r.despesa||0));
+  inTipo.value = (signed >= 0) ? "RECEITA" : "DESPESA";
   inDesc.value = r.descricao || "";
   inObs.value = r.obs || "";
-  inValor.value = money(Math.abs(Number(r.valor_signed||0)));
+  inValor.value = money(Math.abs(signed));
 
   btnCancelar.style.display = "inline-block";
   btnSalvar.textContent = "ATUALIZAR";
 }
 
 async function addOrUpdate(){
-  try{
-    const tipo = String(inTipo.value||"").toUpperCase();
-    const desc = String(inDesc.value||"").trim();
-    const obs = String(inObs.value||"").trim();
-    const val = parseMoneyBR(inValor.value);
+  const data = String(inData.value||"").slice(0,10);
+  const tipo = String(inTipo.value||"").toUpperCase();
+  const desc = String(inDesc.value||"").trim();
+  const obs = String(inObs.value||"").trim();
+  const val = parseMoneyBR(inValor.value);
 
-    if (!desc){ alert("Preencha a DESCRIÇÃO."); return; }
-    if (!isFinite(val) || val <= 0){ alert("Preencha um VALOR válido."); return; }
+  if (!data){ alert("Preencha a DATA."); return; }
+  if (!desc){ alert("Preencha a DESCRIÇÃO."); return; }
+  if (!isFinite(val) || val <= 0){ alert("Preencha um VALOR válido."); return; }
 
-    // data automática (hoje)
-    const dataHoje = String(inData.value||"").slice(0,10);
-    if (!dataHoje){ alert("Data inválida."); return; }
-
-    // bloqueio mensalidade manual
-    if (String(obs).toUpperCase().includes("MENSALIDADE")){
-      alert("Mensalidade é automática (não criar/editar no Caixa).");
-      return;
-    }
-
-    const signed = (tipo === "DESPESA") ? -Math.abs(val) : Math.abs(val);
-
-    const payload = {
-      data: dataHoje,
-      tipo,
-      descricao: desc,
-      obs,
-      valor: signed
-    };
-
-    if (!editingId){
-      const { error } = await sb.from("caixa").insert(payload);
-      if (error) throw error;
-      resetForm();
-      await loadCurrentMonth();
-      return;
-    }
-
-    // update
-    const cols = await detectCols();
-    const idCol = cols.idCol || "id";
-    const { error } = await sb.from("caixa").update(payload).eq(idCol, editingId);
-    if (error) throw error;
-
-    resetForm();
-    await loadCurrentMonth();
-  }catch(e){
-    console.error(e);
-    alert("ERRO ao salvar (ver console).");
+  // mensalidade é só automática
+  if (String(obs).toUpperCase().includes("MENSALIDADE")){
+    alert("Mensalidade é automática (não edita no Caixa).");
+    return;
   }
+
+  const signed = (tipo==="DESPESA") ? -Math.abs(val) : Math.abs(val);
+
+  // tenta payloads diferentes para compatibilidade de colunas
+  const payloads = [
+    { data, tipo, descricao: desc, obs, valor: signed },
+    { data_lancamento: data, tipo, descricao: desc, obs, valor: signed },
+    { data, tipo, desc, obs, valor: signed },
+    { data, tipo, descricao: desc, obs, receita: (tipo==="RECEITA")?Math.abs(val):0, despesa: (tipo==="DESPESA")?Math.abs(val):0 },
+    { data_lancamento: data, tipo, descricao: desc, obs, receita: (tipo==="RECEITA")?Math.abs(val):0, despesa: (tipo==="DESPESA")?Math.abs(val):0 }
+  ];
+
+  if (!editingId){
+    let ok=false, lastErr=null;
+    for (const p of payloads){
+      const { error } = await sb.from("caixa").insert(p);
+      if (!error){ ok=true; break; }
+      lastErr = error;
+    }
+    if (!ok){
+      console.error(lastErr);
+      alert("ERRO ao criar (ver console).");
+      return;
+    }
+    resetForm();
+    carregar();
+    return;
+  }
+
+  // update
+  // descobre coluna id (se existir)
+  const cols = await detectCols();
+  const idCol = cols.idCol || "id";
+  let ok=false, lastErr=null;
+
+  for (const p of payloads){
+    const q = sb.from("caixa").update(p).eq(idCol, editingId);
+    const { error } = await q;
+    if (!error){ ok=true; break; }
+    lastErr = error;
+  }
+  if (!ok){
+    console.error(lastErr);
+    alert("ERRO ao editar (ver console).");
+    return;
+  }
+  resetForm();
+  carregar();
 }
 
 async function doDelete(r){
-  try{
-    if (!r || r.locked) return;
-    if (!confirm("Excluir este lançamento?")) return;
-
-    const cols = await detectCols();
-    const idCol = cols.idCol || "id";
-    const { error } = await sb.from("caixa").delete().eq(idCol, r.id);
-    if (error) throw error;
-
-    await loadCurrentMonth();
-  }catch(e){
-    console.error(e);
+  if (!r || r.locked) return;
+  if (!confirm("Excluir este lançamento?")) return;
+  const cols = await detectCols();
+  const idCol = cols.idCol || "id";
+  const { error } = await sb.from("caixa").delete().eq(idCol, r.id);
+  if (error){
+    console.error(error);
     alert("ERRO ao excluir (ver console).");
+    return;
   }
+  carregar();
 }
 
-/* ===== PDF mensal: imprime mês escolhido e volta pro mês corrente ===== */
-async function baixarPdfMensal(){
-  try{
-    const y = Number(selAnoPdf.value);
-    const m = Number(selMesPdf.value);
-    const { ini, fim } = rangeMonth(y,m);
+/* ===== eventos ===== */
+btnPdf.addEventListener("click", ()=>window.print());
+btnConsultar.addEventListener("click", carregar);
+btnSalvar.addEventListener("click", addOrUpdate);
+btnCancelar.addEventListener("click", ()=>{ resetForm(); });
 
-    currentMode = "PDF";
-    h2Tabela.textContent = `ARQUIVO MENSAL (PDF): ${monthNamePT(m)}/${y}`;
-
-    setStatus("Carregando mês para PDF...");
-    const rows = await fetchCaixaRange(ini, fim);
-    setStatus(`PDF pronto. Registros: ${rows.length}`);
-    render(rows);
-
-    window.print();
-
-    // volta pro mês corrente (evita “ficar preso” em mês antigo)
-    await loadCurrentMonth();
-  }catch(e){
-    console.error(e);
-    alert("ERRO ao gerar PDF (ver console).");
-    await loadCurrentMonth();
-  }
-}
-
-/* ===== montar selects PDF ===== */
-function buildAnoMesPdf(){
-  const now = new Date();
-  const y = now.getFullYear();
-  selAnoPdf.innerHTML = "";
-  [y-1,y,y+1].forEach(yy=>{
-    const opt = document.createElement("option");
-    opt.value = String(yy);
-    opt.textContent = String(yy);
-    selAnoPdf.appendChild(opt);
-  });
-  selAnoPdf.value = String(y);
-
-  selMesPdf.innerHTML = "";
-  for (let m=1;m<=12;m++){
-    const opt = document.createElement("option");
-    opt.value = String(m);
-    opt.textContent = `${pad2(m)} - ${monthNamePT(m)}`;
-    selMesPdf.appendChild(opt);
-  }
-  selMesPdf.value = String(now.getMonth()+1);
-}
+selPeriodo.addEventListener("change", ()=>{ updateUIByPeriodo(); });
+selAno.addEventListener("change", ()=>{ buildSemanas(); updateUIByPeriodo(); });
+selMes.addEventListener("change", ()=>{ /* mês muda só o range */ });
 
 /* ===== init ===== */
 (function init(){
+  buildAno();
+  buildMes();
+
   const now = new Date();
+  selAno.value = String(now.getFullYear());
+  selMes.value = String(now.getMonth()+1);
+  buildSemanas();
+  updateUIByPeriodo();
+
   inData.value = isoDate(now);
-
-  buildAnoMesPdf();
   resetForm();
-  loadCurrentMonth();
+
+  carregar();
 })();
-
-/* ===== eventos ===== */
-btnSalvar.addEventListener("click", addOrUpdate);
-btnCancelar.addEventListener("click", ()=>{ resetForm(); });
-btnLimpar.addEventListener("click", ()=>{ resetForm(); });
-
-btnPdf.addEventListener("click", baixarPdfMensal);
 </script>
 </body>
 </html>
