@@ -424,6 +424,10 @@ function el(id){ return document.getElementById(id); }
           camisaInput.value = j.camisa ?? "";
           nomeInput.value = j.nome ?? "";
           apelidoInput.value = j.apelido ?? "";
+apelidoInput.disabled = true; // trava apelido na edição (evita FK)
+try{
+  document.getElementById("editPanel")?.scrollIntoView({behavior:"smooth", block:"start"});
+}catch(e){}     
           dataNascInput.value = j.data_nasc ?? "";
           celularInput.value = j.celular ?? "";
           posicaoInput.value = (j.posicao ?? "").toUpperCase();
@@ -521,12 +525,17 @@ function el(id){ return document.getElementById(id); }
           .insert(payload);
         error = resp.error;
       } else {
-        const resp = await supabase
-          .from("jogadores")
-          .update(payload)
-          .eq("id", editId);
-        error = resp.error;
-      }
+  // NÃO atualiza "apelido" (evita erro de FK com mensalidades)
+  const payloadUpdate = { ...payload };
+  delete payloadUpdate.apelido;
+
+  const resp = await supabase
+    .from("jogadores")
+    .update(payloadUpdate)
+    .eq("id", editId);
+
+  error = resp.error;
+}
 
       if (error) {
         console.error(error);
@@ -538,6 +547,7 @@ function el(id){ return document.getElementById(id); }
       statusEl.textContent = "JOGADOR SALVO COM SUCESSO.";
       limparFormulario();
       carregarJogadores();
+      apelidoInput.disabled = false;
     }
 
     function init() {
