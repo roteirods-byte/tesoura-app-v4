@@ -151,28 +151,29 @@
   <script src="app/core/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script>
-    // Anti-travamento: limpa Service Worker + caches 1x por dia (evita versão antiga)
-    (function () {
-      try {
-        const k = "TESOURA_CACHE_CLEAN_DAY";
-        const today = new Date().toISOString().slice(0, 10);
-        if (localStorage.getItem(k) === today) return;
-        localStorage.setItem(k, today);
+ <script>
+  // Anti-travamento: limpa Service Worker + caches 1x por dia (evita versão antiga)
+  (function () {
+    try {
+      const k = "TESOURA_CACHE_CLEAN_DAY";
+      const today = new Date().toISOString().slice(0, 10);
+      if (localStorage.getItem(k) === today) return;
+      localStorage.setItem(k, today);
 
-        if ("serviceWorker" in navigator) {
-          navigator.serviceWorker.getRegistrations()
-            .then(regs => Promise.all(regs.map(r => r.unregister())))
-            .catch(() => {});
-        }
-        if (window.caches && caches.keys) {
-          caches.keys()
-            .then(keys => Promise.all(keys.map(key => caches.delete(key))))
-            .catch(() => {});
-        }
-      } catch (e) {}
-    })();
-  </script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistrations()
+          .then(regs => regs.forEach(r => r.unregister()))
+          .catch(() => {});
+      }
+
+      if ("caches" in window) {
+        caches.keys()
+          .then(keys => keys.forEach(key => caches.delete(key)))
+          .catch(() => {});
+      }
+    } catch (e) {}
+  })();
+</script>
 
   <script src="app/core/session.js"></script>
   <script src="app/core/supabase.js"></script>
