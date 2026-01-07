@@ -133,11 +133,14 @@
   <script src="app/core/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+  
   // Evita o site "travar" em versões antigas (Service Worker/caches antigos)
   (function(){
     try{
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
+
+          
 <script>
   // Anti-travamento: limpa SW/cache 1x por dia (sem precisar ficar fazendo Ctrl+Shift+R)
   (function(){
@@ -178,7 +181,8 @@
 
 
   <!-- TESOURA BOOT (destrava) -->
-<script defer src="app/core/boot.js?v=1"></script>
+<script defer src="app/core/boot.js?v=2"></script>
+
 </head>
 
 <body>
