@@ -465,46 +465,50 @@ async function deleteRow(id){
 }
 
 function buildPdfHTML(rows, ano, mes){
-  const titulo = `TESOURA - CAIXA (${mes}/${ano})`;
-  const linhas = rows.map(r=>{
-    const rec = Number(r.receita||0);
-    const dep = Number(r.despesa||0);
-    return `
-      <tr>
-        <td>${r.data||""}</td>
-        <td>${(r.descricao||"")}</td>
-        <td>${(r.obs||"")}</td>
-        <td style="text-align:right">${rec>0?money(rec):""}</td>
-        <td style="text-align:right">${dep>0?money(dep):""}</td>
-        <td style="text-align:right">${money(r.saldo||0)}</td>
-      </tr>`;
-  }).join("");
+  const mm = String(mes).padStart(2,"0");
+  const titulo = `TESOURA - CAIXA (${mm}/${ano})`;
 
-  return `
-  <html><head><meta charset="utf-8">
-  <title>${titulo}</title>
-  <style>
-    body{font-family: Arial, sans-serif; margin:24px;}
-    h1{font-size:18px; margin:0 0 12px;}
-    table{width:100%; border-collapse:collapse; font-size:12px;}
-    th,td{border:1px solid #999; padding:6px;}
-    th{background:#eee;}
-  </style>
-  </head><body>
-    <h1>${titulo}</h1>
-    <table>
-      <thead>
-        <tr>
-          <th>DATA</th><th>DESCRIÇÃO</th><th>OBS</th>
-          <th>RECEITA</th><th>DESPESA</th><th>SALDO</th>
-        </tr>
-      </thead>
-      <tbody>${linhas || '<tr><td colspan="6">Sem lançamentos.</td></tr>'}</tbody>
-    </table>
-    <script>
-      window.onload = ()=>{ window.print(); };
-    </script>
-  </body></html>`;
+  const linha = (r)=>`
+    <tr>
+      <td>${toBR(r.data)}</td>
+      <td>${esc(r.descricao||"")}</td>
+      <td>${esc(r.obs||"")}</td>
+      <td class="num">${fmtMoney(r.receita)}</td>
+      <td class="num">${fmtMoney(r.despesa)}</td>
+      <td class="num">${fmtMoney(r.saldo)}</td>
+    </tr>`;
+
+  const linhas = (rows||[]).map(linha).join("") || `<tr><td colspan="6" class="muted">Sem lançamentos.</td></tr>`;
+
+  return `<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>${titulo}</title>
+<style>
+  body{ font-family: Arial, sans-serif; margin:16px; }
+  h1{ font-size:16px; margin:0 0 10px; }
+  table{ width:100%; border-collapse:collapse; }
+  th,td{ border:1px solid #ccc; padding:6px 8px; font-size:12px; }
+  th{ background:#f3f3f3; text-align:left; }
+  td.num{ text-align:right; }
+  .muted{ color:#666; text-align:center; }
+</style>
+</head>
+<body onload="window.print()">
+  <h1>${titulo}</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>DATA</th><th>DESCRIÇÃO</th><th>OBS</th>
+        <th>RECEITA (R$)</th><th>DESPESA (R$)</th><th>SALDO (R$)</th>
+      </tr>
+    </thead>
+    <tbody>${linhas}</tbody>
+  </table>
+</body>
+</html>`;
 }
 
 async function baixarPdf(){
