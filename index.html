@@ -153,26 +153,31 @@
 
  <script>
   // Anti-travamento: limpa Service Worker + caches 1x por dia (evita versão antiga)
-  (function () {
-    try {
-      const k = "TESOURA_CACHE_CLEAN_DAY";
-      const today = new Date().toISOString().slice(0, 10);
-      if (localStorage.getItem(k) === today) return;
+ (function(){
+  try{
+    const k="TESOURA_SW_RESET_DAY";
+    const today = new Date().toISOString().slice(0,10);
+
+    if(localStorage.getItem(k) !== today){
       localStorage.setItem(k, today);
 
-      if ("serviceWorker" in navigator) {
+      // 1) mata qualquer Service Worker antigo
+      if("serviceWorker" in navigator){
         navigator.serviceWorker.getRegistrations()
-          .then(regs => regs.forEach(r => r.unregister()))
-          .catch(() => {});
+          .then(rs => Promise.all(rs.map(r => r.unregister())))
+          .catch(()=>{});
       }
 
-      if ("caches" in window) {
+      // 2) limpa caches antigos do navegador
+      if(window.caches){
         caches.keys()
-          .then(keys => keys.forEach(key => caches.delete(key)))
-          .catch(() => {});
+          .then(keys => Promise.all(keys.map(name => caches.delete(name))))
+          .catch(()=>{});
       }
-    } catch (e) {}
-  })();
+    }
+  }catch(e){}
+})();
+   
 </script>
 
   <script src="app/core/session.js"></script>
