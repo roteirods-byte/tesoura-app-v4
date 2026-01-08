@@ -1,5 +1,5 @@
-// app/js/config.js
-// Fonte única de configuração do V4
+// /config.js
+// Fonte única de configuração do v4
 
 window.TESOURA_CONFIG = {
   // Jogadores (visual)
@@ -8,10 +8,14 @@ window.TESOURA_CONFIG = {
   // Diretoria (edita) + regra do CAIXA
   // true = COM CAIXA | false = SEM CAIXA
   DIRETORES: {
-    "1baidec": { caixa: true  },
-    "2thiago": { caixa: true  },
-    "3love":   { caixa: false },
-    "4le":     { caixa: false },
-    "5titi":   { caixa: false }
-  }
+    "baidec": { caixa: true },
+    "thiago": { caixa: true },
+    "slove":  { caixa: false },
+    "4le":    { caixa: false },
+    "titi":   { caixa: false }
+  },
+
+  // >>> SUPABASE (OBRIGATÓRIO pro CAIXA funcionar)
+  SUPABASE_URL: "https://xuplzpispukvtggjasxx.supabase.co",
+  SUPABASE_KEY: "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg"
 };
