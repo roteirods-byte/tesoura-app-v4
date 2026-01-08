@@ -652,7 +652,7 @@ tbody.appendChild(tr);
           } else {
               // 2B) tenta mover outras tabelas que guardam APELIDO (se existirem)
             // (se a tabela não existir, ignora e segue)
-            const extraTables = ["gols", "presencas", "presencas", "presenca_escala", "escala", "escalacao"];
+            const extraTables = ["gols", "presencas", "presencas", "escalacoes", "escalacao", "escalacao"];
             for (const t of extraTables) {
               try{
                 const r = await supabase.from(t).update({ apelido: novoApelido }).eq("apelido", apelidoAntigo);
