@@ -1,520 +1,563 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Tesoura - Caixa</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <style>
-    :root {
-      --bg: #07101f;
-      --panel: #0b1830;
-      --panel2: #0d1f3c;
-      --stroke: rgba(255,255,255,.12);
-      --text: #e9eef7;
-      --muted: rgba(233,238,247,.75);
-      --orange: #ff8a2b;
-      --cyan: #35d0ff;
+    :root{
+      --bg:#050a14;
+      --panel:#0b1220;
+      --panel2:#0a1020;
+      --line:#18233a;
+      --text:#e7eefc;
+      --muted:#9fb2d7;
+      --orange:#ff8a2a;
+      --blue:#12b5ea;
+      --green:#18d37b;
+      --red:#ff3b3b;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1200px 600px at 30% 10%, rgba(60,120,255,.20), transparent 55%),
-                  radial-gradient(900px 500px at 80% 30%, rgba(255,138,43,.18), transparent 60%),
-                  var(--bg);
-      color: var(--text);
-      padding: 16px;
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    \.wrap{max-width:1400px;margin:0 auto;padding:18px}
+    .card{background:linear-gradient(180deg,rgba(18,24,45,.92),rgba(10,16,32,.92));border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+    .title{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:2px solid rgba(255,138,42,.55)}
+    .title h1{margin:0;font-size:18px;letter-spacing:.4px;color:var(--orange)}
+    .title small{color:var(--muted)}
+    .section{padding:16px 18px}
+    .section h2{margin:0 0 10px 0;color:var(--orange);font-size:14px;letter-spacing:.4px}
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .field{display:flex;flex-direction:column;gap:6px}
+    label{font-size:12px;color:var(--muted)}
+    select,input{height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.10);background:#0a1020;color:#fff;padding:0 10px;outline:none}
+    input::placeholder{color:#5f6f93}
+    .btn{height:36px;border-radius:10px;border:0;padding:0 14px;font-weight:700;cursor:pointer}
+    .btn.blue{background:var(--blue);color:#00111a}
+    .btn.orange{background:var(--orange);color:#1a0a00}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.14);color:#fff}
+    .meta{margin-top:8px;color:var(--muted);font-size:12px}
+    .stats{display:flex;gap:14px;flex-wrap:wrap;color:var(--text);font-size:12px;margin-top:8px}
+    .stats b{color:#fff}
+    .table-wrap{margin-top:10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);overflow:hidden}
+    table{width:100%;border-collapse:collapse;table-layout:fixed}
+    thead th{background:var(--orange);color:#fff;font-size:12px;padding:10px;border-right:1px solid rgba(0,0,0,.18)}
+    thead th:last-child{border-right:0}
+    tbody td{padding:10px;border-top:1px solid rgba(255,255,255,.08);vertical-align:middle;font-size:12px;color:#e9f1ff}
+    tbody tr:nth-child(even){background:rgba(255,255,255,.02)}
+    .col-date{width:110px}
+    .col-desc{width:280px}
+    .col-obs{width:140px}
+    .col-money{width:120px;text-align:right}
+    .col-actions{width:260px;text-align:center}
+
+    td.col-desc, td.col-obs{white-space:normal;}
+    td.col-desc{text-align:left;}
+    td.col-obs{text-align:left;}
+    .money.pos{color:var(--green);font-weight:800}
+    .money.neg{color:var(--red);font-weight:800}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;border:1px solid rgba(255,255,255,.14);color:#dbe7ff;background:rgba(0,0,0,.18)}
+    .badge.lock{border-color:rgba(255,138,42,.55);color:#ffd9b5}
+    .actions{display:flex;gap:10px;justify-content:center;align-items:center}
+    .btnSmall{height:30px;border-radius:10px;border:0;padding:0 12px;font-weight:800;cursor:pointer;font-size:12px}
+    .btnEdit{background:var(--green);color:#02140b}
+    .btnDel{background:var(--red);color:#1a0000}
+    .btnDisabled{opacity:.55;cursor:not-allowed}
+    .readonly{opacity:.75}
+    .line{height:1px;background:rgba(255,255,255,.08);margin:10px 0}
+    /* impressão */
+    @media print{
+      body{background:#fff;color:#000}
+      .wrap{max-width:none;padding:0}
+      .card{box-shadow:none;border:0;border-radius:0;background:#fff}
+      .title,.section h2,.row,.meta,.stats,.actions,.btn{display:none !important}
+      .table-wrap{border:0}
+      table{table-layout:auto;width:100%}
+      thead th{position:static}
     }
-    .wrap {
-      max-width: 1200px;
-      margin: 0 auto;
-      border: 1px solid var(--stroke);
-      border-radius: 16px;
-      background: linear-gradient(180deg, rgba(15,25,45,.85), rgba(6,11,22,.85));
-      padding: 16px;
-    }
-    .top { display:flex; align-items:flex-start; justify-content:space-between; gap: 12px; margin-bottom: 10px; }
-    h1 { margin: 0; font-size: 26px; letter-spacing: .5px; }
-    .subtitle { margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.35; max-width: 720px; }
-    .chip { align-self:flex-start; padding: 8px 10px; border-radius: 999px; border: 1px solid var(--stroke);
-            background: rgba(0,0,0,.15); color: var(--text); font-size: 12px; white-space: nowrap; }
-
-    .grid { display:grid; grid-template-columns: 1.5fr 1fr; gap: 14px; }
-    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
-
-    .card { border: 1px solid var(--stroke); border-radius: 16px;
-            background: linear-gradient(180deg, rgba(18,30,55,.78), rgba(10,18,34,.78));
-            padding: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
-    .card h2 { margin: 0 0 10px 0; font-size: 14px; color: var(--orange); letter-spacing: .3px; text-transform: uppercase; }
-
-    .row { display:grid; grid-template-columns: 120px 150px 1fr 1fr 140px; gap: 10px; align-items: end; }
-    @media (max-width: 980px) { .row { grid-template-columns: 1fr 1fr; } }
-
-    label { display:block; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
-    input, select {
-      width: 100%; height: 36px; border-radius: 10px; border: 1px solid var(--stroke);
-      background: rgba(255,255,255,.04); color: var(--text); padding: 0 10px; outline: none;
-    }
-    input::placeholder { color: rgba(233,238,247,.45); }
-
-    .btns { display:flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-    button { height: 36px; border-radius: 10px; border: 1px solid var(--stroke); cursor: pointer; padding: 0 14px;
-             font-weight: 700; letter-spacing: .2px; }
-    .btn-primary { background: var(--cyan); color: #00111a; border-color: rgba(53,208,255,.35); }
-    .btn-secondary { background: rgba(255,255,255,.08); color: var(--text); }
-    .btn-orange { background: var(--orange); color: #1a0b00; border-color: rgba(255,138,43,.40); width: 100%; }
-
-    .status { margin-top: 8px; font-size: 12px; color: var(--muted); }
-    .totals { display:flex; gap: 12px; flex-wrap: wrap; margin: 10px 0 0; font-size: 12px; color: var(--text); }
-    .totals b { color: var(--text); }
-    table { width: 100%; border-collapse: collapse; margin-top: 12px; overflow: hidden;
-            border-radius: 14px; border: 1px solid var(--stroke); background: rgba(0,0,0,.10); }
-    thead th { background: var(--orange); color: #1a0b00; font-size: 11px; text-transform: uppercase;
-               padding: 10px 8px; border-right: 1px solid rgba(0,0,0,.18); white-space: nowrap; }
-    thead th:last-child { border-right: none; }
-    tbody td { padding: 9px 8px; border-top: 1px solid var(--stroke); font-size: 12px; color: var(--text); vertical-align: top; }
-    tbody tr:hover td { background: rgba(255,255,255,.03); }
-    .small { font-size: 11px; color: var(--muted); }
-    .linkbtn { background: rgba(255,255,255,.08); color: var(--text); border: 1px solid var(--stroke);
-               height: 28px; padding: 0 10px; border-radius: 10px; font-weight: 700; font-size: 11px; }
-    .danger { background: rgba(255,0,0,.10); border-color: rgba(255,0,0,.25); }
+    @page{size:A4 landscape;margin:10mm}
   </style>
-
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Config (opcional). Se não existir, o CAIXA usa fallback. -->
-  <script src="config.js"></script>
 </head>
 <body>
   <div class="wrap">
-    <div class="top">
-      <div>
+    <div class="card">
+      <div class="title">
         <h1>TESOURA - CAIXA</h1>
-        <div class="subtitle">
-          Arquivo mensal: dia 1 → dia 1 do próximo mês. A tela fica sempre no mês corrente.
-          O filtro ao lado é apenas para baixar PDF de meses anteriores.
-        </div>
+        <small>(auto-save)</small>
       </div>
-      <div class="chip" id="chipMes">Mês corrente: --</div>
-    </div>
 
-    <div class="grid">
-      <div class="card">
-        <h2>Lançamentos (mês corrente)</h2>
-
+      <div class="section">
+        <h2>FILTRO</h2>
         <div class="row">
-          <div>
-            <label>DATA (automática)</label>
-            <input id="inData" type="text" disabled />
+          <div class="field">
+            <label>ANO:</label>
+            <select id="selAno"></select>
           </div>
+          <div class="field">
+            <label>MÊS:</label>
+            <select id="selMes"></select>
+          </div>
+</div>
 
-          <div>
-            <label>TIPO</label>
-            <select id="inTipo">
-              <option value="RECEITA">RECEITA</option>
-              <option value="DESPESA">DESPESA</option>
-            </select>
-          </div>
-
-          <div>
-            <label>DESCRIÇÃO</label>
-            <input id="inDesc" placeholder="Descrição" maxlength="120" />
-          </div>
-
-          <div>
-            <label>OBS</label>
-            <input id="inObs" placeholder="Opcional" maxlength="120" />
-          </div>
-
-          <div>
-            <label>VALOR (R$)</label>
-            <input id="inValor" inputmode="decimal" placeholder="0,00" />
-          </div>
+      <div class="section">
+        <h2>LANÇAMENTOS</h2>
+        <div class="row">
+          <input id="inData" type="date" style="width:160px"/>
+          <select id="inTipo" style="width:140px">
+            <option value="RECEITA">RECEITA</option>
+            <option value="DESPESA">DESPESA</option>
+          </select>
+          <input id="inDesc" placeholder="DESCRIÇÃO" style="flex:1;min-width:220px"/>
+          <input id="inObs" placeholder="OBS" style="width:220px"/>
+          <input id="inValor" placeholder="VALOR (R$)" inputmode="decimal" style="width:160px"/>
+          <button class="btn blue" id="btnSalvar">SALVAR</button>
+          <button class="btn ghost" id="btnCancelar" style="display:none">CANCELAR</button>
         </div>
 
-        <div class="btns">
-          <button class="btn-primary" id="btnSalvar">SALVAR</button>
-          <button class="btn-secondary" id="btnLimpar">LIMPAR</button>
-        </div>
-
-        <div class="status" id="status">Carregando...</div>
-        <div class="totals">
-          <span><b>SALDO ANTERIOR:</b> <span id="tAnterior">R$ 0,00</span></span>
-          <span><b>SALDO NO PERÍODO:</b> <span id="tPeriodo">R$ 0,00</span></span>
-          <span><b>SALDO FINAL:</b> <span id="tFinal">R$ 0,00</span></span>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>DATA</th>
-              <th>DESCRIÇÃO</th>
-              <th>OBS</th>
-              <th>RECEITA (R$)</th>
-              <th>DESPESA (R$)</th>
-              <th>SALDO (R$)</th>
-              <th>EDITAR</th>
-              <th>EXCLUIR</th>
-            </tr>
-          </thead>
-          <tbody id="tbody">
-            <tr><td colspan="8" class="small">Carregando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>PDF (arquivo mensal)</h2>
-        <div class="row" style="grid-template-columns: 1fr 1fr;">
-          <div>
-            <label>ANO</label>
-            <select id="pdfAno"></select>
-          </div>
-          <div>
-            <label>MÊS</label>
-            <select id="pdfMes"></select>
-          </div>
-        </div>
-
-        <div class="btns">
-          <button class="btn-orange" id="btnPdf">BAIXAR PDF</button>
-        </div>
-
-        <div class="status">
-          Dica: o PDF abre no navegador. Depois clique em <b>Imprimir</b> e salve como PDF.
-          <div class="small" style="margin-top:6px;">ARQUIVO: tesoura_caixa_teste.html</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-date">DATA</th>
+                <th class="col-desc">DESCRIÇÃO</th>
+                <th class="col-obs">OBS</th>
+                <th class="col-money">RECEITA (R$)</th>
+                <th class="col-money">DESPESA (R$)</th>
+                <th class="col-money">SALDO (R$)</th>
+                <th class="col-actions">AÇÕES</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
   </div>
 
+
 <script>
-/* ===== CONFIG + SUPABASE ===== */
-const CFG = window.TESOURA_CONFIG || {};
-const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
-const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-const sb = window.supabase.createClient(SB_URL, SB_KEY);
+/* TESOURA - CAIXA (FIX)
+   - Tela: sempre mostra o MÊS corrente (ou o mês escolhido em Ano/Mês)
+   - Sem MENSAL / sem MÊS
+   - Lê dados da view: vw_caixa_painel (com saldo + flags pode_editar/pode_excluir)
+   - CRUD (Salvar/Editar/Excluir) na tabela: caixa
+*/
 
-// fonte para LISTAR (view já pronta com saldo e permissões)
-const VIEW_NAME = "vw_caixa_painel";
-// tabela real para INSERT/UPDATE/DELETE
-const TABLE_NAME = "caixa";
+const el = (id)=>document.getElementById(id);
 
-/* ===== util ===== */
-const fmtBRL = (n) => {
-  const v = (Number(n) || 0);
-  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-};
-const toISO = (d) => d.toISOString().slice(0,10);
-const toBR = (iso) => {
-  if(!iso) return "";
-  const [y,m,dd] = iso.split("-");
-  return `${dd}/${m}/${y}`;
-};
-const parseValor = (s) => {
-  if(!s) return 0;
-  return Number(String(s).replaceAll(".", "").replace(",", ".").trim()) || 0;
-};
+const statusEl = el("status");
+const selAno   = el("selAno");
+const selMes   = el("selMes");
+const btnCons  = el("btnConsultar");
+const btnPdf   = el("btnPdf");
 
-/* ===== estado ===== */
-let editingId = null;
+const inData   = el("inData");
+const inTipo   = el("inTipo");
+const inDesc   = el("inDesc");
+const inObs    = el("inObs");
+const inValor  = el("inValor");
+const btnSalvar= el("btnSalvar");
+const btnLimpar= el("btnLimpar");
 
-const inData = document.getElementById("inData");
-const inTipo = document.getElementById("inTipo");
-const inDesc = document.getElementById("inDesc");
-const inObs = document.getElementById("inObs");
-const inValor = document.getElementById("inValor");
-const tbody = document.getElementById("tbody");
-const statusEl = document.getElementById("status");
+const tbody    = el("tbody");
 
-const tAnterior = document.getElementById("tAnterior");
-const tPeriodo = document.getElementById("tPeriodo");
-const tFinal = document.getElementById("tFinal");
+let editId = null;
 
-const chipMes = document.getElementById("chipMes");
+// ===== Config (tentamos TESOURA_CONFIG; se não tiver, usamos fallback do seu projeto) =====
+const CFG = (window.TESOURA_CONFIG || {});
+const SB_URL = CFG.SUPABASE_URL || window.SUPABASE_URL || "https://xumsbprhlpqnulskldrl.supabase.co";
+const SB_KEY = CFG.SUPABASE_ANON_KEY || window.SUPABASE_ANON_KEY || "sb_publishable_qtRHm8yo7PXADifAIaxqNM_0Z6kS9U4C8NfNUZTxH6uR5NjZcOknVBJ3LLb4QhE2";
 
-const pdfAno = document.getElementById("pdfAno");
-const pdfMes = document.getElementById("pdfMes");
+let sb = null;
 
-/* ===== datas do mês corrente ===== */
-function monthRange(year, month1to12) {
-  const start = new Date(year, month1to12 - 1, 1);
-  const next = new Date(year, month1to12, 1);
-  return { startISO: toISO(start), endISOExclusive: toISO(next), start, next };
-}
-function currentMonthRange() {
-  const now = new Date();
-  return monthRange(now.getFullYear(), now.getMonth() + 1);
-}
-function monthLabel(year, month1to12) {
-  const nomes = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
-  return `${String(month1to12).padStart(2,"0")} - ${nomes[month1to12-1]} / ${year}`;
+function setStatus(msg){
+  if(statusEl) statusEl.textContent = msg;
 }
 
-/* ===== carregar mês (tela) ===== */
-async function loadCurrentMonth() {
-  try {
-    statusEl.textContent = "Carregando...";
-    const r = currentMonthRange();
-    chipMes.textContent = "Mês corrente: " + monthLabel(r.start.getFullYear(), r.start.getMonth()+1);
-    inData.value = toBR(toISO(new Date()));
+function pad2(n){ return String(n).padStart(2,"0"); }
 
-    // saldo anterior = último saldo antes do início do mês
-    const prev = await sb
-      .from(VIEW_NAME)
-      .select("saldo,data,id")
-      .lt("data", r.startISO)
-      .order("data", { ascending: false })
-      .order("id", { ascending: false })
-      .limit(1);
-
-    const saldoAnterior = (prev.data && prev.data[0]) ? (Number(prev.data[0].saldo)||0) : 0;
-
-    // lista do mês corrente
-    const res = await sb
-      .from(VIEW_NAME)
-      .select("id,data,descricao,obs,receita,despesa,saldo,pode_editar,pode_excluir")
-      .gte("data", r.startISO)
-      .lt("data", r.endISOExclusive)
-      .order("data", { ascending: true })
-      .order("id", { ascending: true });
-
-    if(res.error) throw res.error;
-
-    renderRows(res.data || [], saldoAnterior);
-    statusEl.textContent = "OK";
-  } catch (e) {
-    console.error(e);
-    statusEl.textContent = "ERRO ao buscar CAIXA. Abra o Console (F12).";
-  }
+function todayISO(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = pad2(d.getMonth()+1);
+  const day = pad2(d.getDate());
+  return `${y}-${m}-${day}`;
 }
 
-function renderRows(rows, saldoAnterior) {
-  const saldoFinal = (rows.length ? (Number(rows[rows.length-1].saldo)||0) : saldoAnterior);
-  tAnterior.textContent = fmtBRL(saldoAnterior);
-  tFinal.textContent = fmtBRL(saldoFinal);
-  tPeriodo.textContent = fmtBRL(saldoFinal - saldoAnterior);
-
-  if(!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="small">Sem lançamentos no mês corrente.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = rows.map(r => {
-    const receita = Number(r.receita)||0;
-    const despesa = Number(r.despesa)||0;
-    const saldo = Number(r.saldo)||0;
-
-    const canEdit = !!r.pode_editar;
-    const canDel  = !!r.pode_excluir;
-
-    return `
-      <tr>
-        <td>${toBR(r.data)}</td>
-        <td>${(r.descricao||"")}</td>
-        <td>${(r.obs||"")}</td>
-        <td>${receita ? fmtBRL(receita) : ""}</td>
-        <td>${despesa ? fmtBRL(despesa) : ""}</td>
-        <td>${fmtBRL(saldo)}</td>
-        <td>${canEdit ? `<button class="linkbtn" data-act="edit" data-id="${r.id}">EDITAR</button>` : ""}</td>
-        <td>${canDel ? `<button class="linkbtn danger" data-act="del" data-id="${r.id}">EXCLUIR</button>` : ""}</td>
-      </tr>
-    `;
-  }).join("");
+function ymRange(ano, mes1to12){
+  const y = Number(ano);
+  const m = Number(mes1to12); // 1..12
+  const start = `${y}-${pad2(m)}-01`;
+  const next = (m===12) ? {y:y+1, m:1} : {y, m:m+1};
+  const end = `${next.y}-${pad2(next.m)}-01`; // exclusivo
+  return {start, end};
 }
 
-/* ===== salvar / editar / excluir ===== */
-function clearForm() {
-  editingId = null;
+function money(v){
+  const n = Number(v||0);
+  return n.toLocaleString("pt-BR",{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function inferTipo(r){
+  const rec = Number(r.receita||0);
+  const dep = Number(r.despesa||0);
+  if(rec>0) return {tipo:"RECEITA", valor:rec};
+  if(dep>0) return {tipo:"DESPESA", valor:dep};
+  return {tipo:"RECEITA", valor:0};
+}
+
+function clearForm(){
+  editId = null;
+  inData.value = todayISO();
   inTipo.value = "RECEITA";
   inDesc.value = "";
   inObs.value = "";
   inValor.value = "";
+  btnSalvar.textContent = "SALVAR";
 }
 
-async function saveForm() {
-  const desc = (inDesc.value || "").trim();
-  const obs  = (inObs.value || "").trim();
-  const tipo = inTipo.value;
-  const valor = parseValor(inValor.value);
-
-  if(!desc) { alert("Digite a DESCRIÇÃO."); return; }
-  if(!valor || valor <= 0) { alert("Digite um VALOR maior que zero."); return; }
-
-  const hojeISO = toISO(new Date());
-  const payload = {
-    data: hojeISO,
-    descricao: desc,
-    obs: obs || null,
-    receita: (tipo === "RECEITA") ? valor : null,
-    despesa: (tipo === "DESPESA") ? valor : null
-  };
-
-  try {
-    statusEl.textContent = "Salvando...";
-    if(editingId) {
-      const upd = { descricao: payload.descricao, obs: payload.obs, receita: payload.receita, despesa: payload.despesa };
-      const r = await sb.from(TABLE_NAME).update(upd).eq("id", editingId);
-      if(r.error) throw r.error;
-    } else {
-      const r = await sb.from(TABLE_NAME).insert(payload);
-      if(r.error) throw r.error;
+async function initSupabase(){
+  try{
+    if(!window.supabase || !window.supabase.createClient){
+      setStatus("ERRO: biblioteca do Supabase não carregou.");
+      return;
     }
+    sb = window.supabase.createClient(SB_URL, SB_KEY);
+  }catch(e){
+    console.error(e);
+    setStatus("ERRO: não foi possível iniciar Supabase (veja o console).");
+  }
+}
+
+function initSelects(){
+  // Ano: atual -2 até atual +2
+  const y = new Date().getFullYear();
+  selAno.innerHTML = "";
+  for(let yy=y-2; yy<=y+2; yy++){
+    const opt = document.createElement("option");
+    opt.value = String(yy);
+    opt.textContent = String(yy);
+    if(yy===y) opt.selected = true;
+    selAno.appendChild(opt);
+  }
+
+  // Mês: 01..12
+  const meses = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
+  selMes.innerHTML = "";
+  for(let i=1;i<=12;i++){
+    const opt = document.createElement("option");
+    opt.value = pad2(i);
+    opt.textContent = `${pad2(i)} - ${meses[i-1]}`;
+    if(i===(new Date().getMonth()+1)) opt.selected = true;
+    selMes.appendChild(opt);
+  }
+}
+
+function renderRows(rows, saldoAnterior){
+  tbody.innerHTML = "";
+
+  if(!rows || rows.length===0){
+    tbody.innerHTML = `<tr><td colspan="7" class="small">Sem lançamentos no mês.</td></tr>`;
+    return {saldoFinal: saldoAnterior};
+  }
+
+  let saldoFinal = saldoAnterior;
+
+  for(const r of rows){
+    const dt = r.data || "";
+    const desc = r.descricao || "";
+    const obs  = r.obs || "";
+    const rec  = Number(r.receita||0);
+    const dep  = Number(r.despesa||0);
+    const sal  = Number(r.saldo||0);
+
+    saldoFinal = sal;
+
+    const podeEditar = !!r.pode_editar;
+    const podeExcluir= !!r.pode_excluir;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${dt}</td>
+      <td>${desc}</td>
+      <td>${obs}</td>
+      <td class="pos">${rec>0?money(rec):""}</td>
+      <td class="neg">${dep>0?money(dep):""}</td>
+      <td class="saldo">${money(sal)}</td>
+      <td class="acoes"></td>
+    `;
+
+    const tdA = tr.querySelector(".acoes");
+
+    if(podeEditar){
+      const bE = document.createElement("button");
+      bE.className = "btn btn-editar";
+      bE.textContent = "EDITAR";
+      bE.onclick = ()=> startEdit(r);
+      tdA.appendChild(bE);
+    }else{
+      const tag = document.createElement("span");
+      tag.className = "tag-auto";
+      tag.textContent = "AUTO";
+      tdA.appendChild(tag);
+    }
+
+    if(podeExcluir){
+      const bD = document.createElement("button");
+      bD.className = "btn btn-excluir";
+      bD.textContent = "EXCLUIR";
+      bD.onclick = ()=> deleteRow(r.id);
+      tdA.appendChild(bD);
+    }
+
+    tbody.appendChild(tr);
+  }
+
+  return {saldoFinal};
+}
+
+function setSaldos(saldoAnterior, saldoFinal){
+  el("saldoAnterior").textContent = `SALDO ANTERIOR: R$ ${money(saldoAnterior)}`;
+  const saldoPeriodo = (Number(saldoFinal||0) - Number(saldoAnterior||0));
+  el("saldoPeriodo").textContent  = `SALDO NO MÊS: R$ ${money(saldoPeriodo)}`;
+  el("saldoFinal").textContent    = `SALDO FINAL: R$ ${money(saldoFinal)}`;
+}
+
+async function fetchSaldoAnterior(startIso){
+  // Pega o último saldo antes do início do mês
+  const { data, error } = await sb
+    .from("vw_caixa_painel")
+    .select("saldo,data,id")
+    .lt("data", startIso)
+    .order("data", { ascending:false })
+    .order("id", { ascending:false })
+    .limit(1);
+
+  if(error){
+    console.error(error);
+    return 0;
+  }
+  if(!data || data.length===0) return 0;
+  return Number(data[0].saldo||0);
+}
+
+async function loadMonth(){
+  if(!sb){
+    setStatus("ERRO: Supabase não iniciou.");
+    return;
+  }
+  const ano = selAno.value;
+  const mes = selMes.value; // "01".."12"
+  const {start, end} = ymRange(ano, mes);
+
+  setStatus("Carregando...");
+  try{
+    const saldoAnterior = await fetchSaldoAnterior(start);
+
+    const { data, error } = await sb
+      .from("vw_caixa_painel")
+      .select("id,data,descricao,obs,receita,despesa,saldo,pode_editar,pode_excluir")
+      .gte("data", start)
+      .lt("data", end)
+      .order("data", { ascending:true })
+      .order("id", { ascending:true });
+
+    if(error){
+      console.error(error);
+      setStatus("ERRO ao buscar CAIXA (veja console).");
+      renderRows([], saldoAnterior);
+      setSaldos(saldoAnterior, saldoAnterior);
+      return;
+    }
+
+    const rows = data || [];
+    const {saldoFinal} = renderRows(rows, saldoAnterior);
+    setSaldos(saldoAnterior, saldoFinal);
+    setStatus(`LISTA CARREGADA. Registros: ${rows.length}`);
+  }catch(e){
+    console.error(e);
+    setStatus("ERRO ao carregar (veja console).");
+  }
+}
+
+function startEdit(r){
+  if(!r || !r.id) return;
+  editId = r.id;
+
+  const {tipo, valor} = inferTipo(r);
+
+  inData.value = r.data || todayISO();
+  inTipo.value = tipo;
+  inDesc.value = r.descricao || "";
+  inObs.value  = r.obs || "";
+  inValor.value= String(valor||"");
+
+  btnSalvar.textContent = "ATUALIZAR";
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+async function saveForm(){
+  if(!sb) return;
+
+  const data = inData.value || todayISO();
+  const tipo = (inTipo.value || "RECEITA").toUpperCase();
+  const descricao = (inDesc.value || "").trim();
+  const obs = (inObs.value || "").trim();
+  const valor = Number(String(inValor.value||"0").replace(",", "."));
+
+  if(!descricao){
+    alert("Preencha a DESCRIÇÃO.");
+    return;
+  }
+  if(!valor || valor<=0){
+    alert("Preencha o VALOR (maior que zero).");
+    return;
+  }
+
+  const payload = { data, tipo, descricao, obs, valor };
+
+  try{
+    setStatus("Salvando...");
+    let resp;
+    if(editId){
+      resp = await sb.from("caixa").update(payload).eq("id", editId);
+    }else{
+      resp = await sb.from("caixa").insert(payload);
+    }
+
+    if(resp.error){
+      console.error(resp.error);
+      alert("Erro ao salvar (veja console).");
+      setStatus("ERRO ao salvar.");
+      return;
+    }
+
     clearForm();
-    await loadCurrentMonth();
-  } catch (e) {
+    await loadMonth();
+    setStatus("Salvo.");
+  }catch(e){
     console.error(e);
-    statusEl.textContent = "ERRO ao salvar. Abra o Console (F12).";
-    alert("ERRO ao salvar. Veja o Console (F12).");
+    alert("Erro ao salvar (veja console).");
+    setStatus("ERRO ao salvar.");
   }
 }
 
-async function startEdit(id) {
-  try {
-    const r = await sb.from(VIEW_NAME)
-      .select("id,descricao,obs,receita,despesa,pode_editar")
-      .eq("id", id)
-      .limit(1);
-    if(r.error) throw r.error;
-
-    const row = (r.data && r.data[0]) ? r.data[0] : null;
-    if(!row) return;
-
-    if(!row.pode_editar) { alert("Este lançamento não pode ser editado."); return; }
-
-    editingId = row.id;
-
-    const receita = Number(row.receita)||0;
-    const despesa = Number(row.despesa)||0;
-
-    if(receita > 0) {
-      inTipo.value = "RECEITA";
-      inValor.value = String(receita).replace(".", ",");
-    } else {
-      inTipo.value = "DESPESA";
-      inValor.value = String(despesa).replace(".", ",");
-    }
-
-    inDesc.value = row.descricao || "";
-    inObs.value = row.obs || "";
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  } catch (e) {
-    console.error(e);
-    alert("ERRO ao carregar edição. Veja o Console (F12).");
-  }
-}
-
-async function deleteRow(id) {
+async function deleteRow(id){
+  if(!sb || !id) return;
   if(!confirm("Excluir este lançamento?")) return;
-  try {
-    statusEl.textContent = "Excluindo...";
-    const r = await sb.from(TABLE_NAME).delete().eq("id", id);
-    if(r.error) throw r.error;
-    await loadCurrentMonth();
-  } catch (e) {
+
+  try{
+    setStatus("Excluindo...");
+    const { error } = await sb.from("caixa").delete().eq("id", id);
+    if(error){
+      console.error(error);
+      alert("Erro ao excluir (veja console).");
+      setStatus("ERRO ao excluir.");
+      return;
+    }
+    await loadMonth();
+    setStatus("Excluído.");
+  }catch(e){
     console.error(e);
-    statusEl.textContent = "ERRO ao excluir. Abra o Console (F12).";
-    alert("ERRO ao excluir. Veja o Console (F12).");
+    alert("Erro ao excluir (veja console).");
+    setStatus("ERRO ao excluir.");
   }
 }
 
-/* ===== PDF ===== */
-function fillPdfSelectors() {
-  const now = new Date();
-  const y = now.getFullYear();
+function buildPdfHTML(rows, ano, mes){
+  const titulo = `TESOURA - CAIXA (${mes}/${ano})`;
+  const linhas = rows.map(r=>{
+    const rec = Number(r.receita||0);
+    const dep = Number(r.despesa||0);
+    return `
+      <tr>
+        <td>${r.data||""}</td>
+        <td>${(r.descricao||"")}</td>
+        <td>${(r.obs||"")}</td>
+        <td style="text-align:right">${rec>0?money(rec):""}</td>
+        <td style="text-align:right">${dep>0?money(dep):""}</td>
+        <td style="text-align:right">${money(r.saldo||0)}</td>
+      </tr>`;
+  }).join("");
 
-  const anos = [];
-  for(let i=0;i<6;i++) anos.push(y - i);
-  pdfAno.innerHTML = anos.map(a => `<option value="${a}">${a}</option>`).join("");
-
-  const meses = [
-    ["01","JAN"],["02","FEV"],["03","MAR"],["04","ABR"],["05","MAI"],["06","JUN"],
-    ["07","JUL"],["08","AGO"],["09","SET"],["10","OUT"],["11","NOV"],["12","DEZ"]
-  ];
-  pdfMes.innerHTML = meses.map(([v,l]) => `<option value="${v}">${v} - ${l}</option>`).join("");
-
-  pdfAno.value = String(y);
-  pdfMes.value = String(now.getMonth()+1).padStart(2,"0");
+  return `
+  <html><head><meta charset="utf-8">
+  <title>${titulo}</title>
+  <style>
+    body{font-family: Arial, sans-serif; margin:24px;}
+    h1{font-size:18px; margin:0 0 12px;}
+    table{width:100%; border-collapse:collapse; font-size:12px;}
+    th,td{border:1px solid #999; padding:6px;}
+    th{background:#eee;}
+  </style>
+  </head><body>
+    <h1>${titulo}</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>DATA</th><th>DESCRIÇÃO</th><th>OBS</th>
+          <th>RECEITA</th><th>DESPESA</th><th>SALDO</th>
+        </tr>
+      </thead>
+      <tbody>${linhas || '<tr><td colspan="6">Sem lançamentos.</td></tr>'}</tbody>
+    </table>
+    <script>
+      window.onload = ()=>{ window.print(); };
+    </script>
+  </body></html>`;
 }
 
-async function baixarPdf() {
-  try {
-    const year = Number(pdfAno.value);
-    const month = Number(pdfMes.value);
-    const r = monthRange(year, month);
+async function baixarPdf(){
+  const ano = selAno.value;
+  const mes = selMes.value;
+  const {start, end} = ymRange(ano, mes);
 
-    const res = await sb
-      .from(VIEW_NAME)
-      .select("data,descricao,obs,receita,despesa,saldo")
-      .gte("data", r.startISO)
-      .lt("data", r.endISOExclusive)
-      .order("data", { ascending: true })
-      .order("id", { ascending: true });
+  setStatus("Gerando PDF...");
 
-    if(res.error) throw res.error;
-    const rows = res.data || [];
+  const { data, error } = await sb
+    .from("vw_caixa_painel")
+    .select("data,descricao,obs,receita,despesa,saldo")
+    .gte("data", start)
+    .lt("data", end)
+    .order("data", { ascending:true })
+    .order("id", { ascending:true });
 
-    const doc = `<!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8">
-<title>CAIXA - ${monthLabel(year, month)}</title>
-<style>
-  body { font-family: Arial, sans-serif; padding: 16px; }
-  h1 { margin: 0 0 8px 0; }
-  .small { color:#555; font-size: 12px; margin-bottom: 12px; }
-  table { width:100%; border-collapse: collapse; }
-  th, td { border: 1px solid #999; padding: 6px; font-size: 12px; }
-  th { background: #eee; }
-</style></head><body>
-<h1>TESOURA - CAIXA</h1>
-<div class="small">Arquivo mensal: ${monthLabel(year, month)}</div>
-<table><thead><tr>
-<th>DATA</th><th>DESCRIÇÃO</th><th>OBS</th><th>RECEITA</th><th>DESPESA</th><th>SALDO</th>
-</tr></thead><tbody>
-${rows.map(r => `
-<tr>
-<td>${toBR(r.data)}</td>
-<td>${(r.descricao||"")}</td>
-<td>${(r.obs||"")}</td>
-<td>${(Number(r.receita)||0) ? fmtBRL(r.receita) : ""}</td>
-<td>${(Number(r.despesa)||0) ? fmtBRL(r.despesa) : ""}</td>
-<td>${fmtBRL(r.saldo)}</td>
-</tr>`).join("")}
-</tbody></table>
-<script>window.print();</script>
-</body></html>`;
+  if(error){
+    console.error(error);
+    alert("Erro ao gerar PDF (veja console).");
+    setStatus("ERRO ao gerar PDF.");
+    return;
+  }
 
+  const doc = buildPdfHTML(data||[], ano, mes);
+
+  try{
     const w = window.open("", "_blank");
     w.document.open();
     w.document.write(doc);
     w.document.close();
-  } catch (e) {
+    setStatus("PDF aberto. Use Imprimir > Salvar em PDF.");
+  }catch(e){
     console.error(e);
-    alert("ERRO ao gerar PDF. Veja o Console (F12).");
+    alert("Erro ao abrir o PDF (veja console).");
+    setStatus("ERRO ao abrir PDF.");
   }
 }
 
-/* ===== events ===== */
-document.getElementById("btnLimpar").addEventListener("click", () => {
+// ===== Eventos =====
+btnCons.addEventListener("click", loadMonth);
+btnPdf.addEventListener("click", baixarPdf);
+btnSalvar.addEventListener("click", saveForm);
+btnLimpar.addEventListener("click", clearForm);
+
+// ===== Start =====
+(async ()=>{
+  initSelects();
+  await initSupabase();
   clearForm();
-  statusEl.textContent = "OK";
-});
-document.getElementById("btnSalvar").addEventListener("click", saveForm);
-document.getElementById("btnPdf").addEventListener("click", baixarPdf);
-
-tbody.addEventListener("click", (ev) => {
-  const btn = ev.target.closest("button");
-  if(!btn) return;
-  const id = Number(btn.getAttribute("data-id"));
-  const act = btn.getAttribute("data-act");
-  if(!id) return;
-  if(act === "edit") startEdit(id);
-  if(act === "del") deleteRow(id);
-});
-
-/* ===== start ===== */
-fillPdfSelectors();
-loadCurrentMonth();
+  await loadMonth();
+})();
 </script>
+
 </body>
 </html>
