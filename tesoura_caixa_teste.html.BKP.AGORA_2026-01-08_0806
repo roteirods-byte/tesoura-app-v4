@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tesoura - Caixa</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#071427;
+      --panel:#0b1d36;
+      --panel2:#0a1930;
+      --line:#163a63;
+      --text:#e9f0ff;
+      --muted:#a9b7d0;
+      --accent:#ff8a2a;
+      --btn:#1bb6ff;
+      --btn2:#1ae38e;
+      --danger:#ff3b3b;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:14px;
+      --input:#081a33;
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Arial;
+      background: radial-gradient(1200px 600px at 30% -10%, rgba(255,138,42,.15), transparent 60%),
+                  radial-gradient(900px 500px at 80% 10%, rgba(27,182,255,.15), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    .wrap{max-width:1220px;margin:28px auto;padding:0 16px}
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .head{
+      padding:18px 22px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+    }
+    .title{
+      font-weight:800;
+      letter-spacing:.5px;
+      color:var(--accent);
+      font-size:20px;
+    }
+    .sub{
+      font-size:12.5px;color:var(--muted);margin-top:4px
+    }
+    .pill{
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid rgba(255,255,255,.10);
+      padding:6px 10px;border-radius:999px;
+      background:rgba(0,0,0,.18);
+    }
+    .body{padding:18px 22px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media(max-width:980px){.grid{grid-template-columns:1fr}}
+    .panel{
+      background:rgba(0,0,0,.14);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:16px;
+      padding:14px;
+    }
+    .panel h3{
+      margin:0 0 10px 0;
+      font-size:13px;
+      color:var(--accent);
+      letter-spacing:.4px;
+      font-weight:800;
+    }
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+    input,select{
+      width:100%;
+      box-sizing:border-box;
+      background:var(--input);
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:10px;
+      padding:10px 10px;
+      outline:none;
+    }
+    input::placeholder{color:#7f92b3}
+    .row{display:grid;grid-template-columns:120px 160px 1fr 1fr 160px;gap:10px;align-items:end}
+    @media(max-width:980px){.row{grid-template-columns:1fr 1fr}}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    button{
+      border:0;
+      padding:10px 14px;
+      border-radius:10px;
+      font-weight:800;
+      cursor:pointer;
+      letter-spacing:.3px;
+    }
+    .btn{background:var(--btn);color:#04162a}
+    .btn2{background:var(--btn2);color:#032015}
+    .btn3{background:var(--accent);color:#1c0b00}
+    .btn4{background:#365cff;color:#071427}
+    .btnDanger{background:var(--danger);color:white}
+    .muted{color:var(--muted);font-size:12px;margin-top:8px}
+    .status{margin-top:10px;font-size:12px;color:var(--muted)}
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(0,0,0,.16);
+    }
+    thead th{
+      background:rgba(255,138,42,.95);
+      color:#1c0b00;
+      text-align:left;
+      font-size:12px;
+      padding:10px 10px;
+      border-bottom:1px solid rgba(0,0,0,.18);
+      white-space:nowrap;
+    }
+    tbody td{
+      padding:10px 10px;
+      font-size:12px;
+      border-bottom:1px solid rgba(255,255,255,.05);
+      vertical-align:top;
+    }
+    tbody tr:last-child td{border-bottom:0}
+    .right{text-align:right}
+    .green{color:#1ae38e;font-weight:800}
+    .red{color:#ff5a5a;font-weight:800}
+    .small{font-size:11px;color:var(--muted)}
+    .topline{
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+      margin-bottom:10px;
+    }
+    .totals{font-size:12px;color:var(--muted)}
+    .note{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:8px;
+    }
+    .pdfbox{
+      margin-top:12px;
+      border-top:1px dashed rgba(255,255,255,.12);
+      padding-top:12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="head">
+        <div>
+          <div class="title">CAIXA</div>
+          <div class="sub">Tela fixa no mês corrente (dia 1 → dia 1 do próximo mês). Filtro abaixo só serve para BAIXAR PDF.</div>
+        </div>
+        <div class="pill" id="pillStatus">Carregando...</div>
+      </div>
+
+      <div class="body">
+        <div class="grid">
+          <div class="panel">
+            <div class="topline">
+              <div class="pill" id="pillMes">Mês corrente: ...</div>
+              <button class="btn4" id="btnReload" type="button">ATUALIZAR</button>
+            </div>
+
+            <h3>LANÇAMENTOS</h3>
+
+            <div class="row">
+              <div>
+                <label>DATA</label>
+                <input id="inData" type="date" />
+              </div>
+              <div>
+                <label>TIPO</label>
+                <select id="selTipo">
+                  <option value="RECEITA">RECEITA</option>
+                  <option value="DESPESA">DESPESA</option>
+                </select>
+              </div>
+              <div>
+                <label>DESCRIÇÃO</label>
+                <input id="inDesc" type="text" placeholder="Descrição" />
+              </div>
+              <div>
+                <label>OBS</label>
+                <input id="inObs" type="text" placeholder="Opcional" />
+              </div>
+              <div>
+                <label>VALOR (R$)</label>
+                <input id="inValor" type="number" step="0.01" placeholder="0,00" />
+              </div>
+            </div>
+
+            <div class="btns">
+              <button class="btn2" id="btnSalvar" type="button">SALVAR</button>
+              <button class="btnDanger" id="btnCancelar" type="button">LIMPAR</button>
+              <span class="status" id="status">...</span>
+            </div>
+
+            <div class="pdfbox">
+              <h3>PDF (ARQUIVO MENSAL)</h3>
+              <div class="row" style="grid-template-columns:160px 200px 160px;gap:10px">
+                <div>
+                  <label>ANO (PDF)</label>
+                  <select id="pdfYear"></select>
+                </div>
+                <div>
+                  <label>MÊS (PDF)</label>
+                  <select id="pdfMonth"></select>
+                </div>
+                <div>
+                  <button class="btn" id="btnPdf" type="button" style="width:100%;margin-top:22px">BAIXAR PDF</button>
+                </div>
+              </div>
+              <div class="note">Este PDF é apenas para baixar o mês escolhido. A tela continua no mês corrente.</div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="topline">
+              <div class="pill" id="pillRange">Visualizando: ...</div>
+              <div class="pill" id="pillCount">0 lançamentos</div>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:110px">DATA</th>
+                  <th>DESCRIÇÃO</th>
+                  <th>TIPO</th>
+                  <th class="right" style="width:120px">VALOR</th>
+                  <th class="right" style="width:120px">SALDO</th>
+                  <th style="width:110px">AÇÕES</th>
+                </tr>
+              </thead>
+              <tbody id="tbody">
+                <tr><td colspan="6" class="small">Carregando...</td></tr>
+              </tbody>
+            </table>
+
+            <div class="muted" id="totais">Receitas: R$ 0,00 • Despesas: R$ 0,00 • Saldo: R$ 0,00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ====== SUPABASE CONFIG (já existente) ======
+  const SB_URL = (window.SB_URL || window.SUPABASE_URL || "").trim();
+  const SB_KEY = (window.SB_KEY || window.SUPABASE_KEY || window.SUPABASE_ANON_KEY || "").trim();
+
+  // cria client (aceita config no iframe ou herdada do index.html)
+let sb = null;
+try{
+  const url =
+    (typeof SB_URL !== "undefined" && SB_URL) ||
+    window.SB_URL || window.SUPABASE_URL ||
+    (window.parent && (window.parent.SB_URL || window.parent.SUPABASE_URL));
+
+  const key =
+    (typeof SB_KEY !== "undefined" && SB_KEY) ||
+    window.SB_KEY || window.SUPABASE_ANON_KEY || window.SUPABASE_KEY ||
+    (window.parent && (window.parent.SB_KEY || window.parent.SUPABASE_ANON_KEY || window.parent.SUPABASE_KEY));
+
+  if(!url || !key) throw new Error("Supabase config ausente (SB_URL/SB_KEY)");
+  sb = window.supabase.createClient(url, key);
+}catch(e){
+  console.error(e);
+  setTimeout(()=>{ try{ alert("CAIXA: Supabase não configurado (ver Console)."); }catch(_){} }, 50);
+}
+
+  // ====== DOM ======
+  const inData = document.getElementById("inData");
+  const selTipo = document.getElementById("selTipo");
+  const inDesc = document.getElementById("inDesc");
+  const inObs  = document.getElementById("inObs");
+  const inValor= document.getElementById("inValor");
+  const btnSalvar = document.getElementById("btnSalvar");
+  const btnCancelar = document.getElementById("btnCancelar");
+  const btnReload = document.getElementById("btnReload");
+  const btnPdf = document.getElementById("btnPdf");
+  const pdfYear = document.getElementById("pdfYear");
+  const pdfMonth = document.getElementById("pdfMonth");
+
+  const tbody = document.getElementById("tbody");
+  const statusEl = document.getElementById("status");
+  const pillStatus = document.getElementById("pillStatus");
+  const pillMes = document.getElementById("pillMes");
+  const pillRange = document.getElementById("pillRange");
+  const pillCount = document.getElementById("pillCount");
+  const totaisEl = document.getElementById("totais");
+
+  // ====== HELPERS ======
+  const pad2 = (n)=> String(n).padStart(2,"0");
+  const money = (n)=> (Number(n)||0).toLocaleString("pt-BR",{minimumFractionDigits:2, maximumFractionDigits:2});
+  const esc = (s)=> String(s??"").replace(/[&<>"]/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[m]));
+
+  function todayISO(){
+    const d = new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  }
+
+  function monthNamePT(m){
+    const names = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    return names[m] || "";
+  }
+
+  function getCurrentRange(){
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = d.getMonth(); // 0..11
+    const start = new Date(y, m, 1);
+    const end = new Date(y, m+1, 1); // exclusivo
+    const startIso = `${y}-${pad2(m+1)}-01`;
+    const endIso = `${end.getFullYear()}-${pad2(end.getMonth()+1)}-01`;
+    return { startIso, endIso, y, m, label:`${monthNamePT(m)}/${y} (1 → 1)` };
+  }
+
+  // ====== PDF (gerar HTML e imprimir) ======
+  async function printRowsToPdf(title, rows){
+    const trs = rows.map(r=>{
+      const receita = r.tipo==="RECEITA" ? money(r.valor) : "";
+      const despesa = r.tipo==="DESPESA" ? money(r.valor) : "";
+      return `<tr>
+        <td>${esc(r.data||"")}</td>
+        <td>${esc(r.descricao||"")}</td>
+        <td>${esc(r.obs||"")}</td>
+        <td style="text-align:right">${receita}</td>
+        <td style="text-align:right">${despesa}</td>
+        <td style="text-align:right">${money(r.saldo||0)}</td>
+      </tr>`;
+    }).join("");
+
+    const html = `<!doctype html><html><head><meta charset="utf-8">
+    <title>${esc(title)}</title>
+    <style>
+      body{font-family:Arial,Helvetica,sans-serif;font-size:12px;margin:0;padding:0}
+      h1{font-size:16px;margin:10px 0 8px 0;text-align:center}
+      table{width:100%;border-collapse:collapse}
+      th,td{border:1px solid #999;padding:6px;vertical-align:top}
+      th{background:#f2f2f2}
+      @page{size:A4 landscape;margin:10mm}
+    </style></head><body>
+    <h1>${esc(title)}</h1>
+    <table>
+      <thead><tr>
+        <th>DATA</th><th>DESCRIÇÃO</th><th>OBS</th>
+        <th>RECEITA (R$)</th><th>DESPESA (R$)</th><th>SALDO (R$)</th>
+      </tr></thead>
+      <tbody>${trs}</tbody>
+    </table>
+    <script>
+      window.onload = () => { setTimeout(()=>{ window.print(); }, 50); };
+      window.onafterprint = () => { setTimeout(()=>{ window.close?.(); }, 50); };
+    <\/script>
+  </body></html>`;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+
+    // remove depois (para não acumular)
+    setTimeout(()=>{ try{ iframe.remove(); }catch(e){} }, 5000);
+  }
+
+  // ====== DATA LOAD / CRUD (mantidos) ======
+  async function garantirFechamentos(){
+    // (mantém como estava no seu arquivo; se vazio, tudo bem)
+    return;
+  }
+
+  async function somarSaldoAnterior(startIso){
+    const { data, error } = await sb
+      .from("caixa")
+      .select("tipo, valor, data")
+      .lt("data", startIso);
+
+    if(error){ console.error(error); return 0; }
+
+    let saldo = 0;
+    for(const r of (data||[])){
+      const v = Number(r.valor)||0;
+      if(String(r.tipo).toUpperCase()==="RECEITA") saldo += v;
+      else saldo -= v;
+    }
+    return saldo;
+  }
+
+  function render(rows, saldoAnterior){
+    let saldo = Number(saldoAnterior)||0;
+    let rec=0, des=0;
+
+    if(!rows || rows.length===0){
+      tbody.innerHTML = `<tr><td colspan="6" class="small">Sem lançamentos no período.</td></tr>`;
+      pillCount.textContent = "0 lançamentos";
+      totaisEl.textContent = `Receitas: R$ ${money(0)} • Despesas: R$ ${money(0)} • Saldo: R$ ${money(saldo)}`;
+      return;
+    }
+
+    const html = rows.map(r=>{
+      const tipo = String(r.tipo||"").toUpperCase();
+      const v = Number(r.valor)||0;
+      if(tipo==="RECEITA"){ saldo += v; rec += v; }
+      else { saldo -= v; des += v; }
+
+      const vTxt = money(v);
+      const saldoTxt = money(saldo);
+
+      const vClass = tipo==="RECEITA" ? "green" : "red";
+
+      return `<tr>
+        <td>${esc(r.data||"")}</td>
+        <td>${esc(r.descricao||"")}</td>
+        <td>${esc(tipo)}</td>
+        <td class="right ${vClass}">${vTxt}</td>
+        <td class="right">${saldoTxt}</td>
+        <td><button class="btnDanger" data-del="${r.id}">EXCLUIR</button></td>
+      </tr>`;
+    }).join("");
+
+    tbody.innerHTML = html;
+    pillCount.textContent = `${rows.length} lançamentos`;
+    totaisEl.textContent = `Receitas: R$ ${money(rec)} • Despesas: R$ ${money(des)} • Saldo: R$ ${money(saldo)}`;
+
+    tbody.querySelectorAll("button[data-del]").forEach(btn=>{
+      btn.addEventListener("click", async ()=>{
+        const id = btn.getAttribute("data-del");
+        if(!id) return;
+        if(!confirm("Excluir este lançamento?")) return;
+        const { error } = await sb.from("caixa").delete().eq("id", id);
+        if(error){ console.error(error); alert("Erro ao excluir (ver console)."); return; }
+        await carregar();
+      });
+    });
+  }
+
+  async function criarNovo(){
+    const data = inData.value;
+    const tipo = selTipo.value;
+    const descricao = inDesc.value.trim();
+    const obs = inObs.value.trim();
+    const valor = Number(inValor.value||0);
+
+    if(!data){ alert("Informe a DATA."); return; }
+    if(!descricao){ alert("Informe a DESCRIÇÃO."); return; }
+    if(!valor || valor<=0){ alert("Informe um VALOR maior que 0."); return; }
+
+    const payload = {
+      data,
+      hora: null,
+      tipo,
+      descricao,
+      obs,
+      valor: valor
+    };
+
+    const { data: row, error } = await sb.from("caixa").insert([payload]).select("*").single();
+    if(error){
+      console.error(error);
+      alert("ERRO ao criar: " + (error.message || "ver console"));
+      statusEl.textContent = "ERRO ao criar.";
+      return;
+    }
+    await carregar();
+    statusEl.textContent = "CRIADO.";
+  }
+
+  async function carregar(){
+    try{
+      pillStatus.textContent = "Carregando...";
+      statusEl.textContent = "CARREGANDO...";
+
+      await garantirFechamentos();
+
+      const range = getCurrentRange();
+      pillMes.textContent = `Mês corrente: ${monthNamePT(range.m)}/${range.y}`;
+      pillRange.textContent = `Visualizando: ${range.label}`;
+
+      // saldo anterior
+      const saldoAnterior = await somarSaldoAnterior(range.startIso);
+
+      // lista do período
+      const { data: rows, error } = await sb
+        .from("caixa")
+        .select("id, data, hora, tipo, descricao, obs, valor")
+        .gte("data", range.startIso)
+        .lt("data", range.endIso)
+        .order("data", { ascending:true })
+        .order("hora", { ascending:true });
+
+      if(error){
+        console.error(error);
+        statusEl.textContent = "ERRO ao buscar CAIXA (ver console).";
+        pillStatus.textContent = "Erro";
+        return;
+      }
+
+      render(rows || [], saldoAnterior);
+
+      statusEl.textContent = `OK: ${range.label} | Registros: ${(rows||[]).length} | Saldo anterior: R$ ${money(saldoAnterior)}`;
+      pillStatus.textContent = "OK";
+    }catch(e){
+      console.error(e);
+      statusEl.textContent = "ERRO (ver console).";
+      pillStatus.textContent = "Erro";
+    }
+  }
+
+  function fillPdfSelectors(){
+    const now = new Date();
+    const yNow = now.getFullYear();
+    const mNow = now.getMonth();
+
+    // anos: yNow-3 .. yNow+1
+    pdfYear.innerHTML = "";
+    for(let y=yNow-3; y<=yNow+1; y++){
+      const o = document.createElement("option");
+      o.value = String(y);
+      o.textContent = String(y);
+      if(y===yNow) o.selected = true;
+      pdfYear.appendChild(o);
+    }
+
+    // meses
+    pdfMonth.innerHTML = "";
+    for(let m=0; m<12; m++){
+      const o = document.createElement("option");
+      o.value = String(m);
+      o.textContent = monthNamePT(m);
+      if(m===mNow) o.selected = true;
+      pdfMonth.appendChild(o);
+    }
+  }
+
+  async function handlePdf(){
+    try{
+      btnPdf.disabled = true;
+      pillStatus.textContent = "Preparando PDF...";
+      const year = Number(pdfYear.value);
+      const monthIndex = Number(pdfMonth.value);
+      const startIso = `${year}-${pad2(monthIndex+1)}-01`;
+      const end = new Date(year, monthIndex+1, 1);
+      const endIso = `${end.getFullYear()}-${pad2(end.getMonth()+1)}-01`;
+
+      // saldo anterior até o início do mês do PDF
+      const saldoAnterior = await somarSaldoAnterior(startIso);
+
+      const { data: rows, error } = await sb
+        .from("caixa")
+        .select("id, data, hora, tipo, descricao, obs, valor")
+        .gte("data", startIso)
+        .lt("data", endIso)
+        .order("data", { ascending:true })
+        .order("hora", { ascending:true });
+
+      if(error){
+        console.error(error);
+        pillStatus.textContent = "Erro";
+        alert("Falha ao preparar PDF: " + (error.message||"ver console"));
+        return;
+      }
+
+      // calcular saldo progressivo para o pdf
+      let saldo = Number(saldoAnterior)||0;
+      const pdfRows = (rows||[]).map(r=>{
+        const tipo = String(r.tipo||"").toUpperCase();
+        const v = Number(r.valor)||0;
+        if(tipo==="RECEITA") saldo += v; else saldo -= v;
+        return { ...r, saldo };
+      });
+
+      const title = `TESOURA - CAIXA (${monthNamePT(monthIndex)}/${year})`;
+      await printRowsToPdf(title, pdfRows);
+
+      pillStatus.textContent = "PDF pronto";
+    }catch(e){
+      console.error(e);
+      pillStatus.textContent = "Erro";
+      alert("Erro ao gerar PDF (ver console).");
+    }finally{
+      btnPdf.disabled = false;
+    }
+  }
+
+  btnSalvar.addEventListener("click", criarNovo);
+  btnCancelar.addEventListener("click", ()=>{
+    inData.value = todayISO();
+    selTipo.value = "RECEITA";
+    inDesc.value = "";
+    inObs.value = "";
+    inValor.value = "";
+  });
+  btnReload.addEventListener("click", carregar);
+  btnPdf.addEventListener("click", handlePdf);
+
+  // init
+  (function init(){
+    inData.value = todayISO();
+    fillPdfSelectors();
+  })();
+
+  // auto-load
+  window.addEventListener("DOMContentLoaded", ()=> setTimeout(()=>{ if(sb) carregar(); }, 50));
+</script>
+</body>
+</html>
