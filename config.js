@@ -1,23 +1,24 @@
-// Fonte única de configuração do Tesoura (v4)
-// Este arquivo pode ficar na raiz (config.js) e/ou em app/js/config.js.
-// Importante: usa MERGE para não apagar configurações já existentes.
-(function () {
-  const prev = (window.TESOURA_CONFIG && typeof window.TESOURA_CONFIG === "object") ? window.TESOURA_CONFIG : {};
+// config.js (TESOURA)
+// Mantém compatibilidade: TESOURA_CONFIG + SUPABASE_URL/ANON_KEY em window
 
-  window.TESOURA_CONFIG = Object.assign({}, prev, {
-    // Supabase
-    SUPABASE_URL: "https://xuplzpispukvtggjasxx.supabase.co",
-    // Pode ser SUPABASE_KEY ou SUPABASE_ANON_KEY — o CAIXA aceita ambos
-    SUPABASE_KEY: "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg",
+window.TESOURA_CONFIG = Object.assign({}, window.TESOURA_CONFIG || {}, {
+  APP_PIN: "TESOURA2026",
 
-    // Login / Diretores (visual)
-    APP_PIN: "TESOURA2026",
-    DIRETORES: {
-      "1baidec": { caixa: true },
-      "2thiago": { caixa: true },
-      "3love":   { caixa: false },
-      "4le":     { caixa: false },
-      "5titi":   { caixa: false }
-    }
-  });
-})();
+  // Supabase (cliente)
+  SUPABASE_URL: "https://xumsbprhlpqnulskldrl.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_qtRHm8yo7PXADifAIaxqNM_0Z6kS9U4C8NfNUZTxH6uR5NjZcOknVBJ3LLb4QhE2",
+
+  // Diretoria (edita) + regra do CAIXA
+  // true = com CAIXA | false = sem CAIXA
+  DIRETORES: {
+    "baideck": { caixa: true },
+    "thiago":  { caixa: true },
+    "slove":   { caixa: false },
+    "4le":     { caixa: false },
+    "titi":    { caixa: false }
+  }
+});
+
+// Compatibilidade para painéis antigos:
+window.SUPABASE_URL = window.TESOURA_CONFIG.SUPABASE_URL;
+window.SUPABASE_ANON_KEY = window.TESOURA_CONFIG.SUPABASE_ANON_KEY;
