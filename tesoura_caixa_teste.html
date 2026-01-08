@@ -160,6 +160,8 @@
   </div>
 
 <script>
+// PATCH_OK
+
 /* ===== SUPABASE ===== */
 const CFG = window.TESOURA_CONFIG || {};
 const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
@@ -663,18 +665,45 @@ async function doDelete(r){
   carregar();
 }
 
-/* ===== eventos ===== */
-btnPdf.addEventListener("click", ()=>window.print());
-btnConsultar.addEventListener("click", carregar);
-btnSalvar.addEventListener("click", addOrUpdate);
-btnCancelar.addEventListener("click", ()=>{ resetForm(); });
 
-selPeriodo.addEventListener("change", ()=>{ updateUIByPeriodo(); });
-selAno.addEventListener("change", ()=>{ buildSemanas(); updateUIByPeriodo(); });
-selMes.addEventListener("change", ()=>{ /* mês muda só o range */ });
+function safeOn(el, ev, fn){
+  try{
+    if(!el){ console.warn('[CAIXA] Elemento ausente para evento:', ev); return; }
+    el.addEventListener(ev, fn);
+  }catch(e){
+    console.error('[CAIXA] Falha ao ligar evento', ev, e);
+  }
+}
+
+function safeSetValue(el, v){
+  if(!el) return;
+  try{ el.value = v; }catch(e){}
+}
+
+function safeSetText(el, v){
+  if(!el) return;
+  try{ el.textContent = v; }catch(e){}
+}
+
+/* ===== eventos ===== */
+safeOn(btnPdf, "click", ()=>window.print());
+safeOn(btnConsultar, "click", carregar);
+safeOn(btnSalvar, "click", addOrUpdate);
+safeOn(btnCancelar, "click", ()=>{ resetForm(); });
+
+safeOn(selPeriodo, "change", ()=>{ updateUIByPeriodo(); });
+safeOn(selAno, "change", ()=>{ buildSemanas(); updateUIByPeriodo(); });
+safeOn(selMes, "change", ()=>{ /* mês muda só o range */ });
 
 /* ===== init ===== */
 (function init(){
+  // Checagem rápida de elementos (evita erro no console)
+  const _req = {selAno, selMes, selPeriodo, selSemana, inData, btnConsultar, btnSalvar, btnPdf, btnCancelar};
+  const _faltando = Object.entries(_req).filter(([k,v])=>!v).map(([k])=>k);
+  if(_faltando.length){
+    console.warn("[CAIXA] Elementos ausentes:", _faltando.join(", "));
+  }
+
   buildAno();
   buildMes();
 
@@ -684,7 +713,7 @@ selMes.addEventListener("change", ()=>{ /* mês muda só o range */ });
   buildSemanas();
   updateUIByPeriodo();
 
-  inData.value = isoDate(now);
+  safeSetValue(inData, isoDate(now));
   resetForm();
 
   carregar();
