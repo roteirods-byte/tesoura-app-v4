@@ -209,6 +209,35 @@
 window.TESOURA_BUILD_VER = "20260109_190000";
 </script>
 
+  <script>
+/* TESOURA_IFRAME_FALLBACK 20260109_200000: se boot falhar, destrava e carrega o app */
+(function(){
+  function destravar(){
+    var f = document.getElementById("frame");
+    if(!f) return;
+    var src = (f.getAttribute("src") || "").trim();
+    if(!src || src === "about:blank"){
+      f.setAttribute("src", "tesoura_app_abas_R10.html?v=" + Date.now());
+    }
+    f.style.opacity = "1";
+    f.style.pointerEvents = "auto";
+    f.style.visibility = "visible";
+  }
+
+  setTimeout(function(){
+    try{
+      var f = document.getElementById("frame");
+      if(!f) return;
+      var src = (f.getAttribute("src") || "").trim();
+      if(!src || src === "about:blank"){
+        destravar();
+        console.warn("TESOURA: fallback aplicado (boot não liberou iframe).");
+      }
+    }catch(e){}
+  }, 1200);
+})();
+</script>
+
 
 </head>
 
