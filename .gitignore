@@ -8,3 +8,5 @@ index.html.fixbak2_*
 
 __backup_cleanup__/
 __deprecated__/
+
+*.bak_*
