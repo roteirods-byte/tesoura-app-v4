@@ -185,7 +185,8 @@
   #jogadoresTable th:nth-child(11), #jogadoresTable td:nth-child(11){width:40px;}  /* VEL */
   #jogadoresTable th:nth-child(12), #jogadoresTable td:nth-child(12){width:40px;}  /* MOV */
   #jogadoresTable th:nth-child(13), #jogadoresTable td:nth-child(13){width:50px;}  /* PONTOS */
-  #jogadoresTable th:nth-child(14), #jogadoresTable td:nth-child(14){width:100px;} /* AÇÕES */
+  #jogadoresTable th:nth-child(14),  #jogadoresTable td:nth-child(14){width:70px;}   /* EDITAR */
+  #jogadoresTable th:nth-child(15),  #jogadoresTable td:nth-child(15){width:70px;}   /* EXCLUIR */
 
 
 
@@ -307,7 +308,8 @@
             <th>VEL</th>
             <th>MOV</th>
             <th>PONTOS</th>
-            <th>AÇÕES</th>
+            <th>EDITAR</th>
+            <th>EXCLUIR</th>
           </tr>
         </thead>
         <tbody id="tbody-jogadores"></tbody>
@@ -519,8 +521,10 @@ function el(id){ return document.getElementById(id); }
         tr.appendChild(tdTexto(j.vel ?? ""));
         tr.appendChild(tdTexto(j.mov ?? ""));
         tr.appendChild(tdTexto(j.pontos ?? ""));
-          const tdAcoes = document.createElement("td");
-          tdAcoes.className = "td-acoes";
+          const tdEditar = document.createElement("td");
+          tdEditar.className = "td-acoes";
+          tdEditar.style.textAlign = "center";
+
           const btnE = document.createElement("button");
           btnE.textContent = "EDITAR";
           btnE.className = "btn";
@@ -541,30 +545,28 @@ function el(id){ return document.getElementById(id); }
             pontosInput.value = j.pontos ?? "";
             statusEl.textContent = "Editando jogador ID " + j.id;
             btnSalvar.textContent = "SALVAR ALTERAÇÃO";
-            // rolar para o topo do formulário (sempre visível)
             window.scrollTo({ top: 0, behavior: "smooth" });
           });
+          tdEditar.appendChild(btnE);
+          tr.appendChild(tdEditar);
+
+          const tdExcluir = document.createElement("td");
+          tdExcluir.className = "td-acoes";
+          tdExcluir.style.textAlign = "center";
 
           const btnX = document.createElement("button");
           btnX.textContent = "EXCLUIR";
-          btnX.className = "btn btn-red";
+          btnX.className = "btn btn-danger";
           btnX.style.padding = "6px 10px";
           btnX.style.fontSize = "11px";
           btnX.addEventListener("click", async () => {
             if (!confirm("Excluir este jogador?")) return;
             await excluirJogador(j.id);
           });
+          tdExcluir.appendChild(btnX);
+          tr.appendChild(tdExcluir);
 
-          const wrap = document.createElement("div");
-          wrap.style.display = "flex";
-          wrap.style.gap = "6px";
-          wrap.style.justifyContent = "center";
-          wrap.appendChild(btnE);
-          wrap.appendChild(btnX);
-
-          tdAcoes.appendChild(wrap);
-          tr.appendChild(tdAcoes);
-tbody.appendChild(tr);
+          tbody.appendChild(tr);
       });
 
       renderAniversariantes(data);
