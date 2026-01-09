@@ -542,7 +542,7 @@ function el(id){ return document.getElementById(id); }
             statusEl.textContent = "Editando jogador ID " + j.id;
             btnSalvar.textContent = "SALVAR ALTERAÇÃO";
             // rolar para o topo do formulário (sempre visível)
-            document.getElementById("topoFormulario")?.scrollIntoView({behavior:"smooth", block:"start"});
+            window.scrollTo({ top: 0, behavior: "smooth" });
           });
 
           const btnX = document.createElement("button");
