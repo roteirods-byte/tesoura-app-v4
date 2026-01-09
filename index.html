@@ -1,50 +1,7 @@
 <!doctype html>
 <html lang="pt-br">
 <head>
-<script>
-/* TESOURA FIX DEFINITIVO: desliga Service Worker e limpa cache 1x */
-(function () {
-  try {
-    // impede qualquer registro novo de SW nesta página
-    if (navigator.serviceWorker) {
-      navigator.serviceWorker.register = function(){ return Promise.resolve(null); };
-    }
-  } catch(e){}
-
-  const KEY = "TESOURA_SWKILL_DONE_v1";
-  if (localStorage.getItem(KEY) === "1") return;
-  localStorage.setItem(KEY, "1");
-
-  (async function(){
-    try {
-      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        for (const r of regs) { try { await r.unregister(); } catch(e){} }
-      }
-      if (window.caches && caches.keys) {
-        const keys = await caches.keys();
-        for (const k of keys) { try { await caches.delete(k); } catch(e){} }
-      }
-    } finally {
-      // força 1 reload com cache-bust, depois a URL volta limpa
-      const u = new URL(location.href);
-      u.searchParams.set("v", Date.now().toString());
-      location.replace(u.toString());
-    }
-  })();
-})();
-window.addEventListener("load", function(){
-  try{
-    const u=new URL(location.href);
-    if(u.searchParams.has("v")){
-      u.searchParams.delete("v");
-      history.replaceState({}, "", u.pathname + (u.search?u.search:"") + u.hash);
-    }
-  }catch(e){}
-});
-</script>
-
-  <meta charset="utf-8"/>
+<meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Tesoura — Controle do Futebol</title>
 
@@ -191,7 +148,7 @@ window.addEventListener("load", function(){
   </style>
 
   <!-- TESOURA CORE (central) -->
-  <script src="app/core/config.js?v=20260109_082208"></script>
+  <script src="app/core/config.js?v=20260109_083000"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
  <script>
@@ -207,15 +164,14 @@ window.addEventListener("load", function(){
       // 1) mata qualquer Service Worker antigo
       if("serviceWorker" in navigator){
 
-          .then(rs => Promise.all(rs.map(r => r.unregister())))
-          .catch(()=>{});
+
       }
 
       // 2) limpa caches antigos do navegador
       if(window.caches){
         caches.keys()
-          .then(keys => Promise.all(keys.map(name => caches.delete(name))))
-          .catch(()=>{});
+
+
       }
     }
   }catch(e){}
@@ -224,8 +180,8 @@ window.addEventListener("load", function(){
 </script>
 
   <script src="app/core/session.js"></script>
-  <script src="app/core/supabase.js?v=20260109_082208"></script>
-  <script src="app/core/override.js?v=20260109_082208"></script>
+  <script src="app/core/supabase.js?v=20260109_083000"></script>
+  <script src="app/core/override.js?v=20260109_083000"></script>
 
   <!-- TESOURA BOOT (destrava) -->
   <script>
@@ -242,7 +198,7 @@ window.addEventListener("load", function(){
 (function(){
   try {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+      .then(rs => rs.forEach(r => r.unregister()));
     }
     if (window.caches) {
       caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
