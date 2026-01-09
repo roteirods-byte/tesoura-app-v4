@@ -35,3 +35,8 @@ window.TESOURA_CONFIG = {
 
   DEFAULT_TAB: "aba-controle"
 };
+
+
+// ===== API (Cloud Run) =====
+window.TESOURA_CONFIG = window.TESOURA_CONFIG || {};
+window.TESOURA_CONFIG.API_BASE = "https://tesoura-api-quutkunkda-uc.a.run.app";

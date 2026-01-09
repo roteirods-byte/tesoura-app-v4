@@ -110,8 +110,6 @@ window.TESOURA_PANELS["jogadores"] = {
       </div>
     `;
 
-    const supabase = window.getSupabase();
-
     const el = (id) => root.querySelector(id);
 
     const camisaInput = el("#j_camisa");
@@ -136,8 +134,15 @@ window.TESOURA_PANELS["jogadores"] = {
     let editId = null;
     let cacheJogadores = [];
 
+    const API_BASE =
+      (window.TESOURA_CONFIG && (window.TESOURA_CONFIG.API_BASE || window.TESOURA_CONFIG.API)) || "";
+
     function up(s) {
       return (s || "").toString().trim().toUpperCase();
+    }
+
+    function setStatus(msg) {
+      statusEl.textContent = msg || "";
     }
 
     function calcularIdade(dataISO) {
@@ -158,10 +163,6 @@ window.TESOURA_PANELS["jogadores"] = {
       pontosInput.value = pontos ? String(pontos) : "";
     }
 
-    function setStatus(msg) {
-      statusEl.textContent = msg || "";
-    }
-
     function limparFormulario() {
       editId = null;
       camisaInput.value = "";
@@ -176,6 +177,28 @@ window.TESOURA_PANELS["jogadores"] = {
       pontosInput.value = "";
       setStatus("");
       window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function apiUrl(path) {
+      const base = (API_BASE || "").replace(/\/+$/, "");
+      const p = String(path || "").startsWith("/") ? path : `/${path}`;
+      return `${base}${p}`;
+    }
+
+    async function apiFetch(path, opts = {}) {
+      if (!API_BASE) throw new Error("API_BASE não configurada (TESOURA_CONFIG.API_BASE).");
+      const res = await fetch(apiUrl(path), {
+        ...opts,
+        headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+      });
+      const text = await res.text();
+      let json = null;
+      try { json = text ? JSON.parse(text) : null; } catch (_) {}
+      if (!res.ok) {
+        const msg = (json && (json.error || json.message)) || text || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return json;
     }
 
     function renderTabela(lista) {
@@ -231,20 +254,16 @@ window.TESOURA_PANELS["jogadores"] = {
     }
 
     async function carregarJogadores() {
-      setStatus("CARREGANDO JOGADORES...");
-      const { data, error } = await supabase
-        .from("jogadores")
-        .select("*")
-        .order("apelido", { ascending: true });
-
-      if (error) {
-        console.error(error);
-        setStatus("ERRO AO CARREGAR JOGADORES.");
-        return;
+      try {
+        setStatus("CARREGANDO JOGADORES...");
+        const data = await apiFetch("/api/jogadores", { method: "GET" });
+        cacheJogadores = Array.isArray(data) ? data : [];
+        cacheJogadores.sort((a, b) => up(a.apelido).localeCompare(up(b.apelido), "pt-BR"));
+        renderTabela(cacheJogadores);
+      } catch (e) {
+        console.error(e);
+        setStatus("ERRO AO CARREGAR JOGADORES: " + (e.message || ""));
       }
-
-      cacheJogadores = data || [];
-      renderTabela(cacheJogadores);
     }
 
     function editarJogador(j) {
@@ -265,17 +284,14 @@ window.TESOURA_PANELS["jogadores"] = {
 
     async function excluirJogador(id) {
       if (!confirm("CONFIRMAR EXCLUSÃO DEFINITIVA DO JOGADOR?")) return;
-
-      const { error } = await supabase.from("jogadores").delete().eq("id", id);
-
-      if (error) {
-        console.error(error);
-        setStatus("ERRO AO EXCLUIR JOGADOR: " + (error.message || ""));
-        return;
+      try {
+        await apiFetch(`/api/jogadores/${id}`, { method: "DELETE" });
+        setStatus("JOGADOR EXCLUÍDO COM SUCESSO.");
+        await carregarJogadores();
+      } catch (e) {
+        console.error(e);
+        setStatus("ERRO AO EXCLUIR JOGADOR: " + (e.message || ""));
       }
-
-      setStatus("JOGADOR EXCLUÍDO COM SUCESSO.");
-      await carregarJogadores();
     }
 
     async function salvarJogador() {
@@ -311,33 +327,25 @@ window.TESOURA_PANELS["jogadores"] = {
         vel,
         mov,
         pontos,
-        ativo: true,
       };
 
-      setStatus("SALVANDO...");
-      let error;
-
-      if (editId === null) {
-        const resp = await supabase.from("jogadores").insert(payload);
-        error = resp.error;
-      } else {
-        const resp = await supabase.from("jogadores").update(payload).eq("id", editId);
-        error = resp.error;
+      try {
+        setStatus("SALVANDO...");
+        if (editId === null) {
+          await apiFetch("/api/jogadores", { method: "POST", body: JSON.stringify(payload) });
+        } else {
+          await apiFetch(`/api/jogadores/${editId}`, { method: "PUT", body: JSON.stringify(payload) });
+        }
+        setStatus("JOGADOR SALVO COM SUCESSO.");
+        limparFormulario();
+        await carregarJogadores();
+      } catch (e) {
+        console.error(e);
+        setStatus("ERRO AO SALVAR JOGADOR: " + (e.message || ""));
       }
-
-      if (error) {
-        console.error(error);
-        setStatus("ERRO AO SALVAR JOGADOR.");
-        return;
-      }
-
-      setStatus("JOGADOR SALVO COM SUCESSO.");
-      limparFormulario();
-      await carregarJogadores();
     }
 
     function baixarArquivoHTML() {
-      // Gera um arquivo HTML “imprimível/arquivável” do painel de jogadores (tabela completa)
       const hoje = new Date().toISOString().slice(0, 10);
 
       const rows = (cacheJogadores || []).map(j => `
