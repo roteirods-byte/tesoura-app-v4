@@ -191,7 +191,7 @@ window.addEventListener("load", function(){
   </style>
 
   <!-- TESOURA CORE (central) -->
-  <script src="app/core/config.js"></script>
+  <script src="app/core/config.js?v=20260109_082208"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
  <script>
@@ -206,7 +206,7 @@ window.addEventListener("load", function(){
 
       // 1) mata qualquer Service Worker antigo
       if("serviceWorker" in navigator){
-        navigator.serviceWorker.getRegistrations()
+
           .then(rs => Promise.all(rs.map(r => r.unregister())))
           .catch(()=>{});
       }
@@ -224,8 +224,8 @@ window.addEventListener("load", function(){
 </script>
 
   <script src="app/core/session.js"></script>
-  <script src="app/core/supabase.js"></script>
-  <script src="app/core/override.js"></script>
+  <script src="app/core/supabase.js?v=20260109_082208"></script>
+  <script src="app/core/override.js?v=20260109_082208"></script>
 
   <!-- TESOURA BOOT (destrava) -->
   <script>
@@ -236,6 +236,22 @@ window.addEventListener("load", function(){
   document.head.appendChild(s);
 })();
 </script>
+
+<script>
+/* TESOURA_BOOT_FIX 20260109_082208: limpa SW/cache e evita travamento por versão antiga */
+(function(){
+  try {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+    }
+    if (window.caches) {
+      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
+    }
+  } catch(e) {}
+})();
+window.TESOURA_BUILD_VER = "20260109_082208";
+</script>
+
 </head>
 
 <body>
