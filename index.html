@@ -1,6 +1,49 @@
 <!doctype html>
 <html lang="pt-br">
 <head>
+<script>
+/* TESOURA FIX DEFINITIVO: desliga Service Worker e limpa cache 1x */
+(function () {
+  try {
+    // impede qualquer registro novo de SW nesta página
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.register = function(){ return Promise.resolve(null); };
+    }
+  } catch(e){}
+
+  const KEY = "TESOURA_SWKILL_DONE_v1";
+  if (localStorage.getItem(KEY) === "1") return;
+  localStorage.setItem(KEY, "1");
+
+  (async function(){
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const r of regs) { try { await r.unregister(); } catch(e){} }
+      }
+      if (window.caches && caches.keys) {
+        const keys = await caches.keys();
+        for (const k of keys) { try { await caches.delete(k); } catch(e){} }
+      }
+    } finally {
+      // força 1 reload com cache-bust, depois a URL volta limpa
+      const u = new URL(location.href);
+      u.searchParams.set("v", Date.now().toString());
+      location.replace(u.toString());
+    }
+  })();
+})();
+window.addEventListener("load", function(){
+  try{
+    const u=new URL(location.href);
+    if(u.searchParams.has("v")){
+      u.searchParams.delete("v");
+      history.replaceState({}, "", u.pathname + (u.search?u.search:"") + u.hash);
+    }
+  }catch(e){}
+});
+</script>
+
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Tesoura — Controle do Futebol</title>
