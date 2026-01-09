@@ -572,18 +572,37 @@ tbody.appendChild(tr);
     }
 
     async function excluirJogador(id) {
-      statusEl.textContent = "Excluindo jogador...";
-     const { data, error } = await supabase.from("vw_jogadores_painel").select("*").order("apelido", { ascending:true });
-      
-      if (error) {
-        console.error(error);
-        statusEl.textContent =
-          "ERRO AO EXCLUIR JOGADOR: " + (error.message || JSON.stringify(error));
-        return;
-      }
+      try {
+        const idNum = Number(id);
+        if (!idNum || Number.isNaN(idNum)) {
+          alert("ERRO: ID inválido para excluir: " + id);
+          return;
+        }
 
-      statusEl.textContent = "JOGADOR EXCLUÍDO COM SUCESSO.";
-      carregarJogadores();
+        statusEl.textContent = "Excluindo jogador (ID " + idNum + ")...";
+
+        const { data, error } = await supabase
+          .from("jogadores")
+          .delete()
+          .eq("id", idNum)
+          .select("id");
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          alert("Não excluiu. ID não encontrado no banco. ID=" + idNum);
+          statusEl.textContent = "Não excluiu (ID não encontrado).";
+          return;
+        }
+
+        statusEl.textContent = "Jogador excluído. Recarregando lista...";
+        await carregarJogadores();
+        statusEl.textContent = "JOGADOR EXCLUÍDO COM SUCESSO.";
+      } catch (e) {
+        console.error("ERRO AO EXCLUIR JOGADOR:", e);
+        alert("ERRO AO EXCLUIR JOGADOR: " + (e.message || JSON.stringify(e)));
+        statusEl.textContent = "ERRO AO EXCLUIR JOGADOR.";
+      }
     }
 
     async function salvarJogador() {
