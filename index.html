@@ -185,7 +185,14 @@
   <script src="app/core/override.js"></script>
 
   <!-- TESOURA BOOT (destrava) -->
-  <script defer src="app/core/boot.js?v=2"></script>
+  <script>
+(function(){
+  var s=document.createElement("script");
+  s.defer=true;
+  s.src="app/core/boot.js?v="+Date.now();
+  document.head.appendChild(s);
+})();
+</script>
 </head>
 
 <body>
