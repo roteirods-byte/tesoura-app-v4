@@ -265,12 +265,6 @@ function buildMes(){
 }
 // buildSemanas removido (filtro agora é somente por mês)
 
-function buildSemanas(){
-  // filtro semanal removido (mantido só mês/ano)
-  return;
-}
-
-
 // updateUIByPeriodo removido (filtro agora é somente por mês)
 
 function setStatus(msg){ statusEl.textContent = msg; }

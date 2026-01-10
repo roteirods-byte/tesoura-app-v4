@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Tesoura — Controle do Futebol</title>
+
+  <style>
+    :root{
+      --bg:#070c18;
+      --bg2:#0b1630;
+      --card:#0b1a33;
+      --line:#1a2c52;
+      --text:#eaf0ff;
+      --muted:rgba(255,255,255,.70);
+      --orange:#ff8a1c;
+      --green:#17d46a;
+      --red:#ff4050;
+      --blue:#35a7ff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
+      background:radial-gradient(1200px 700px at 50% -10%, rgba(255,138,28,.18), transparent 60%),
+                 linear-gradient(180deg,var(--bg2),var(--bg));
+      color:var(--text);
+    }
+    .topbar{
+      position:sticky;top:0;z-index:10;
+      background:rgba(6,10,22,.92);
+      backdrop-filter: blur(8px);
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .topbar-inner{
+      display:flex;align-items:center;gap:12px;
+      padding:10px 14px;
+    }
+    .logo{
+      width:34px;height:34px;border-radius:10px;
+      background:var(--orange);color:#101;
+      display:grid;place-items:center;
+      font-weight:1000;
+      box-shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    .titlewrap{display:flex;flex-direction:column;line-height:1.1}
+    .t1{font-weight:1000;letter-spacing:.2px}
+    .t2{font-size:12px;color:var(--muted);font-weight:800}
+    .spacer{flex:1}
+    .badge{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);font-size:12px;color:var(--muted)}
+    .btnTop{padding:8px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer;font-weight:700}
+    .btnTop.orange{background:var(--orange);border-color:transparent;color:#101}
+    .btnTop:hover{filter:brightness(1.05)}
+
+    .tabs{display:flex;gap:10px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.04)}
+    .tab{padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--text);cursor:pointer;font-weight:800;font-size:13px}
+    .tab.active{background:var(--orange);border-color:transparent;color:#101}
+    .tab:hover{filter:brightness(1.05)}
+
+    .wrap{max-width:1400px;margin:0 auto;padding:0 14px 20px}
+    .frameWrap{border:1px solid rgba(255,255,255,.10);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.03);height:calc(100vh - 120px);position:relative}
+    iframe{width:100%;height:calc(100vh - 150px);border:0;background:transparent}
+
+    .msg{margin:10px 0 0;color:var(--red);font-weight:800;min-height:18px}
+
+    /* LOGIN OVERLAY */
+    .overlay{
+      position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+      background:rgba(0,0,0,.55);backdrop-filter:blur(6px);z-index:999;
+    }
+    .modal{
+      width:min(880px,94vw);
+      background:linear-gradient(180deg,#0b1a33,#07101f);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:18px;
+      box-shadow:0 30px 80px rgba(0,0,0,.55);
+      padding:18px;
+    }
+    .h1{margin:0;text-align:center;font-weight:1000;letter-spacing:.6px;color:var(--orange);font-size:22px}
+    .h2{margin:6px 0 0;text-align:center;font-weight:900;font-size:14px}
+    .h3{margin:4px 0 14px;text-align:center;color:var(--muted);font-size:12px}
+
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media (max-width:780px){ .grid{grid-template-columns:1fr} }
+
+    .card{
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:16px;
+      padding:14px;
+    }
+    .label{font-weight:1000;color:var(--text);opacity:.9;font-size:12px;margin-bottom:8px}
+    .pin{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      outline:none;
+      background:rgba(0,0,0,.25);
+      color:var(--text);
+      font-weight:900;
+      letter-spacing:.6px;
+    }
+    .rowbtn{margin-top:10px}
+    .btn{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:0;
+      cursor:pointer;
+      font-weight:1000;
+      letter-spacing:.3px;
+    }
+    .btn.green{background:var(--green);color:#04140c}
+    .btn.blue{background:var(--blue);color:#061225}
+    .btn:hover{filter:brightness(1.05)}
+
+    .foot{margin-top:10px;text-align:center;color:var(--muted);font-size:12px;font-weight:800}
+    .loginMsg{margin-top:10px;text-align:center;color:var(--red);font-weight:1000;min-height:18px}
+
+    .frameLoader{
+      position:absolute; inset:0;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:12px;
+      background:rgba(6,10,22,.80);
+      backdrop-filter: blur(2px);
+      z-index:5;
+      opacity:0; pointer-events:none;
+      transition: opacity .15s ease;
+    }
+    .frameLoader.on{opacity:1; pointer-events:auto;}
+    .spinner{
+      width:26px; height:26px;
+      border:3px solid rgba(255,255,255,.25);
+      border-top-color: rgba(255,255,255,.85);
+      border-radius:50%;
+      animation: spin .9s linear infinite;
+    }
+    .loaderText{color:#fff; font-weight:700; letter-spacing:.2px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* Login: campos de senha (sem prompt) */
+    .loginField{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+    .loginField label{font-size:12px;letter-spacing:.04em;color:rgba(255,255,255,.85)}
+    .loginField input{width:260px;max-width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.25);color:#fff;outline:none}
+    .loginField input:focus{border-color:rgba(255,255,255,.28)}
+  </style>
+
+  <!-- TESOURA CORE (central) -->
+  <script src="app/core/config.js?v=20260109_083000"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+ <script>
+  // Anti-travamento: limpa Service Worker + caches 1x por dia (evita versão antiga)
+ (function(){
+  try{
+    const k="TESOURA_SW_RESET_DAY";
+    const today = new Date().toISOString().slice(0,10);
+
+    if(localStorage.getItem(k) !== today){
+      localStorage.setItem(k, today);
+
+      // 1) mata qualquer Service Worker antigo
+      if("serviceWorker" in navigator){
+
+
+      }
+
+      // 2) limpa caches antigos do navegador
+      if(window.caches){
+        caches.keys()
+
+
+      }
+    }
+  }catch(e){}
+})();
+   
+</script>
+
+  <script src="app/core/session.js"></script>
+  <script src="app/core/supabase.js?v=20260109_083000"></script>
+  <script src="app/core/override.js?v=20260109_083000"></script>
+
+  <!-- TESOURA BOOT (destrava) -->
+  <script>
+(function(){
+  var s=document.createElement("script");
+  s.defer=true;
+  s.src="app/core/boot.js?v="+Date.now();
+  document.head.appendChild(s);
+})();
+</script>
+
+<script>
+/* TESOURA_BOOT_FIX 20260109_190000: limpa SW/cache e evita travamento por versão antiga */
+(function(){
+  try {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations()
+        .then(rs => rs.forEach(r => r.unregister()));
+    }
+    if (window.caches) {
+      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
+    }
+  } catch(e) {}
+})();
+window.TESOURA_BUILD_VER = "20260109_190000";
+</script>
+
+  <script>
+/* TESOURA_IFRAME_FALLBACK 20260109_200000: se boot falhar, destrava e carrega o app */
+(function(){
+  function destravar(){
+    var f = document.getElementById("frame");
+    if(!f) return;
+    var src = (f.getAttribute("src") || "").trim();
+    if(!src || src === "about:blank"){
+      f.setAttribute("src", "tesoura_controle_geral_teste.html?v=" + Date.now());
+    }
+    f.style.opacity = "1";
+    f.style.pointerEvents = "auto";
+    f.style.visibility = "visible";
+  }
+
+  setTimeout(function(){
+    try{
+      var f = document.getElementById("frame");
+      if(!f) return;
+      var src = (f.getAttribute("src") || "").trim();
+      if(!src || src === "about:blank"){
+        destravar();
+        /* warn removido */
+      }
+    }catch(e){}
+  }, 1200);
+})();
+</script>
+
+
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="logo">T</div>
+      <div class="titlewrap">
+        <div class="t1">Tesoura — Controle do Futebol</div>
+        <div class="t2">Acesso da Diretoria (edita).</div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div id="badge" class="badge">JOGADOR (VISUAL)</div>
+      <button id="btnLogin" class="btnTop orange" type="button">LOGIN</button>
+      <button id="btnSair" class="btnTop" type="button">SAIR</button>
+    </div>
+
+    <div class="tabs">
+      <button id="aba-jogadores" class="tab" type="button">JOGADORES</button>
+      <button id="aba-presenca" class="tab" type="button">PRESENÇA / ESCALAÇÃO</button>
+      <button id="aba-controle" class="tab active" type="button">CONTROLE GERAL</button>
+      <button id="aba-mensalidade" class="tab" type="button">MENSALIDADE</button>
+      <button id="aba-caixa" class="tab" type="button">CAIXA</button>
+      <button id="aba-gols" class="tab" type="button">GOLS</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="frameWrap">
+      <div id="frameLoader" class="frameLoader" aria-live="polite">
+        <div class="spinner"></div>
+        <div class="loaderText">Carregando painel...</div>
+      </div>
+
+      <!-- CONTROLE GERAL SEMPRE VISÍVEL POR TRÁS -->
+      <iframe id="frame" src="about:blank" style="width:100%;height:100%;border:0;visibility:hidden;opacity:0;pointer-events:none"></iframe>
+    </div>
+
+    <div id="msg" class="msg"></div>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="overlay" class="overlay">
+    <div class="modal">
+      <p class="h1">GRUPO TESOURA !</p>
+      <p class="h2">ESPORTE, FAMÍLIA E AMIZADE</p>
+      <p class="h3">Digite a senha e escolha o acesso</p>
+
+      <div class="grid">
+        <div class="card">
+          <div class="label">JOGADORES (VISUAL)</div>
+          <input id="senhaJogador" class="pin" type="text" inputmode="text" autocomplete="off" placeholder="Senha do jogador" />
+          <div class="rowbtn">
+            <button id="btnEntrarJogadores" class="btn green" type="button">ENTRAR JOGADORES</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="label">DIRETORIA (EDITA)</div>
+          <input id="senhaDiretor" class="pin" type="text" inputmode="text" autocomplete="off" placeholder="Senha da diretoria" />
+          <div class="rowbtn">
+            <button id="btnEntrarDiretoria" class="btn blue" type="button">ENTRAR DIRETORIA</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot">Regra: Jogador só visualiza (não edita). Diretor edita.</div>
+      <div id="loginMsg" class="loginMsg"></div>
+    </div>
+  </div>
+</body>
+</html>
