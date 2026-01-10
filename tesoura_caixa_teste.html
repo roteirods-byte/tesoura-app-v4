@@ -633,7 +633,12 @@ async function doDelete(r){
 btnConsultar.addEventListener("click", carregar);
 btnSalvar.addEventListener("click", addOrUpdate);
 btnCancelar.addEventListener("click", ()=>{ resetForm(); });
-selAno.addEventListener("change", ()=>{ buildSemanas(); updateUIByPeriodo(); });
+selAno.addEventListener("change", ()=>{
+  if (typeof buildSemanas === "function") buildSemanas();
+  updateUIByPeriodo();
+});
+
+if (typeof buildSemanas === "function") buildSemanas();
 selMes.addEventListener("change", ()=>{ /* mês muda só o range */ });
 
 /* ===== init ===== */
