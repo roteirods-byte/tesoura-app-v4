@@ -634,7 +634,9 @@ async function doDelete(r){
 btnConsultar.addEventListener("click", carregar);
 btnSalvar.addEventListener("click", addOrUpdate);
 btnCancelar.addEventListener("click", ()=>{ resetForm(); });
-
+<script>
+function buildSemanas(){ return; } /* CAIXA: filtro é só ANO/MÊS */
+</script>
 selAno.addEventListener("change", ()=>{ buildSemanas(); updateUIByPeriodo(); });
 selMes.addEventListener("change", ()=>{ /* mês muda só o range */ });
 
