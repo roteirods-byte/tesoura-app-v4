@@ -1,15 +1,19 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tesoura</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tesoura — Controle do Futebol</title>
+  <link rel="icon" href="favicon.ico">
   <script>
-    // SEM iframe, SEM fallback, SEM “2 páginas”
+    // abre sempre o APP principal (evita cair em painel isolado)
     location.replace("tesoura_app_abas_R10.html?v=" + Date.now());
   </script>
 </head>
-<body style="font-family:Arial; padding:20px">
-  Carregando...
+<body style="margin:0;background:#070c18;color:#eaf0ff;font-family:system-ui;padding:16px">
+  Carregando…
+  <noscript>
+    <a href="tesoura_app_abas_R10.html">Abrir o app</a>
+  </noscript>
 </body>
 </html>
