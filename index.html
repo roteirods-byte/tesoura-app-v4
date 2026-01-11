@@ -5,120 +5,142 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Tesoura — Controle do Futebol</title>
   <style>
-    :root{ --bg:#071b2a; --line:#ff7a1a; --btn:#0f2b40; --btn2:#13354f; --txt:#e9f2ff; }
-    html,body{ height:100%; margin:0; background:var(--bg); color:var(--txt); font-family:system-ui,Segoe UI,Arial; }
-    .top{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:2px solid var(--line); }
-    .brand{ font-weight:800; letter-spacing:.3px; }
-    .tabs{ display:flex; gap:10px; flex-wrap:wrap; padding:10px 14px; border-bottom:1px solid rgba(255,255,255,.08); }
-    .tab{
-      background:var(--btn); color:var(--txt); border:1px solid rgba(255,255,255,.12);
-      padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:700;
+    :root{
+      --bg:#061829;
+      --bg2:#0a2236;
+      --line:#ff8a2a;
+      --btn:#0f2d46;
+      --btnOn:#163a58;
+      --txt:#e9f2ff;
+      --muted:#9fb3c8;
     }
-    .tab:hover{ background:var(--btn2); }
-    .tab.active{ outline:2px solid var(--line); }
-    .wrap{ height:calc(100vh - 112px); }
-    iframe{ width:100%; height:100%; border:0; background:var(--bg); }
-    .hint{ padding:8px 14px; font-size:12px; opacity:.85; }
+    html,body{height:100%; margin:0; background:var(--bg); color:var(--txt); font-family:system-ui,Segoe UI,Arial;}
+    .topbar{padding:14px 16px; border-bottom:2px solid var(--line); background:linear-gradient(180deg,var(--bg2),var(--bg));}
+    .title{font-weight:700; font-size:18px;}
+    .nav{display:flex; gap:10px; padding:10px 12px; border-bottom:1px solid rgba(255,138,42,.35); flex-wrap:wrap;}
+    .btn{
+      background:var(--btn);
+      color:var(--txt);
+      border:1px solid rgba(255,255,255,.10);
+      padding:8px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:700;
+    }
+    .btn.on{outline:2px solid var(--line); background:var(--btnOn);}
+    .hint{padding:6px 12px; color:var(--muted); font-size:12px;}
+    .wrap{padding:0; margin:0;}
+    #frame{
+      width:100%;
+      height:calc(100vh - 130px);
+      border:0;
+      display:block;
+      visibility:visible;
+      opacity:1;
+      pointer-events:auto;
+      background:transparent;
+    }
+    .err{
+      display:none;
+      margin:10px 12px;
+      padding:10px 12px;
+      border:1px solid rgba(255,138,42,.6);
+      border-radius:10px;
+      background:rgba(255,138,42,.08);
+      color:var(--txt);
+      font-size:13px;
+    }
+    .err a{color:var(--txt); font-weight:800;}
   </style>
 </head>
 <body>
-  <div class="top">
-    <div class="brand">Tesoura — Controle do Futebol</div>
+  <div class="topbar">
+    <div class="title">Tesoura — Controle do Futebol</div>
   </div>
 
-  <div class="tabs" id="tabs"></div>
-  <div class="hint">Página Única (abas). Se um painel abrir com “cabeçalho duplicado”, ele será ocultado automaticamente.</div>
+  <div class="nav" id="nav">
+    <button class="btn" data-panel="jogadores">JOGADORES</button>
+    <button class="btn" data-panel="presenca">PRESENÇA / ESCALAÇÃO</button>
+    <button class="btn" data-panel="controle">CONTROLE GERAL</button>
+    <button class="btn" data-panel="mensalidade">MENSALIDADE</button>
+    <button class="btn" data-panel="caixa">CAIXA</button>
+    <button class="btn" data-panel="gols">GOLS</button>
+  </div>
+
+  <div class="hint">Página Única (abas). Se algum painel abrir “vazio”, é arquivo inexistente (404) ou erro dentro do painel.</div>
+  <div class="err" id="err"></div>
 
   <div class="wrap">
-    <iframe id="frame" src="about:blank" referrerpolicy="no-referrer"></iframe>
+    <iframe id="frame" src="about:blank"></iframe>
   </div>
 
 <script>
 (function(){
-  const PANELS = [
-    {key:"jogadores",  label:"JOGADORES",            file:"tesoura_jogadores_teste.html"},
-    {key:"presenca",   label:"PRESENÇA / ESCALAÇÃO", file:"tesoura_presenca_escala_R5.html"},
-    {key:"controle",   label:"CONTROLE GERAL",       file:"tesoura_controle_geral_teste.html"},
-    {key:"mensal",     label:"MENSALIDADE",          file:"tesoura_mensalidade_R4.html"},
-    {key:"caixa",      label:"CAIXA",                file:"tesoura_caixa_teste.html"},
-    {key:"gols",       label:"GOLS",                 file:"tesoura_gols_teste.html"},
-  ];
+  // MAPEAMENTO (somente arquivos que existem na RAIZ do repo)
+  const PANELS = {
+    jogadores:   { file: "tesoura_jogadores_teste.html" },
+    presenca:    { file: "tesoura_presenca_escala_R5.html" },
+    controle:    { file: "tesoura_controle_geral_teste.html" },
+    mensalidade: { file: "tesoura_mensalidade_R4.html" },
+    caixa:       { file: "tesoura_caixa_teste.html" },
+    gols:        { file: "tesoura_gols_teste.html" }
+  };
 
-  const tabs = document.getElementById("tabs");
+  const nav = document.getElementById("nav");
   const frame = document.getElementById("frame");
+  const err = document.getElementById("err");
 
-  function setActive(key){
-    [...tabs.querySelectorAll(".tab")].forEach(b => b.classList.toggle("active", b.dataset.key===key));
+  function setErr(html){
+    err.innerHTML = html;
+    err.style.display = "block";
+  }
+  function clearErr(){
+    err.style.display = "none";
+    err.innerHTML = "";
   }
 
-  function load(key){
-    const p = PANELS.find(x=>x.key===key) || PANELS[0];
-    setActive(p.key);
-    location.hash = p.key;
-    frame.src = p.file + "?v=" + Date.now();
-  }
+  function select(panel, pushHash=true){
+    if(!PANELS[panel]) panel = "jogadores";
 
-  // Oculta cabeçalho/menu duplicado dentro do iframe (mesmo domínio => permitido)
-  function hideDuplicatedHeader(doc){
-    try{
-      const texts = ["LOGIN","SAIR","JOGADOR (VISUAL)","TESOURA","JOGADORES","PRESENÇA","ESCALAÇÃO","CONTROLE GERAL","MENSALIDADE","CAIXA","GOLS","BANCO DE DADOS"];
-      const candidates = [];
-      doc.querySelectorAll("button,a,div,span").forEach(el=>{
-        const t = (el.innerText||"").trim().toUpperCase();
-        if(!t) return;
-        if(texts.some(x=>t===x || t.includes(x))){
-          candidates.push(el);
-        }
-      });
-      // sobe até achar um “bloco” grande no topo e esconde
-      function topContainer(el){
-        let cur = el;
-        for(let i=0;i<8 && cur && cur !== doc.body;i++){
-          const r = cur.getBoundingClientRect ? cur.getBoundingClientRect() : null;
-          if(r && r.top <= 5 && r.height >= 50) return cur;
-          cur = cur.parentElement;
-        }
-        return null;
+    [...nav.querySelectorAll(".btn")].forEach(b=>{
+      b.classList.toggle("on", b.dataset.panel===panel);
+    });
+
+    clearErr();
+
+    // força reload leve (evita cache “grudado”)
+    const v = Date.now();
+    const src = `${PANELS[panel].file}?v=${v}#in_app`;
+    frame.src = src;
+
+    // se não carregar, mostra aviso com link direto
+    const thisSrc = src;
+    setTimeout(()=>{
+      // se ainda estiver no mesmo src depois do tempo, provavelmente travou/404/erro interno
+      if(frame.src.includes(thisSrc)){
+        setErr(`Painel <b>${panel}</b> pode não ter carregado. <a href="${PANELS[panel].file}?v=${v}" target="_blank">Abrir este painel direto</a>`);
       }
-      const tops = candidates.map(topContainer).filter(Boolean);
+    }, 1800);
 
-      // esconde até 2 containers do topo (pra matar “duas páginas”)
-      let hidden = 0;
-      for(const c of tops){
-        if(hidden>=2) break;
-        // evita esconder o corpo inteiro
-        if(c === doc.body) continue;
-        c.style.display = "none";
-        hidden++;
-      }
-
-      // garante que o conteúdo encoste no topo
-      doc.documentElement.style.scrollBehavior = "auto";
-      doc.body.style.marginTop = "0px";
-    }catch(e){}
+    if(pushHash) location.hash = panel;
   }
 
-  frame.addEventListener("load", ()=>{
-    try{
-      const doc = frame.contentDocument;
-      if(!doc) return;
-      hideDuplicatedHeader(doc);
-    }catch(e){}
+  nav.addEventListener("click", (e)=>{
+    const btn = e.target.closest(".btn");
+    if(!btn) return;
+    select(btn.dataset.panel, true);
   });
 
-  // cria botões
-  PANELS.forEach(p=>{
-    const b = document.createElement("button");
-    b.className="tab";
-    b.textContent=p.label;
-    b.dataset.key=p.key;
-    b.onclick=()=>load(p.key);
-    tabs.appendChild(b);
+  window.addEventListener("hashchange", ()=>{
+    const p = (location.hash||"").replace("#","").trim();
+    select(p || "jogadores", false);
   });
 
-  // abre pelo hash
-  const k = (location.hash||"").replace("#","").trim();
-  load(k || PANELS[0].key);
+  frame.addEventListener("load", ()=>{ clearErr(); });
+
+  // inicial
+  const start = (location.hash||"").replace("#","").trim() || "jogadores";
+  select(start, false);
 })();
 </script>
 </body>
