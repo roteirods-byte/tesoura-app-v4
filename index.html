@@ -3,12 +3,77 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Tesoura</title>
-  <script>
-    location.replace("tesoura_jogadores_teste.html?v=" + Date.now());
-  </script>
+  <title>TESOURA</title>
+  <link rel="icon" href="./favicon.ico">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./app/css/ui.css">
 </head>
+
 <body>
-  <a href="tesoura_jogadores_teste.html">Abrir Tesoura</a>
+  <div class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <div>
+        <h1>TESOURA</h1>
+        <small>Controle do Futebol</small>
+      </div>
+      <div style="margin-left:auto">
+        <span id="badge" class="badge"></span>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab" id="aba-jogadores">Jogadores</button>
+      <button class="tab" id="aba-presenca">Presença / Escalação</button>
+      <button class="tab" id="aba-controle">Controle Geral</button>
+      <button class="tab" id="aba-mensalidade">Mensalidade</button>
+      <button class="tab" id="aba-caixa">Caixa</button>
+      <button class="tab" id="aba-gols">Gols</button>
+      <button class="tab" id="aba-banco">Banco de Dados</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div id="msg" class="muted" style="padding:8px 2px;"></div>
+
+    <div class="card" style="padding:0; overflow:hidden;">
+      <iframe id="frame" title="Conteúdo"
+        style="width:100%; height: calc(100vh - 210px); border:0; display:block;"></iframe>
+    </div>
+
+    <div style="display:flex; gap:10px; padding:12px 0;">
+      <button id="btnLogin" class="btn secondary">Login</button>
+      <button id="btnSair" class="btn danger">Sair</button>
+    </div>
+  </div>
+
+  <!-- OVERLAY LOGIN -->
+  <div id="overlay" class="pin-overlay">
+    <div class="pin-box">
+      <h2>Entrar</h2>
+      <p id="loginMsg">Digite a senha para acessar.</p>
+
+      <div class="row" style="margin-bottom:10px;">
+        <div class="field" style="flex:1;">
+          <label>Senha Jogadores</label>
+          <input id="pinJog" placeholder="Senha dos jogadores"/>
+        </div>
+        <div class="field" style="flex:1;">
+          <label>Senha Diretoria</label>
+          <input id="pinDir" placeholder="Senha da diretoria"/>
+        </div>
+      </div>
+
+      <div class="pin-actions">
+        <button id="btnEntrarJogadores" class="btn primary">Entrar (Jogadores)</button>
+        <button id="btnEntrarDiretoria" class="btn secondary">Entrar (Diretoria)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORDEM DOS SCRIPTS (importante) -->
+  <script src="./app/core/config.js"></script>
+  <script src="./app/core/session.js"></script>
+  <script src="./app/core/boot.js"></script>
 </body>
 </html>
