@@ -134,3 +134,12 @@ hr{border:0; border-top:1px solid var(--line); margin:14px 0}
 .pin-box p{margin:0 0 12px 0; color:var(--muted); font-size:13px}
 .pin-actions{display:flex; gap:10px}
 .pin-actions .btn{flex:1}
+
+/* V5 - Abas (maiúsculas, maiores, abóbora) */
+.tabs .tab{
+  text-transform: uppercase !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  color: var(--accent) !important;
+  letter-spacing: .6px !important;
+}
