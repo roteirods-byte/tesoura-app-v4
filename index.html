@@ -4,9 +4,27 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>TESOURA</title>
+
   <link rel="icon" href="./favicon.ico">
   <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./app/css/ui.css?v=V5_20260113A">
+
+  <!-- CSS do projeto -->
+  <link rel="stylesheet" href="./app/css/ui.css?v=V5_20260113B">
+
+  <!-- FIX: abas sempre maiúsculas/abóbora (sem depender de cache) -->
+  <style>
+    .tabs .tab{
+      text-transform: uppercase !important;
+      font-size: 15px !important;
+      font-weight: 800 !important;
+      color: var(--accent) !important;
+      letter-spacing: .6px !important;
+    }
+    .tabs .tab.active{
+      border-color: rgba(255,138,0,.55) !important;
+      box-shadow: 0 0 0 3px rgba(255,138,0,.12) !important;
+    }
+  </style>
 </head>
 
 <body>
@@ -72,8 +90,8 @@
   </div>
 
   <!-- ORDEM DOS SCRIPTS (importante) -->
-  <script src="./app/core/config.js"></script>
-  <script src="./app/core/session.js"></script>
-  <script src="./app/core/boot.js"></script>
+  <script src="./app/core/config.js?v=V5_20260113B"></script>
+  <script src="./app/core/session.js?v=V5_20260113B"></script>
+  <script src="./app/core/boot.js?v=V5_20260113B"></script>
 </body>
 </html>
