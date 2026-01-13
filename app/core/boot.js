@@ -65,6 +65,11 @@
     // cache-buster
     const sep = url.includes("?") ? "&" : "?";
     nf.src = url + sep + "v=" + Date.now();
+    if (cfg.DEBUG) {
+  const short = String(url).split("/").pop();
+  setTopMsg("ARQUIVO: " + short + " | BUILD: " + (cfg.BUILD || ""));
+}
+
   }
 
   function requireLogin(){
